@@ -1,5 +1,6 @@
 from flask import Flask
-from .models import db
+from ..models import db
+from .admin import admin
 
 
 def app_maker(config=None):
@@ -9,6 +10,7 @@ def app_maker(config=None):
         app.config.update(config)
 
     db.init_app(app)
+    admin.init_app(app)
 
     @app.before_first_request
     def create_models():
