@@ -52,5 +52,8 @@ def test_it_creates_a_job(webapp):
     job.add_notification(group, on_retry=True, on_failure=True)
 
     db.session.add(job)
-
     db.session.commit()
+
+    assert (
+        job.notifications[0].groups[0].emails[0].email == "admin@local.local"
+    )
