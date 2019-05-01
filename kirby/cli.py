@@ -1,2 +1,2 @@
 def web():
-    pass
+    print("hello world")
