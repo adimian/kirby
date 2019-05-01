@@ -1,4 +1,7 @@
+import pytest
+from dateutil.parser import parse
 from kirby.models import (
+    db,
     Job,
     Environment,
     JobType,
@@ -7,9 +10,23 @@ from kirby.models import (
     Suspension,
     NotificationGroup,
 )
+from kirby.web import app_maker
 
 
-def test_it_creates_a_job():
+@pytest.fixture(scope="function")
+def webapp():
+    config = {
+        "TESTING": True,
+        "SQLALCHEMY_DATABASE_URI": "sqlite://",
+        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+    }
+    app = app_maker(config=config)
+    with app.app_context():
+        db.create_all()
+        yield app
+
+
+def test_it_creates_a_job(webapp):
 
     job = Job(
         name="retrieve cash register data",
@@ -22,14 +39,18 @@ def test_it_creates_a_job():
     context = Context(environment=test_env, package_name="my_script")
     context.set_config(url="http://localhost:8000", loop=30, retry=True)
 
-    schedule = Schedule(hour="*", minute="/2")
+    schedule = Schedule(name="every two minutes", hour="*", minute="/2")
     context.add_schedule(schedule)
 
-    suspension = Suspension(start="2019-01-01", end="2019-01-02")
+    suspension = Suspension(start=parse("2019-01-01"), end=parse("2019-01-02"))
     schedule.add_suspension(suspension)
 
-    group = NotificationGroup()
+    group = NotificationGroup(name="admins")
     group.add_email("admin@local.local")
 
     job.add_context(context)
     job.add_notification(group, on_retry=True, on_failure=True)
+
+    db.session.add(job)
+
+    db.session.commit()
