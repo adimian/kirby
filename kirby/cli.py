@@ -5,6 +5,7 @@ def web():
         "TESTING": False,
         "SQLALCHEMY_DATABASE_URI": "sqlite:///kirby.db",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+        "SECRET_KEY": "whatever",
     }
 
     app = app_maker(config=config)
