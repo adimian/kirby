@@ -2,7 +2,7 @@ from requests_flask_adapter import Session
 from kirby.web import app_maker
 from pytest import fixture
 
-BASE_API = "http://localhost:5000"
+BASE_API = "http://some-test-server.somewhere"
 
 
 @fixture
@@ -22,4 +22,3 @@ def test_it_register_a_job(session):
         },
     )
     assert result.status_code == 200
-    assert result.json() == {"id": 1}
