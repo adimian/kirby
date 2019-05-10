@@ -34,8 +34,8 @@ class Registration(Resource):
             return {
                 "id": db.session.query(Job)
                 .filter_by(name=args["name"])
-                .first()
+                .one()
                 .id
             }
         except sqlalchemy.exc.IntegrityError:
-            abort(400, "Bad request")
+            abort(400, "There is already a Job with this name.")
