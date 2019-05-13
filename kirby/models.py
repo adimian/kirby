@@ -6,8 +6,7 @@ db = SQLAlchemy()
 
 
 class Environment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(), nullable=False)
+    name = db.Column(db.String(), nullable=False, primary_key=True)
 
 
 class JobType(Enum):
@@ -16,9 +15,8 @@ class JobType(Enum):
 
 
 class Job(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(), nullable=False)
-    description = db.Column(db.Text(), nullable=True)
+    name = db.Column(db.String(), nullable=False, primary_key=True)
+    description = db.Column(db.Text())
     type = db.Column(db.Enum(JobType), nullable=False)
 
     def add_context(self, context):
@@ -30,19 +28,30 @@ class Job(db.Model):
         self.notifications.append(notification)
 
 
+schedules_to_contexts = db.Table(
+    "schedules_to_contexts",
+    db.metadata,
+    db.Column("schedule", db.Integer, db.ForeignKey("schedule.id")),
+    db.Column("context", db.Integer, db.ForeignKey("context.id")),
+)
+
+
 class Context(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    package_name = db.Column(db.String(), nullable=False)
 
-    environment_id = db.Column(
-        db.Integer, db.ForeignKey("environment.id"), nullable=False
+    environment_name = db.Column(
+        db.Integer, db.ForeignKey("environment.name"), nullable=False
     )
     environment = db.relationship(
         Environment, backref=db.backref("contexts", lazy=True)
     )
 
-    job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=False)
+    job_name = db.Column(db.Integer, db.ForeignKey("job.name"))
     job = db.relationship(Job, backref=db.backref("contexts", lazy=True))
+
+    schedules = db.relationship(
+        "Schedule", secondary=schedules_to_contexts, back_populates="contexts"
+    )
 
     def set_config(self, **kwargs):
         for key, value in kwargs.items():
@@ -79,11 +88,8 @@ class Schedule(db.Model):
     month = db.Column(db.String(), default="*")
     weekday = db.Column(db.String(), default="*")
 
-    context_id = db.Column(
-        db.Integer, db.ForeignKey("context.id"), nullable=False
-    )
-    context = db.relationship(
-        Context, backref=db.backref("schedules", lazy=True)
+    contexts = db.relationship(
+        "Context", secondary=schedules_to_contexts, back_populates="schedules"
     )
 
     def add_suspension(self, suspension):
@@ -150,11 +156,52 @@ class Notification(db.Model):
     on_retry = db.Column(db.Boolean, nullable=False, default=False)
     on_failure = db.Column(db.Boolean, nullable=False, default=True)
 
-    job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=False)
+    job_name = db.Column(db.Integer, db.ForeignKey("job.name"), nullable=False)
     job = db.relationship(Job, backref=db.backref("notifications", lazy=True))
 
     groups = db.relationship(
         "NotificationGroup",
         secondary=notification_to_groups,
         back_populates="notifications",
+    )
+
+
+class Script(db.Model):
+    __tablename__ = "script"
+    id = db.Column(db.Integer, primary_key=True)
+    package_name = db.Column(db.String(), nullable=False)
+    package_version = db.Column(db.String(), nullable=False)
+
+    context_id = db.Column(
+        db.Integer, db.ForeignKey("context.id"), nullable=False
+    )
+    context = db.relationship(
+        Context, backref=db.backref("scripts", lazy=True)
+    )
+
+    first_seen = db.Column(db.DateTime)
+    last_seen = db.Column(db.DateTime)
+
+    def add_source(self, source):
+        self.sources.append(source)
+
+    def add_destination(self, destination):
+        self.destinations.append(destination)
+
+
+class Topic(db.Model):
+    name = db.Column(db.String(), nullable=False, primary_key=True)
+
+    subscriber_id = db.Column(db.Integer, db.ForeignKey("script.id"))
+    subscriber = db.relationship(
+        Script,
+        backref=db.backref("sources", lazy=True),
+        foreign_keys=[subscriber_id],
+    )
+
+    provider_id = db.Column(db.Integer, db.ForeignKey("script.id"))
+    provider = db.relationship(
+        Script,
+        backref=db.backref("destinations", lazy=True),
+        foreign_keys=[provider_id],
     )
