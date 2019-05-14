@@ -33,6 +33,7 @@ class Job(db.Model):
 class Context(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     package_name = db.Column(db.String(), nullable=False)
+    package_version = db.Column(db.String(), nullable=False)
 
     environment_id = db.Column(
         db.Integer, db.ForeignKey("environment.id"), nullable=False
