@@ -1,13 +1,9 @@
 import sqlalchemy
 from flask import abort
-from flask_restplus import Api, Resource, fields, reqparse
+from flask_restplus import Api, Resource, reqparse
 from ..models import db, Job, JobType
 
 api = Api()
-
-client_model = api.model(
-    "Client", {"id": fields.Integer, "name": fields.String}
-)
 
 registration_parser = reqparse.RequestParser()
 registration_parser.add_argument("name", type=str, required=True)
