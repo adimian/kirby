@@ -91,19 +91,23 @@ def init_schedule_on_db():
         on_retry=True, on_failure=True, job=realtime_job, groups=[admin_group]
     )
 
-    db.session.add(test_env)
-    db.session.add(admin_group)
-    db.session.add(producers_group)
-    db.session.add(bakery_group)
-    db.session.add(baking_job)
-    db.session.add(baking_context)
-    db.session.add(every_ten_minute_schedule)
-    db.session.add(first_notification_baking)
-    db.session.add(second_notification_baking)
-    db.session.add(realtime_job)
-    db.session.add(realtime_context)
-    db.session.add(every_minute_schedule)
-    db.session.add(first_notification)
+    db.session.add_all(
+        [
+            test_env,
+            admin_group,
+            producers_group,
+            bakery_group,
+            baking_job,
+            baking_context,
+            every_ten_minute_schedule,
+            first_notification_baking,
+            second_notification_baking,
+            realtime_job,
+            realtime_context,
+            every_minute_schedule,
+            first_notification,
+        ]
+    )
     db.session.commit()
 
 
