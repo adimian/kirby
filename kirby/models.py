@@ -17,7 +17,7 @@ class JobType(Enum):
 
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(), nullable=False)
+    name = db.Column(db.String(), nullable=False, unique=True)
     description = db.Column(db.Text(), nullable=True)
     type = db.Column(db.Enum(JobType), nullable=False)
 
