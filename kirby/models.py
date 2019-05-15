@@ -6,7 +6,8 @@ db = SQLAlchemy()
 
 
 class Environment(db.Model):
-    name = db.Column(db.String(), nullable=False, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(), nullable=False, unique=True)
 
 
 class JobType(Enum):
@@ -15,7 +16,8 @@ class JobType(Enum):
 
 
 class Job(db.Model):
-    name = db.Column(db.String(), nullable=False, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(), nullable=False, unique=True)
     description = db.Column(db.Text())
     type = db.Column(db.Enum(JobType), nullable=False)
 
@@ -190,7 +192,8 @@ class Script(db.Model):
 
 
 class Topic(db.Model):
-    name = db.Column(db.String(), nullable=False, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(), nullable=False, unique=True)
 
     subscriber_id = db.Column(db.Integer, db.ForeignKey("script.id"))
     subscriber = db.relationship(
