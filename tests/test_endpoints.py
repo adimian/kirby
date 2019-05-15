@@ -116,7 +116,5 @@ def test_it_get_the_current_schedule(session, current_schedule):
     result_json.update(actual_date)
     current_schedule.update(actual_date)
 
-    print(result_json)
-    print(current_schedule)
     assert result.status_code == 200
     assert result_json == current_schedule
