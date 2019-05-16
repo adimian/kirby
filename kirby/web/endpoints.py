@@ -41,7 +41,8 @@ class Registration(Resource):
             return {"message": "Sucess"}
         except NoResultFound:
             abort(
-                400, "One or many of the id given refer to inexistent objects."
+                400,
+                "One or many of the given 'id' refer to inexistent objects.",
             )
 
 
