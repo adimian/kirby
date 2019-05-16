@@ -7,7 +7,9 @@ from ..models import db, Job
 
 api = Api()
 
-group_model = api.model("Group", {"name": fields.String})
+group_model = api.model(
+    "Group", {"name": fields.String, "emails": fields.List(fields.String)}
+)
 
 notifications_model = api.model(
     "Notifications",
@@ -54,7 +56,13 @@ class Schedule(Resource):
                 on_retry = notification.on_retry
                 on_failure = notification.on_failure
                 groups = [
-                    {"name": group.name} for group in notification.groups
+                    {
+                        "name": group.name,
+                        "emails": [
+                            group_email.email for group_email in group.emails
+                        ],
+                    }
+                    for group in notification.groups
                 ]
                 notifications.append(
                     {

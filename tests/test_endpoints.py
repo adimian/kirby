@@ -3,8 +3,8 @@ import json
 from datetime import datetime
 from pytest import fixture
 from requests_flask_adapter import Session
-from kirby.web import app_maker
 
+from kirby.web import app_maker
 from kirby.models import (
     db,
     Job,
@@ -48,8 +48,12 @@ def init_schedule_on_db():
     test_env = Environment(name="test_env")
 
     admin_group = NotificationGroup(name="Admin")
+    admin_group.add_email("admin@some-test-server.somewhere")
     producers_group = NotificationGroup(name="Producers")
+    producers_group.add_email("producer1@some-test-server.somewhere")
+    producers_group.add_email("producer2@some-test-server.somewhere")
     bakery_group = NotificationGroup(name="Bakery")
+    bakery_group.add_email("bakery@some-test-server.somewhere")
 
     # First job
     baking_job = Job(name="Baking", type=JobType.SCHEDULED)

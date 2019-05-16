@@ -7,24 +7,33 @@
       "package_version": "1.0.1",
       "notifications": [
         {
-          "on_retry" : true,
-          "on_failure" : true,
+          "on_retry": true,
+          "on_failure": true,
           "groups": [
             {
-              "name": "Admin"
+              "name": "Admin",
+              "emails": [
+                "admin@some-test-server.somewhere"
+              ]
             }
           ]
         },
         {
-          "on_retry" : false,
-          "on_failure" : true,
+          "on_retry": false,
+          "on_failure": true,
           "groups": [
-
             {
-              "name": "Producers"
+              "name": "Producers",
+              "emails": [
+                "producer1@some-test-server.somewhere",
+                "producer2@some-test-server.somewhere"
+              ]
             },
             {
-              "name": "Bakery"
+              "name": "Bakery",
+              "emails": [
+                "bakery@some-test-server.somewhere"
+              ]
             }
           ]
         }
@@ -36,11 +45,14 @@
       "package_version": "2.1.0",
       "notifications": [
         {
-          "on_retry" : true,
-          "on_failure" : true,
+          "on_retry": true,
+          "on_failure": true,
           "groups": [
             {
-              "name": "Admin"
+              "name": "Admin",
+              "emails": [
+                "admin@some-test-server.somewhere"
+              ]
             }
           ]
         }
