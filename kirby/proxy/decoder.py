@@ -9,13 +9,11 @@ def decode_bytes(value):
         return value.decode(TEXT_ENCODING)
 
     elif isinstance(value, list):
-        decoded_value = []
+        decoded_values = []
 
         for val in value:
-            if isinstance(val, bytes):
-                val = val.decode(TEXT_ENCODING)
-            decoded_value.append(val)
+            decoded_values.append(decode_bytes(val))
 
-        return decoded_value
+        return decoded_values
 
     return value
