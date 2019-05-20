@@ -19,31 +19,45 @@ class Registration(Resource):
     def patch(self):
         args = registration_parser.parse_args()
 
+        # Update last_seen
         try:
-            # Update last_seen
             script = (
                 db.session.query(Script).filter_by(id=args["script_id"]).one()
             )
             script.last_seen = datetime.utcnow()
+        except NoResultFound:
+            abort(
+                400,
+                f"The script with the 'id':{args['script_id']}, doesn't exist.",
+            )
 
-            # Add sources and destinations
-            for source_id in args["source_id"]:
+        # Add sources and destinations
+        for source_id in args["source_id"]:
+            try:
                 source = db.session.query(Topic).filter_by(id=source_id).one()
                 script.add_source(source)
-            for destination_id in args["destination_id"]:
+            except NoResultFound:
+                db.session.rollback()
+                abort(
+                    400,
+                    f"The topic with the 'id':{source_id}, doesn't exist. No changes has been committed.",
+                )
+        for destination_id in args["destination_id"]:
+            try:
                 destination = (
                     db.session.query(Topic).filter_by(id=destination_id).one()
                 )
                 script.add_destination(destination)
+            except NoResultFound:
+                db.session.rollback()
+                abort(
+                    400,
+                    f"The topic with the 'id':{destination_id}, doesn't exist. No changes has been committed.",
+                )
 
-            db.session.commit()
+        db.session.commit()
 
-            return {"message": "Sucess"}
-        except NoResultFound:
-            abort(
-                400,
-                "One or many of the given 'id' refer to inexistent objects.",
-            )
+        return {"message": "Sucess"}
 
 
 topic_parser = reqparse.RequestParser()
