@@ -15,6 +15,7 @@ from kirby.models import (
     Notification,
     NotificationGroup,
 )
+from kirby.web.endpoints import test_schedule
 
 BASE_API = "http://some-test-server.somewhere"
 
@@ -44,6 +45,20 @@ def current_schedule():
         yield json.load(fp)
 
 
+def test_it_compares_correctly_schedule_and_time():
+    date = datetime(2019, 5, 20, 12, 0)
+    assert test_schedule(Schedule(name="Every minute"), date)
+    assert test_schedule(
+        Schedule(
+            name="At 12:00 on day-of-month 20", minute="0", hour="12", day="20"
+        ),
+        date,
+    )
+    assert not test_schedule(
+        Schedule(name="Every minute past hour 13", hour="13"), date
+    )
+
+
 def init_schedule_on_db():
     test_env = Environment(name="test_env")
 
@@ -64,10 +79,8 @@ def init_schedule_on_db():
         package_version="1.0.1",
     )
 
-    every_ten_minute_schedule = Schedule(
-        name="every ten minute", minute="/10", context=baking_context
-    )
-    baking_context.add_schedule(every_ten_minute_schedule)
+    schedule_every_minute = Schedule(name="every minute")
+    baking_context.add_schedule(schedule_every_minute)
 
     first_notification_baking = Notification(
         on_retry=True, on_failure=True, job=baking_job, groups=[admin_group]
@@ -87,12 +100,19 @@ def init_schedule_on_db():
         package_name="insert_realtime",
         package_version="2.1.0",
     )
-    every_minute_schedule = Schedule(
-        name="every minute", minute="/1", context=realtime_context
-    )
 
     first_notification = Notification(
         on_retry=True, on_failure=True, job=realtime_job, groups=[admin_group]
+    )
+
+    # Job that mustn't appear
+
+    stop_job = Job(name="Stop everything", type=JobType.SCHEDULED)
+    stop_context = Context(
+        environment=test_env,
+        job=stop_job,
+        package_name="shutdown",
+        package_version="1.0.0",
     )
 
     db.session.add_all(
@@ -103,13 +123,14 @@ def init_schedule_on_db():
             bakery_group,
             baking_job,
             baking_context,
-            every_ten_minute_schedule,
+            schedule_every_minute,
             first_notification_baking,
             second_notification_baking,
             realtime_job,
             realtime_context,
-            every_minute_schedule,
             first_notification,
+            stop_job,
+            stop_context,
         ]
     )
     db.session.commit()

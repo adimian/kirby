@@ -1,9 +1,9 @@
 from datetime import datetime
+from cronex import CronExpression
 import copy
-import sqlalchemy
-from flask import abort
 from flask_restplus import Api, Resource, fields
-from ..models import db, Job
+
+from ..models import db, Job, JobType
 
 api = Api()
 
@@ -37,6 +37,22 @@ schedule_model = api.model(
         "jobs": fields.List(fields.Nested(job_model)),
     },
 )
+
+
+def test_schedule(schedule, date):
+    cron = CronExpression(
+        " ".join(
+            [
+                schedule.minute or "*",
+                schedule.hour or "*",
+                schedule.day or "*",
+                schedule.month or "*",
+                schedule.weekday or "*",
+            ]
+        )
+    )
+    now = [date.year, date.month, date.day, date.hour, date.minute]
+    return cron.check_trigger(now)
 
 
 @api.route("/schedule")
@@ -73,16 +89,25 @@ class Schedule(Resource):
                 )
 
             # Each Job can have various contexts. We need to go through them
-            # To generate all the jobs = since curently package_name and
+            # To generate all the jobs, since curently package_name and
             # package_version are in the Context data.
             for context in job.contexts:
-                jobs.append(
-                    {
-                        "name": job_name,
-                        "package_name": context.package_name,
-                        "package_version": context.package_version,
-                        "notifications": copy.deepcopy(notifications),
-                    }
-                )
+                if job.type == JobType.TRIGGERED or (
+                    context.schedules
+                    and any(
+                        [
+                            test_schedule(schedule, date)
+                            for schedule in context.schedules
+                        ]
+                    )
+                ):
+                    jobs.append(
+                        {
+                            "name": job_name,
+                            "package_name": context.package_name,
+                            "package_version": context.package_version,
+                            "notifications": copy.deepcopy(notifications),
+                        }
+                    )
 
         return schedule
