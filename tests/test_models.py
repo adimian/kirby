@@ -1,6 +1,8 @@
-import pytest
 from datetime import datetime
 from dateutil.parser import parse
+
+import pytest
+
 from kirby.models import (
     db,
     Job,

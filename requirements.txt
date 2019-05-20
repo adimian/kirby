@@ -5,3 +5,7 @@ python-dateutil==2.8.0
 Flask-Admin==1.5.3
 Flask-SQLAlchemy==2.4.0
 requests_flask_adapter==0.0.1
+redis==3.0.1
+kafka-python-log-handler==0.0.1.dev12
+kafka-python==1.4.3
+smart-getenv==1.1.0
