@@ -9,6 +9,9 @@ class Environment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False, unique=True)
 
+    def __repr__(self):
+        return f"<Environment name={self.name}>"
+
 
 class JobType(Enum):
     SCHEDULED = "scheduled"
@@ -29,6 +32,9 @@ class Job(db.Model):
         notification.groups.append(group)
         self.notifications.append(notification)
 
+    def __repr__(self):
+        return f"<Job name={self.name} type={self.type.value}>"
+
 
 schedules_to_contexts = db.Table(
     "schedules_to_contexts",
@@ -41,14 +47,14 @@ schedules_to_contexts = db.Table(
 class Context(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    environment_name = db.Column(
-        db.Integer, db.ForeignKey("environment.name"), nullable=False
+    environment_id = db.Column(
+        db.Integer, db.ForeignKey("environment.id"), nullable=False
     )
     environment = db.relationship(
         Environment, backref=db.backref("contexts", lazy=True)
     )
 
-    job_name = db.Column(db.Integer, db.ForeignKey("job.name"))
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"))
     job = db.relationship(Job, backref=db.backref("contexts", lazy=True))
 
     schedules = db.relationship(
@@ -62,6 +68,9 @@ class Context(db.Model):
 
     def add_schedule(self, schedule):
         self.schedules.append(schedule)
+
+    def __repr__(self):
+        return f"<Context job={self.job} environment={self.environment}>"
 
 
 class ConfigKey(db.Model):
@@ -158,7 +167,7 @@ class Notification(db.Model):
     on_retry = db.Column(db.Boolean, nullable=False, default=False)
     on_failure = db.Column(db.Boolean, nullable=False, default=True)
 
-    job_name = db.Column(db.Integer, db.ForeignKey("job.name"), nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=False)
     job = db.relationship(Job, backref=db.backref("notifications", lazy=True))
 
     groups = db.relationship(
@@ -190,6 +199,9 @@ class Script(db.Model):
     def add_destination(self, destination):
         self.destinations.append(destination)
 
+    def __repr__(self):
+        return f"<Script name={self.package_name} package_version={self.package_version}>"
+
 
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -208,3 +220,6 @@ class Topic(db.Model):
         backref=db.backref("destinations", lazy=True),
         foreign_keys=[provider_id],
     )
+
+    def __repr__(self):
+        return f"<Topic name={self.name}>"

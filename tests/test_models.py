@@ -1,4 +1,3 @@
-import pytest
 from datetime import datetime
 from dateutil.parser import parse
 from kirby.models import (
@@ -13,20 +12,6 @@ from kirby.models import (
     Script,
     Topic,
 )
-from kirby.web import app_maker
-
-
-@pytest.fixture(scope="function")
-def webapp():
-    config = {
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite://",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-    }
-    app = app_maker(config=config)
-    with app.app_context():
-        db.create_all()
-        yield app
 
 
 def test_it_creates_a_job(webapp):
