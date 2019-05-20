@@ -3,16 +3,16 @@ from kirby.models import db, JobType, Script
 from tests.conftest import API_ROOT
 
 
-def get_id_topic(session, name):
+def get_topic_id(session, name):
     return session.get(
         "/".join([API_ROOT, "topic"]), params={"name": name}
     ).json()["id"]
 
 
-def test_if_get_id_topic(session, db_topic_factory):
+def test_if_get_topic_id(session, db_topic_factory):
     topic_name = "Orders"
     db_topic_factory(topic_name)
-    assert get_id_topic(session, topic_name) == 1
+    assert get_topic_id(session, topic_name) == 1
 
 
 def test_it_register_a_script(
@@ -38,8 +38,8 @@ def test_it_register_a_script(
     db_topic_factory(asset_management_topic_name)
 
     # Get id registered
-    id_source = get_id_topic(session, orders_topic_name)
-    id_destination = get_id_topic(session, asset_management_topic_name)
+    id_source = get_topic_id(session, orders_topic_name)
+    id_destination = get_topic_id(session, asset_management_topic_name)
 
     result = session.patch(
         "/".join([API_ROOT, "registration"]),
