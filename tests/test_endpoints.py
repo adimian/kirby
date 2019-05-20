@@ -1,7 +1,4 @@
-import os
-import json
 from datetime import datetime
-from pytest import fixture
 from freezegun import freeze_time
 
 from kirby.models import db, Schedule, Script
