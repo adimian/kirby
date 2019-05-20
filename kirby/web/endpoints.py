@@ -1,5 +1,4 @@
 from datetime import datetime
-from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound
 from flask import abort
 from cronex import CronExpression
@@ -76,7 +75,6 @@ class TopicView(Resource):
         return {"id": topic.id, "name": topic.name}
 
 
-
 group_model = api.model(
     "Group", {"name": fields.String, "emails": fields.List(fields.String)}
 )
@@ -94,6 +92,7 @@ job_model = api.model(
     "Job",
     {
         "name": fields.String,
+        "environment": fields.String,
         "package_name": fields.String,
         "package_version": fields.String,
         "notifications": fields.List(fields.Nested(notifications_model)),
@@ -109,7 +108,7 @@ schedule_model = api.model(
 )
 
 
-def test_schedule(schedule, date):
+def should_run(schedule, date):
     cron = CronExpression(
         " ".join(
             [
@@ -159,25 +158,28 @@ class Schedule(Resource):
                 )
 
             # Each Job can have various contexts. We need to go through them
-            # To generate all the jobs, since curently package_name and
-            # package_version are in the Context data.
+            # to generate all the jobs. And for each context, linked scripts
+            # contains the package_name and package_version are in the Context
+            # data.
             for context in job.contexts:
                 if job.type == JobType.TRIGGERED or (
                     context.schedules
                     and any(
                         [
-                            test_schedule(schedule, date)
+                            should_run(schedule, date)
                             for schedule in context.schedules
                         ]
                     )
                 ):
-                    jobs.append(
-                        {
-                            "name": job_name,
-                            "package_name": context.package_name,
-                            "package_version": context.package_version,
-                            "notifications": copy.deepcopy(notifications),
-                        }
-                    )
+                    for script in context.scripts:
+                        jobs.append(
+                            {
+                                "name": job_name,
+                                "environment": context.environment.name,
+                                "package_name": script.package_name,
+                                "package_version": script.package_version,
+                                "notifications": copy.deepcopy(notifications),
+                            }
+                        )
 
         return schedule

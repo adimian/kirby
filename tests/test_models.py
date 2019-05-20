@@ -23,7 +23,7 @@ def test_it_creates_a_job(webapp):
     )
 
     test_env = Environment(name="test")
-    
+
     context = Context(environment=test_env)
     context.set_config(url="http://localhost:8000", loop=30, retry=True)
 
