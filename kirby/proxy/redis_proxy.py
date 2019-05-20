@@ -26,9 +26,6 @@ class RedisProxy(object):
 
     def set_value_with_ttl(self, key, value, time_to_live):
         self.client.set(key, value, ex=time_to_live, nx=True)
-        print(
-            f"REDIS - set key: {key} value: {value} for {time_to_live} seconds."
-        )
 
     def get(self, key):
         response = self.client.get(key)
