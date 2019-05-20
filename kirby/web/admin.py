@@ -12,6 +12,8 @@ from ..models import (
     NotificationEmail,
     NotificationGroup,
     Notification,
+    Script,
+    Topic,
 )
 
 admin = Admin(template_mode="bootstrap3")
@@ -26,6 +28,8 @@ models = (
     NotificationEmail,
     NotificationGroup,
     Notification,
+    Script,
+    Topic,
 )
 
 
