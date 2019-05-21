@@ -42,7 +42,8 @@ class Registration(Resource):
                 db.session.rollback()
                 abort(
                     400,
-                    f"The topic with the 'id':{source_id}, doesn't exist. No changes has been committed.",
+                    f"The topic with the 'id':{source_id}, doesn't exist. "
+                    f"No changes has been committed.",
                 )
         for destination_id in args["destination_id"]:
             try:
@@ -54,7 +55,8 @@ class Registration(Resource):
                 db.session.rollback()
                 abort(
                     400,
-                    f"The topic with the 'id':{destination_id}, doesn't exist. No changes has been committed.",
+                    f"The topic with the 'id':{destination_id}, doesn't exist. "
+                    f"No changes has been committed.",
                 )
 
         db.session.commit()
