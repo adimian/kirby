@@ -1,4 +1,6 @@
 from enum import Enum
+
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import UniqueConstraint
 
@@ -223,3 +225,4 @@ class Topic(db.Model):
 
     def __repr__(self):
         return f"<Topic name={self.name}>"
+

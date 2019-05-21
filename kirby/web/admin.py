@@ -15,6 +15,7 @@ from ..models import (
     Script,
     Topic,
 )
+from ..models.security import User
 
 admin = Admin(template_mode="bootstrap3")
 
@@ -30,6 +31,7 @@ models = (
     Notification,
     Script,
     Topic,
+    User,
 )
 
 
