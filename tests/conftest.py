@@ -29,7 +29,7 @@ def webapp():
         }
     )
     with app.app_context():
-        db.create_all()
+        app.try_trigger_before_first_request_functions()
         yield app
 
 
