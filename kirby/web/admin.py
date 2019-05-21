@@ -16,6 +16,15 @@ class AuthenticatedModelView(ModelView):
         return redirect(url_for("security.login", next=request.url))
 
 
+class UserView(AuthenticatedModelView):
+    form_excluded_columns = "password"
+    column_exclude_list = ["password"]
+
+    def on_form_prefill(self, form, id):
+        form.username.render_kw = {"readonly": True}
+        form.provider.render_kw = {"readonly": True}
+
+
 class KirbyAdminIndexView(AdminIndexView):
     @expose("/")
     def index(self):
@@ -59,9 +68,11 @@ models = (
     Notification,
     Script,
     Topic,
-    User,
 )
 
 
 for model in models:
     admin.add_view(AuthenticatedModelView(model, db.session))
+
+
+admin.add_view(UserView(User, db.session))
