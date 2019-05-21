@@ -38,8 +38,8 @@ def get_topic_id(session, name):
 
 
 def test_if_get_topic_id(session, db_topics):
-    for i, topic in enumerate(db_topics):
-        assert get_topic_id(session, topic.name) == i + 1
+    for i, topic in enumerate(db_topics, start=1):
+        assert get_topic_id(session, topic.name) == i
 
 
 @freeze_time("2019-05-20 15:34")
