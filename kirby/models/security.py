@@ -46,7 +46,7 @@ class User(db.Model, UserMixin):
 
     @property
     def is_local(self):
-        return self.provider == "local"
+        return self.provider == ProviderTypes.LOCAL
 
     def has_role(self, role):
         if isinstance(role, UserRoles):
