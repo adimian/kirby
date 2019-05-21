@@ -3,13 +3,15 @@ import logging
 from kafka_handler import KafkaLogHandler
 
 
+def start_executor_for_job(job):
+    Executor(job).run()
+
+
 class Executor(object):
     def __init__(self, job):
         self.job = job
         self.context = job.context
         self.raw_logs = self.context.get("WORKER_RAW_LOGS", False)
-
-        self.start()
 
     def set_logging_configuration(self, topic, key=None, partition=None):
         handler = KafkaLogHandler(
@@ -25,8 +27,8 @@ class Executor(object):
 
         logging.info("Start logging {}.".format(""))
 
-    def start(self):
-        self.set_logging_configuration("dink")
+    def run(self):
+        self.set_logging_configuration()
         # Detect worker
         # Create venv and/or switch to venv if it exists
         # Pipi nstall

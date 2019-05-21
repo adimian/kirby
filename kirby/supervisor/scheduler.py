@@ -6,13 +6,15 @@ from smart_getenv import getenv
 from kirby.supervisor.consensus import Consensus
 
 
-STREAM_TOPIC_JOBS_DUE = getenv("STREAM_TOPIC_JOBS_DUE", type=str)
+def start_scheduler():
+    Scheduler().run()
 
 
 class Scheduler(object):
     def __init__(self):
         self.consensus = Consensus()
         self.producer = KafkaProducer()
+        self.stream_topic = getenv("STREAM_TOPIC_JOBS_DUE", type=str)
 
     def get_due_jobs(self):
         return []
@@ -21,18 +23,10 @@ class Scheduler(object):
         while True:
             if self.consensus.is_leader():
                 for job in self.get_due_jobs():
-                    # Add job to queue
-                    self.producer.send(
-                        STREAM_TOPIC_JOBS_DUE, job.value, job.key
-                    )
-                    # Update jobs' status
+                    self.producer.send(self.stream_topic, job.value, job.key)
+
+                    # Update job's status
                     job.status = "WAITING FOR PICKUP"
                     job.save()
 
             time.sleep(self.consensus.time_to_live)
-
-
-def start():
-    """Interface to properly start a Scheduler"""
-    supervisor = Scheduler()
-    supervisor.run()
