@@ -14,7 +14,6 @@ from kirby.models import db
 @click.option("--debug", type=bool, default=False, help="Start in DEBUG mode")
 def web(host, port, debug):
     app = app_maker()
-
     app.run(debug=debug, port=port, host=host)
 
 
@@ -24,6 +23,7 @@ def adduser(username):
     app = app_maker()
 
     with app.app_context():
+        app.try_trigger_before_first_request_functions()
         user = user_datastore.find_user(username=username)
         if user is None:
             user = user_datastore.create_user(
