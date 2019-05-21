@@ -7,7 +7,8 @@ from multiprocessing import Process
 def _load_config():
     from kirby.api.context import ctx
 
-    print(ctx)
+    assert ctx.HELLO == "WORLD"
+    assert ctx.MYLIST == ["this", "is", "a", "list"]
 
 
 def test_it_can_read_configuration():
