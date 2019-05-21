@@ -1,6 +1,6 @@
 from flask import Flask
 from ..models import db
-from ..models.security import user_datastore, security
+from ..models.security import user_datastore, security, UserRoles
 from .admin import admin
 from .endpoints import api
 
@@ -19,6 +19,7 @@ def app_maker(config=None):
     @app.before_first_request
     def create_models():
         db.create_all()
-        user_datastore.find_or_create_role("admin")
+        user_datastore.find_or_create_role(UserRoles.ADMIN.value)
+        db.session.commit()
 
     return app

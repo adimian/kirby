@@ -3,6 +3,12 @@ from flask_security import RoleMixin, UserMixin
 
 from . import db
 
+from enum import Enum
+
+
+class UserRoles(Enum):
+    ADMIN = "admin"
+
 
 roles_users = db.Table(
     "roles_users",
@@ -34,9 +40,18 @@ class User(db.Model, UserMixin):
     def is_local(self):
         return self.provider == "local"
 
+    def has_role(self, role):
+        if isinstance(role, UserRoles):
+            return self.has_role(role=role.value)
+        if isinstance(role, str):
+            role = role.lower()
+            return role in (role.name.lower() for role in self.roles)
+        else:
+            return role in self.roles
+
     @property
     def is_admin(self):
-        return self.has_role("admin")
+        return self.has_role(UserRoles.ADMIN)
 
 
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)

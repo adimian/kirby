@@ -18,6 +18,7 @@ def test_promote_user_to_admin(webapp):
         username="admin", email="admin@local.local", password="password"
     )
     role = user_datastore.find_role("admin")
+    assert role
 
     db.session.commit()
 
