@@ -1,3 +1,4 @@
+from pytest import raises
 from datetime import datetime
 from dateutil.parser import parse
 from kirby.models import (
@@ -89,16 +90,13 @@ def test_it_creates_a_script(webapp):
 
 
 def test_it_validate_schedule(webapp):
-    try:
+    with raises(ValueError) as excinfo:
         schedule = Schedule(name="Schedule test", hour="/2", minute="/3")
         db.session.add(schedule)
         db.session.commit()
-    except ValueError:
-        assert True
-    else:
-        assert (
-            False
-        ), f"The Schedule should not accept '/2' for hour nor '/3' for minute"
+    assert "hour" in str(
+        excinfo.value
+    ), f"The Schedule should not accept '/2' for hour"
 
     name_schedule_2 = "Schedule test II"
 
@@ -110,3 +108,7 @@ def test_it_validate_schedule(webapp):
         db.session.query(Schedule).filter_by(name=name_schedule_2).one()
     )
     assert schedule_2_commit.hour == "*/2"
+
+    with raises(ValueError):
+        schedule_2.minute = "/3"
+        db.session.commit()
