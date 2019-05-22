@@ -1,7 +1,8 @@
 from enum import Enum
-
+from cronex import CronExpression
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import validates
 from sqlalchemy import UniqueConstraint
 
 db = SQLAlchemy()
@@ -95,8 +96,8 @@ class ConfigKey(db.Model):
 class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False, unique=True)
-    hour = db.Column(db.String(), default="*")
     minute = db.Column(db.String(), default="*")
+    hour = db.Column(db.String(), default="*")
     day = db.Column(db.String(), default="*")
     month = db.Column(db.String(), default="*")
     weekday = db.Column(db.String(), default="*")
@@ -107,6 +108,26 @@ class Schedule(db.Model):
 
     def add_suspension(self, suspension):
         self.suspensions.append(suspension)
+
+    @validates("hour", "minute", "day", "month", "weekday")
+    def validate_schedule_attribute(self, key, attribute):
+        cron_expression = "{minute} {hour} {day} {month} {weekday}".format(
+            minute=attribute if key == "minute" else "*",
+            hour=attribute if key == "hour" else "*",
+            day=attribute if key == "day" else "*",
+            month=attribute if key == "month" else "*",
+            weekday=attribute if key == "weekday" else "*",
+        )
+
+        try:
+            CronExpression(cron_expression)
+        except ValueError:
+            raise ValueError(
+                f"The Schedule cannot accept the "
+                f"value given in the {key} attribute"
+            )
+
+        return attribute
 
 
 class Suspension(db.Model):
