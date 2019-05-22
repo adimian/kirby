@@ -9,4 +9,7 @@ install:
   - pip install -e .
 
 script:
-  - pytest
+  - pytest --cov=kirby --cov-report term-missing
+
+after_success:
+  - coveralls
