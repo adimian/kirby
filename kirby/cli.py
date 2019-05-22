@@ -1,11 +1,13 @@
-import click
-
 from getpass import getpass
 
+import click
+from redis import Redis
+
 from kirby.demo import create_demo_db
-from kirby.web import app_maker
-from kirby.models.security import user_datastore
 from kirby.models import db
+from kirby.models.security import user_datastore
+from kirby.supervisor.election import Election
+from kirby.web import app_maker
 
 
 @click.command()
@@ -37,6 +39,23 @@ def adduser(username):
             user_datastore.add_role_to_user(user=user, role=role)
 
         db.session.commit()
+
+
+@click.command()
+@click.argument("name")
+@click.option(
+    "--window",
+    type=int,
+    default=5,
+    help="Leader election window size (in seconds)",
+)
+def supervisor(name, window):
+    server = Redis()
+    with Election(identity=name, server=server, check_ttl=window) as me:
+        if me.is_leader():
+            print("I'm the leader!")
+        else:
+            print("I'm NOT the leader :(")
 
 
 @click.command()

@@ -1,34 +1,23 @@
-import pytest
-from kirby.supervisor.scheduler import Election, make_me_leader
-from redis import Redis
+from kirby.supervisor.scheduler import Scheduler
+import os
 
 
-@pytest.fixture
-def redis():
-    redis = Redis()
-    redis.flushall()
-    yield redis
+def test_scheduler_can_grab_jobs(data_dir):
+    scheduler = Scheduler()
 
+    with open(os.path.join(data_dir, "sample_jobs_request.txt"), "r") as f:
+        content = f.read()
 
-def test_it_can_make_leader(redis):
-    assert make_me_leader("server-1", redis, 0.1)
+    jobs = scheduler.parse_jobs(content)
+    job = jobs[0]
 
-
-def test_it_can_elect_a_leader_with_a_single_node(redis):
-    with Election("server-1", server=redis, check_ttl=0.1) as bob:
-        assert bob.is_leader()
-
-
-def test_it_can_elect_a_leader_but_not_two(redis):
-    with Election("alice", server=redis, check_ttl=0.1) as alice:
-        with Election("bob", server=redis, check_ttl=0.1) as bob:
-            assert alice.is_leader() ^ bob.is_leader()
-
-
-def test_it_can_elect_a_new_leader_when_second_stops(redis):
-    with Election("alice", server=redis, check_ttl=0.1) as alice:
-        assert alice.is_leader()
-
-    redis.flushall()
-    with Election("bob", server=redis, check_ttl=0.1) as bob:
-        assert bob.is_leader()
+    assert job.name == "Fetch bakery realtime sales"
+    assert job.environment == "Development"
+    assert job.package_version == "2.0.1"
+    assert job.variables == {
+        "SENTRY_DSN": "http://sentry.dsn.somewhere",
+        "SSH_USERNAME": "demo",
+        "ENV": "dev",
+        "SSH_SERVER": "dev.server.somewhere:22",
+        "KAFKA_URL": "some.kafka.server:9999",
+    }

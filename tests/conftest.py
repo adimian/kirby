@@ -1,4 +1,5 @@
 from pytest import fixture
+import os
 from requests_flask_adapter import Session
 
 from kirby.web import app_maker
@@ -31,6 +32,13 @@ def webapp():
     with app.app_context():
         app.try_trigger_before_first_request_functions()
         yield app
+
+
+@fixture
+def data_dir():
+    current_dir = os.path.dirname(__file__)
+    data_dir = os.path.join(current_dir, "data")
+    return data_dir
 
 
 @fixture
