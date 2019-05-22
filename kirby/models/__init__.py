@@ -80,6 +80,26 @@ class Context(db.Model):
     def __repr__(self):
         return f"<Context job={self.job} environment={self.environment}>"
 
+    def variables(self):
+        export = {}
+
+        global_query = db.session.query(ConfigKey).filter_by(
+            scope=ConfigScope.GLOBAL
+        )
+        job_query = db.session.query(ConfigKey).filter(
+            ConfigKey.job_id == self.job.id
+        )
+        own_query = db.session.query(ConfigKey).filter(
+            ConfigKey.context_id == self.id
+        )
+
+        query = global_query.union(job_query).union(own_query)
+
+        for config in query.all():
+            export[config.name] = config.value
+
+        return export
+
 
 class ConfigScope(Enum):
     GLOBAL = "global"

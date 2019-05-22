@@ -97,14 +97,20 @@ def test_it_can_associate_config_to_context(webapp):
     test_env = Environment(name="test_env")
     db.session.add(test_env)
     job = Job(name="retrieve cash register data", type=JobType.SCHEDULED)
+    job.set_config(API_URL="http://a.place.somewhere", OPERATION_MODE="normal")
     db.session.add(job)
 
     context = Context(environment=test_env, job=job)
     db.session.add(context)
 
-    config = ConfigKey(name="API_URL", value="http://someserver.somewhere")
+    config = ConfigKey(name="API_URL", value="http://another.place.somewhere")
     config.context = context
 
     db.session.commit()
 
     assert config.scope == ConfigScope.CONTEXT
+
+    assert context.variables() == {
+        "API_URL": "http://another.place.somewhere",
+        "OPERATION_MODE": "normal",
+    }

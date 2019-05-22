@@ -90,6 +90,11 @@ notifications_model = api.model(
     },
 )
 
+config_model = api.model(
+    "Config", {"key": fields.String, "value": fields.String}
+)
+
+
 job_model = api.model(
     "Job",
     {
@@ -98,6 +103,7 @@ job_model = api.model(
         "package_name": fields.String,
         "package_version": fields.String,
         "notifications": fields.List(fields.Nested(notifications_model)),
+        "variables": fields.List(fields.Nested(config_model)),
     },
 )
 
@@ -181,6 +187,10 @@ class Schedule(Resource):
                                 "package_name": script.package_name,
                                 "package_version": script.package_version,
                                 "notifications": copy.deepcopy(notifications),
+                                "variables": [
+                                    {"key": k, "value": v}
+                                    for k, v in context.variables().items()
+                                ],
                             }
                         )
 
