@@ -13,4 +13,3 @@ def test_scheduler_can_grab_jobs(data_dir):
 
     assert isinstance(jobs, list)
     assert all(isinstance(job, str) for job in jobs)
-
