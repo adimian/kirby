@@ -1,4 +1,5 @@
 import logging
+import random
 
 from threading import Thread, Event
 
@@ -40,16 +41,18 @@ class Timer(Thread):
 
 
 def make_me_leader(identity, server, check_ttl):
-    # Key should live on at least the time of check_ttl,
-    # otherwise we might have gaps during which nobody is the leader.
-    # We're using 2x the check_ttl time to be sure as long as the leader lives
-    # it is able to reclaim its leader position
-    expiry = int(2 * check_ttl * 1000)
+    expiry = int(check_ttl * 1000)
 
     logger.info(f"setting up leader to {identity} for {expiry}ms")
-    return server.set(
+    server.set(
         name=LEADER_KEY, value=identity.encode("utf-8"), nx=True, px=expiry
     )
+
+    # To avoid expiring key while the leader is still alive, we need
+    # to extend the lease if this process is the leader
+    if server.get(LEADER_KEY).decode("utf-8") == identity:
+        logger.debug(f"extending lease to {identity} for {expiry}ms")
+        server.pexpire(LEADER_KEY, expiry)
 
 
 class Election:
@@ -77,6 +80,11 @@ class Election:
 
     def is_leader(self):
         current_leader = self.server.get(LEADER_KEY)
+        if current_leader is None:
+            logger.warning("no leader, attempting coup")
+            make_me_leader(self.identity, self.server, self.check_ttl)
+            current_leader = self.server.get(LEADER_KEY)
+
         if current_leader:
             current_leader = current_leader.decode("utf-8")
         logger.info(f"[{self.identity}] current leader: {current_leader}")

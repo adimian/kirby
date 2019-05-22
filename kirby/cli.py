@@ -1,21 +1,23 @@
 from getpass import getpass
-from time import sleep
 
 import click
-from redis import Redis
 
 from kirby.demo import create_demo_db
 from kirby.models import db
 from kirby.models.security import user_datastore
-from kirby.supervisor.election import Election
+from kirby.supervisor import run_supervisor
 from kirby.web import app_maker
+
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @click.command()
 @click.option(
     "--host", type=str, default="127.0.0.1", help="The interface to bind to"
 )
-@click.option("--port", type=str, default="6000", help="The port to bind to")
+@click.option("--port", type=str, default="8080", help="The port to bind to")
 @click.option("--debug", type=bool, default=False, help="Start in DEBUG mode")
 def web(host, port, debug):
     app = app_maker()
@@ -51,15 +53,7 @@ def adduser(username):
     help="Leader election window size (in seconds)",
 )
 def supervisor(name, window):
-    server = Redis()
-    with Election(identity=name, server=server, check_ttl=window) as me:
-        while True:
-            if me.is_leader():
-                print("I'm the leader!")
-            else:
-                print("I'm NOT the leader :(")
-
-            sleep(2)
+    run_supervisor(name, window)
 
 
 @click.command()
