@@ -64,3 +64,23 @@ def test_it_register_a_script(session, db_scripts_not_registered, db_topics):
     )
     assert script_registered.sources[0].id == id_source
     assert script_registered.destinations[0].id == id_destination
+
+
+def test_schedule_contains_configuration(session, db_scripts_registered):
+    script = (
+        db.session.query(Script)
+        .filter_by(package_name="orders_retriever")
+        .one()
+    )
+
+    context = script.context
+    context.set_config(API_USERNAME="test-user", API_PORT=2000)
+
+    result = session.get("/".join([API_ROOT, "schedule"]))
+    result_json = result.json()
+
+    assert result.status_code == 200
+    assert result_json["jobs"][0]["variables"] == [
+        {"key": "API_USERNAME", "value": "test-user"},
+        {"key": "API_PORT", "value": "2000"},
+    ]
