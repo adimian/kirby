@@ -109,6 +109,18 @@ class ConfigKey(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=True)
     job = db.relationship(Job, backref=db.backref("configkeys", lazy=True))
 
+    @property
+    def job_name(self):
+        if self.job:
+            return self.job.name
+        elif self.context:
+            return self.context.job.name
+
+    @property
+    def environment_name(self):
+        if self.context:
+            return self.context.environment.name
+
 
 @event.listens_for(Session, "before_flush")
 def set_config_scope(session, flush_context, instances):
