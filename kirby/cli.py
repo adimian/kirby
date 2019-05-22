@@ -1,6 +1,8 @@
 import click
 
 from getpass import getpass
+
+from kirby.demo import create_demo_db
 from kirby.web import app_maker
 from kirby.models.security import user_datastore
 from kirby.models import db
@@ -37,6 +39,15 @@ def adduser(username):
         db.session.commit()
 
 
+@click.command()
+def demo():
+    app = app_maker()
+
+    with app.app_context():
+        app.try_trigger_before_first_request_functions()
+        create_demo_db(db.session)
+
+
 @click.group()
 def cli():
     pass
@@ -44,6 +55,7 @@ def cli():
 
 cli.add_command(web)
 cli.add_command(adduser)
+cli.add_command(demo)
 
 if __name__ == "__main__":
     cli()

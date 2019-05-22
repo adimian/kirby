@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from dateutil.parser import parse
 from kirby.models import (
     db,
@@ -11,6 +12,8 @@ from kirby.models import (
     NotificationGroup,
     Script,
     Topic,
+    ConfigKey,
+    ConfigScope,
 )
 
 
@@ -110,3 +113,20 @@ def test_it_validate_schedule(webapp):
         db.session.query(Schedule).filter_by(name=name_schedule_2).one()
     )
     assert schedule_2_commit.hour == "*/2"
+
+
+def test_it_can_associate_config_to_context(webapp):
+    test_env = Environment(name="test_env")
+    db.session.add(test_env)
+    job = Job(name="retrieve cash register data", type=JobType.SCHEDULED)
+    db.session.add(job)
+
+    context = Context(environment=test_env, job=job)
+    db.session.add(context)
+
+    config = ConfigKey(name="API_URL", value="http://someserver.somewhere")
+    config.context = context
+
+    db.session.commit()
+
+    assert config.scope == ConfigScope.CONTEXT
