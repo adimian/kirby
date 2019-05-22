@@ -66,7 +66,7 @@ def test_it_register_a_script(session, db_scripts_not_registered, db_topics):
     assert script_registered.destinations[0].id == id_destination
 
 
-def test_it_schedule_contains_configuration(session, db_scripts_registered):
+def test_schedule_contains_configuration(session, db_scripts_registered):
     script = (
         db.session.query(Script)
         .filter_by(package_name="orders_retriever")
