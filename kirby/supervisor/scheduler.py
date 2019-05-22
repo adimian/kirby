@@ -40,6 +40,10 @@ class Timer(Thread):
 
 
 def make_me_leader(identity, server, check_ttl):
+    # Key should live on at least the time of check_ttl,
+    # otherwise we might have gaps during which nobody is the leader.
+    # We're using 2x the check_ttl time to be sure as long as the leader lives
+    # it is able to reclaim its leader position
     expiry = int(2 * check_ttl * 1000)
 
     logger.info(f"setting up leader to {identity} for {expiry}ms")
@@ -61,7 +65,10 @@ class Election:
     def __enter__(self):
         logger.info(f"starting election process for {self.identity}")
         self.timer.start()
-        self.timer.ready.wait(5)
+
+        # The first activation might take some time,
+        # so we are waiting a bit before moving on
+        self.timer.ready.wait(self.check_ttl * 2)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
