@@ -1,3 +1,4 @@
+from kirby.models import ConfigKey
 from kirby.models.security import user_datastore
 from kirby import models
 
@@ -70,5 +71,7 @@ def create_demo_db(s):
     prod_script.add_destination(destination)
 
     s.add_all([dev_script, test_script, prod_script])
+
+    s.add(ConfigKey(name="KAFKA_URL", value="some.kafka.server:9999"))
 
     s.commit()

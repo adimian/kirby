@@ -27,6 +27,13 @@ class UserView(AuthenticatedModelView):
 class ConfigKeyView(AuthenticatedModelView):
     form_excluded_columns = ("job", "context", "scope")
     column_list = ("job_name", "environment_name", "scope", "name", "value")
+    column_searchable_list = (
+        "scope",
+        "name",
+        "job.name",
+        "context.job.name",
+        "context.environment.name",
+    )
 
     def on_form_prefill(self, form, id):
         form.name.render_kw = {"readonly": True}
