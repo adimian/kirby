@@ -1,2 +1,4 @@
 black==19.3b0
+coveralls
 pytest==4.4.1
+pytest-cov==2.7.1
