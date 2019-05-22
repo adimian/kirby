@@ -1,7 +1,7 @@
 import os
+from multiprocessing import Process
 
 from kirby.api.context import ContextManager
-from multiprocessing import Process
 
 
 def _load_config():

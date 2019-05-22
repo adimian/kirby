@@ -11,8 +11,12 @@ api = Api()
 
 registration_parser = reqparse.RequestParser()
 registration_parser.add_argument("script_id", type=int)
-registration_parser.add_argument("source_id", type=int, action="append")
-registration_parser.add_argument("destination_id", type=int, action="append")
+registration_parser.add_argument(
+    "source_id", type=int, action="append", default=[]
+)
+registration_parser.add_argument(
+    "destination_id", type=int, action="append", default=[]
+)
 
 
 @api.route("/registration")

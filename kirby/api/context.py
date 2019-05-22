@@ -25,7 +25,7 @@ def get_signature():
 
 class Context:
     def __getattr__(self, item):
-        signature = get_signature()[item]
+        signature = get_signature().get(item, {"type": str})
         return getenv(item, **signature)
 
     def __repr__(self):
