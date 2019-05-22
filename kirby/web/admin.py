@@ -24,6 +24,13 @@ class UserView(AuthenticatedModelView):
         form.username.render_kw = {"readonly": True}
 
 
+class ConfigKeyView(AuthenticatedModelView):
+    form_excluded_columns = ("context", "job", "scope")
+
+    def on_form_prefill(self, form, id):
+        form.name.render_kw = {"readonly": True}
+
+
 class KirbyAdminIndexView(AdminIndexView):
     @expose("/")
     def index(self):
@@ -60,7 +67,6 @@ models = (
     Environment,
     Schedule,
     Context,
-    ConfigKey,
     Suspension,
     NotificationEmail,
     NotificationGroup,
@@ -75,3 +81,4 @@ for model in models:
 
 
 admin.add_view(UserView(User, db.session))
+admin.add_view(ConfigKeyView(ConfigKey, db.session))
