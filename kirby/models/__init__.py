@@ -38,7 +38,7 @@ class Job(db.Model):
     def set_config(self, **kwargs):
         for key, value in kwargs.items():
             c = ConfigKey(name=key, value=str(value))
-            self.configkeys.append(c)
+            self.config_keys.append(c)
 
     def __repr__(self):
         return f"<Job name={self.name} type={self.type.value}>"
@@ -72,7 +72,7 @@ class Context(db.Model):
     def set_config(self, **kwargs):
         for key, value in kwargs.items():
             c = ConfigKey(name=key, value=str(value))
-            self.configkeys.append(c)
+            self.config_keys.append(c)
 
     def add_schedule(self, schedule):
         self.schedules.append(schedule)
@@ -103,11 +103,11 @@ class ConfigKey(db.Model):
         db.Integer, db.ForeignKey("context.id"), nullable=True
     )
     context = db.relationship(
-        Context, backref=db.backref("configkeys", lazy=True)
+        Context, backref=db.backref("config_keys", lazy=True)
     )
 
     job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=True)
-    job = db.relationship(Job, backref=db.backref("configkeys", lazy=True))
+    job = db.relationship(Job, backref=db.backref("config_keys", lazy=True))
 
     @property
     def job_name(self):
