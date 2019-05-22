@@ -1,3 +1,4 @@
+from pytest import raises
 from datetime import datetime
 
 from dateutil.parser import parse
@@ -30,7 +31,7 @@ def test_it_creates_a_job(webapp):
     context = Context(environment=test_env)
     context.set_config(url="http://localhost:8000", loop=30, retry=True)
 
-    schedule = Schedule(name="every two minutes", hour="*", minute="/2")
+    schedule = Schedule(name="every two minutes", hour="*", minute="*/2")
     context.add_schedule(schedule)
 
     suspension = Suspension(start=parse("2019-01-01"), end=parse("2019-01-02"))
@@ -62,7 +63,7 @@ def test_it_creates_a_script(webapp):
 
     context = Context(environment=test_env, job=job)
 
-    schedule = Schedule(name="every two minutes", hour="*", minute="/2")
+    schedule = Schedule(name="every two minutes", hour="*", minute="*/2")
     db.session.add(schedule)
     context.add_schedule(schedule)
     db.session.add(context)
@@ -84,13 +85,36 @@ def test_it_creates_a_script(webapp):
     db.session.add(script)
     db.session.commit()
 
-    db.session.query()
-
     assert script.sources == [source]
     assert script.destinations == [destination]
     assert script.context.environment.name == "test_env"
     assert script.context.job.name == "retrieve cash register data"
     assert script.context.schedules[0].name == "every two minutes"
+
+
+def test_it_validate_schedule(webapp):
+    with raises(ValueError) as excinfo:
+        schedule = Schedule(name="Schedule test", hour="/2", minute="/3")
+        db.session.add(schedule)
+        db.session.commit()
+    assert "hour" in str(
+        excinfo.value
+    ), f"The Schedule should not accept '/2' for hour"
+
+    name_schedule_2 = "Schedule test II"
+
+    schedule_2 = Schedule(name=name_schedule_2, hour="*/2")
+    db.session.add(schedule_2)
+    db.session.commit()
+
+    schedule_2_commit = (
+        db.session.query(Schedule).filter_by(name=name_schedule_2).one()
+    )
+    assert schedule_2_commit.hour == "*/2"
+
+    with raises(ValueError):
+        schedule_2.minute = "/3"
+        db.session.commit()
 
 
 def test_it_can_associate_config_to_context(webapp):
