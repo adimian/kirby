@@ -1,5 +1,4 @@
 import logging
-import random
 
 from threading import Thread, Event
 
@@ -44,7 +43,7 @@ def make_me_leader(identity, server, check_ttl):
     expiry = int(check_ttl * 1000)
 
     logger.info(f"setting up leader to {identity} for {expiry}ms")
-    server.set(
+    result = server.set(
         name=LEADER_KEY, value=identity.encode("utf-8"), nx=True, px=expiry
     )
 
@@ -53,6 +52,8 @@ def make_me_leader(identity, server, check_ttl):
     if server.get(LEADER_KEY).decode("utf-8") == identity:
         logger.debug(f"extending lease to {identity} for {expiry}ms")
         server.pexpire(LEADER_KEY, expiry)
+
+    return result
 
 
 class Election:

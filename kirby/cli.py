@@ -49,11 +49,17 @@ def adduser(username):
 @click.option(
     "--window",
     type=int,
-    default=5,
+    default=15,
     help="Leader election window size (in seconds)",
 )
-def supervisor(name, window):
-    run_supervisor(name, window)
+@click.option(
+    "--wakeup",
+    type=int,
+    default=30,
+    help="Shortest time interval between two scheduler executions",
+)
+def supervisor(name, window, wakeup):
+    run_supervisor(name, window, wakeup)
 
 
 @click.command()

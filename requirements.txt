@@ -10,5 +10,6 @@ requests_flask_adapter==0.0.1
 freezegun==0.3.11
 flask-security==3.0.0
 python-dotenv==0.10.1
+redis==3.2.1
 smart-getenv==1.1.0
 bcrypt==3.1.6

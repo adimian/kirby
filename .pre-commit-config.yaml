@@ -4,3 +4,22 @@ repos:
     hooks:
     - id: black
       language_version: python3.6
+-   repo: git://github.com/pre-commit/pre-commit-hooks
+    rev: v2.2.3
+    hooks:
+      - id: flake8
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: debug-statements
+        language_version: python3
+      - id: requirements-txt-fixer
+      - id: name-tests-test
+        args: ['--django']
+      - id: no-commit-to-branch
+        args: [--branch, master]
+-   repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.1.0
+    hooks:
+    -   id: python-safety-dependencies-check
+        language: python
+        language_version: python3
