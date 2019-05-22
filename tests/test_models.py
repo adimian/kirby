@@ -1,5 +1,6 @@
 from pytest import raises
 from datetime import datetime
+
 from dateutil.parser import parse
 from kirby.models import (
     db,
@@ -12,6 +13,8 @@ from kirby.models import (
     NotificationGroup,
     Script,
     Topic,
+    ConfigKey,
+    ConfigScope,
 )
 
 
@@ -112,3 +115,20 @@ def test_it_validate_schedule(webapp):
     with raises(ValueError):
         schedule_2.minute = "/3"
         db.session.commit()
+
+
+def test_it_can_associate_config_to_context(webapp):
+    test_env = Environment(name="test_env")
+    db.session.add(test_env)
+    job = Job(name="retrieve cash register data", type=JobType.SCHEDULED)
+    db.session.add(job)
+
+    context = Context(environment=test_env, job=job)
+    db.session.add(context)
+
+    config = ConfigKey(name="API_URL", value="http://someserver.somewhere")
+    config.context = context
+
+    db.session.commit()
+
+    assert config.scope == ConfigScope.CONTEXT

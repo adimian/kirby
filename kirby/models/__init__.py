@@ -2,8 +2,8 @@ from enum import Enum
 from cronex import CronExpression
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import validates
-from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import Session, validates
+from sqlalchemy import UniqueConstraint, event
 
 db = SQLAlchemy()
 
@@ -35,6 +35,11 @@ class Job(db.Model):
         notification.groups.append(group)
         self.notifications.append(notification)
 
+    def set_config(self, **kwargs):
+        for key, value in kwargs.items():
+            c = ConfigKey(name=key, value=str(value))
+            self.config_keys.append(c)
+
     def __repr__(self):
         return f"<Job name={self.name} type={self.type.value}>"
 
@@ -57,7 +62,7 @@ class Context(db.Model):
         Environment, backref=db.backref("contexts", lazy=True)
     )
 
-    job_id = db.Column(db.Integer, db.ForeignKey("job.id"))
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=False)
     job = db.relationship(Job, backref=db.backref("contexts", lazy=True))
 
     schedules = db.relationship(
@@ -67,7 +72,7 @@ class Context(db.Model):
     def set_config(self, **kwargs):
         for key, value in kwargs.items():
             c = ConfigKey(name=key, value=str(value))
-            self.configkeys.append(c)
+            self.config_keys.append(c)
 
     def add_schedule(self, schedule):
         self.schedules.append(schedule)
@@ -76,21 +81,57 @@ class Context(db.Model):
         return f"<Context job={self.job} environment={self.environment}>"
 
 
+class ConfigScope(Enum):
+    GLOBAL = "global"
+    JOB = "job"
+    CONTEXT = "context"
+
+
 class ConfigKey(db.Model):
     __table_args__ = (
-        UniqueConstraint("name", "context_id", name="_context_name_uc"),
+        UniqueConstraint(
+            "name", "context_id", "job_id", name="_context_name_uc"
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False)
     value = db.Column(db.String(), nullable=False)
+    scope = db.Column(db.Enum(ConfigScope), nullable=False)
 
     context_id = db.Column(
-        db.Integer, db.ForeignKey("context.id"), nullable=False
+        db.Integer, db.ForeignKey("context.id"), nullable=True
     )
     context = db.relationship(
-        Context, backref=db.backref("configkeys", lazy=True)
+        Context, backref=db.backref("config_keys", lazy=True)
     )
+
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=True)
+    job = db.relationship(Job, backref=db.backref("config_keys", lazy=True))
+
+    @property
+    def job_name(self):
+        if self.job:
+            return self.job.name
+        elif self.context:
+            return self.context.job.name
+
+    @property
+    def environment_name(self):
+        if self.context:
+            return self.context.environment.name
+
+
+@event.listens_for(Session, "before_flush")
+def set_config_scope(session, flush_context, instances):
+    for target in set(session.new).union(set(session.dirty)):
+        if isinstance(target, ConfigKey):
+            if target.context or target.context_id:
+                target.scope = ConfigScope.CONTEXT
+            elif target.job or target.job_id:
+                target.scope = ConfigScope.JOB
+            else:
+                target.scope = ConfigScope.GLOBAL
 
 
 class Schedule(db.Model):
