@@ -1,4 +1,5 @@
 from getpass import getpass
+from time import sleep
 
 import click
 from redis import Redis
@@ -14,7 +15,7 @@ from kirby.web import app_maker
 @click.option(
     "--host", type=str, default="127.0.0.1", help="The interface to bind to"
 )
-@click.option("--port", type=str, default="5000", help="The port to bind to")
+@click.option("--port", type=str, default="6000", help="The port to bind to")
 @click.option("--debug", type=bool, default=False, help="Start in DEBUG mode")
 def web(host, port, debug):
     app = app_maker()
@@ -52,10 +53,13 @@ def adduser(username):
 def supervisor(name, window):
     server = Redis()
     with Election(identity=name, server=server, check_ttl=window) as me:
-        if me.is_leader():
-            print("I'm the leader!")
-        else:
-            print("I'm NOT the leader :(")
+        while True:
+            if me.is_leader():
+                print("I'm the leader!")
+            else:
+                print("I'm NOT the leader :(")
+
+            sleep(2)
 
 
 @click.command()
@@ -74,7 +78,9 @@ def cli():
 
 cli.add_command(web)
 cli.add_command(adduser)
+cli.add_command(supervisor)
 cli.add_command(demo)
+
 
 if __name__ == "__main__":
     cli()
