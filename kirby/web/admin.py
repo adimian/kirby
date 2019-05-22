@@ -1,7 +1,10 @@
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.model import InlineFormAdmin
 from flask_login import current_user
 from flask import redirect, url_for, request
+
+from kirby.models import ConfigKey
 
 
 def is_authenticated(user):
@@ -22,6 +25,37 @@ class UserView(AuthenticatedModelView):
 
     def on_form_prefill(self, form, id):
         form.username.render_kw = {"readonly": True}
+
+
+class ConfigKeyView(AuthenticatedModelView):
+    form_excluded_columns = ("job", "context", "scope")
+    column_list = ("job_name", "environment_name", "scope", "name", "value")
+    column_searchable_list = (
+        "scope",
+        "name",
+        "job.name",
+        "context.job.name",
+        "context.environment.name",
+    )
+
+    def on_form_prefill(self, form, id):
+        form.name.render_kw = {"readonly": True}
+
+
+class ContextConfigKeyInlineModel(InlineFormAdmin):
+    form_excluded_columns = ("job", "scope")
+
+
+class ContextView(AuthenticatedModelView):
+    inline_models = [ContextConfigKeyInlineModel(ConfigKey)]
+
+
+class JobConfigKeyInlineModel(InlineFormAdmin):
+    form_excluded_columns = ("context", "scope")
+
+
+class JobView(AuthenticatedModelView):
+    inline_models = [JobConfigKeyInlineModel(ConfigKey)]
 
 
 class KirbyAdminIndexView(AdminIndexView):
@@ -56,11 +90,8 @@ admin = Admin(
 )
 
 models = (
-    Job,
     Environment,
     Schedule,
-    Context,
-    ConfigKey,
     Suspension,
     NotificationEmail,
     NotificationGroup,
@@ -75,3 +106,6 @@ for model in models:
 
 
 admin.add_view(UserView(User, db.session))
+admin.add_view(ConfigKeyView(ConfigKey, db.session))
+admin.add_view(ContextView(Context, db.session))
+admin.add_view(JobView(Job, db.session))
