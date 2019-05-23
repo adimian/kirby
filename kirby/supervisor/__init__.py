@@ -14,9 +14,9 @@ def run_supervisor(name, window, wakeup):
         while True:
             checkpoint = perf_counter()
             if me.is_leader():
-                print("I'm the leader!")
+                logger.debug("I am the leader")
             else:
-                print("I'm NOT the leader :(")
+                logger.debug("not the leader, do nothing")
 
             drift = perf_counter() - checkpoint
             next_wakeup = wakeup - drift

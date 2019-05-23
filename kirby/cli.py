@@ -49,7 +49,7 @@ def adduser(username):
 @click.option(
     "--window",
     type=int,
-    default=15,
+    default=5,
     help="Leader election window size (in seconds)",
 )
 @click.option(

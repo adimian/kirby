@@ -30,6 +30,7 @@ class Timer(Thread):
         self.finished.set()
 
     def run(self):
+        self.function(*self.args, **self.kwargs)
         while True:
             self.finished.wait(self.interval)
             if not self.finished.is_set():
@@ -41,19 +42,19 @@ class Timer(Thread):
 
 def make_me_leader(identity, server, check_ttl):
     expiry = int(check_ttl * 1000)
+    current_leader = server.get(LEADER_KEY)
 
-    logger.info(f"setting up leader to {identity} for {expiry}ms")
-    result = server.set(
-        name=LEADER_KEY, value=identity.encode("utf-8"), nx=True, px=expiry
-    )
+    if current_leader and current_leader.decode("utf-8") == identity:
+        # To avoid expiring key while the leader is still alive, we need
+        # to extend the lease if this process is the leader
 
-    # To avoid expiring key while the leader is still alive, we need
-    # to extend the lease if this process is the leader
-    if server.get(LEADER_KEY).decode("utf-8") == identity:
         logger.debug(f"extending lease to {identity} for {expiry}ms")
-        server.pexpire(LEADER_KEY, expiry)
-
-    return result
+        return server.pexpire(LEADER_KEY, expiry)
+    else:
+        logger.debug(f"setting up leader to {identity} for {expiry}ms")
+        return server.set(
+            name=LEADER_KEY, value=identity.encode("utf-8"), nx=True, px=expiry
+        )
 
 
 class Election:
