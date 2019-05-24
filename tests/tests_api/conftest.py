@@ -13,17 +13,18 @@ DATE = "2019-05-22 15:18"
 KAFKA_URL = ""
 TOPIC_NAME = "orders"
 
-SSL_CAFILE = "ca.pem"
-SSL_CERTFILE = "service.cert"
-SSL_KEYFILE = "service.key"
+DIR_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+SSL_CAFILE = os.path.join(DIR_PATH, "ca.pem")
+SSL_CERTFILE = os.path.join(DIR_PATH, "service.cert")
+SSL_KEYFILE = os.path.join(DIR_PATH, "service.key")
 
 
 @fixture
 def kirby_hidden_env(db_scripts_not_registered):
     env = {
         # These are the "hidden" variables.
-        "ID": "2",
-        "PACKAGE_NAME": "cashregister_retriever",
+        "ID": "1",
+        "PACKAGE_NAME": "orders_retriever",
         "KIRBY_WEB_SERVER": API_ROOT,
         "KAFKA_URL": KAFKA_URL,
         "SSL_CAFILE": SSL_CAFILE,
