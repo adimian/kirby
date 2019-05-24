@@ -37,5 +37,8 @@ class Context:
             ]
         )
 
+    def __getitem__(self, item):
+        return self.__getattr__(item)
+
 
 ctx = Context()

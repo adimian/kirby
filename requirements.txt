@@ -12,3 +12,4 @@ flask-security==3.0.0
 python-dotenv==0.10.1
 smart-getenv==1.1.0
 bcrypt==3.1.6
+kafka-python==1.4.6

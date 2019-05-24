@@ -9,6 +9,7 @@ def _load_config():
 
     assert ctx.HELLO == "WORLD"
     assert ctx.MYLIST == ["this", "is", "a", "list"]
+    assert ctx["HELLO"]
 
 
 def test_it_can_read_configuration():
