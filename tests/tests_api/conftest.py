@@ -78,7 +78,7 @@ class init_kafka_topic:
 
 @fixture(scope="function")
 def kirby_topic(kirby_app):
-    with init_kafka_topic(TOPIC_NAME) as topic_name:
+    with init_kafka_topic(TOPIC_NAME):
         topic = Topic(kirby_app, "TOPIC_NAME")
         yield topic
     topic.close()

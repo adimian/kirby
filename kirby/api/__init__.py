@@ -1,15 +1,12 @@
 import requests
 
-from .context import ContextManager
+from .context import ContextManager, ctx
 
 
 class Kirby:
     def __init__(self, env_signature, session=None):
         ctx_manager = ContextManager(env_signature)
         ctx_manager.load()
-
-        from .context import ctx
-
         self.ctx = ctx
         self._session = session or requests.session()
 
