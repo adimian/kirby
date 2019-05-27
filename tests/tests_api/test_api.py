@@ -51,8 +51,8 @@ def test_it_add_destination(
 
 
 def test_throw_error_if_bad_usage(kirby_app):
-    with raises(AssertionError) as excinfo:
-        kirby_app._add_source_or_destination(object(), "bad_key")
-    assert "'source_id' or 'destination_id'" in str(
+    with raises(ValueError) as excinfo:
+        kirby_app._register({"bad_key": 1})
+    assert "'source_id' and 'destination_id'" in str(
         excinfo.value
     ), f"The function should not accept this key"

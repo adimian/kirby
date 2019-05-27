@@ -66,7 +66,7 @@ class init_kafka_topic:
 
     def __enter__(self):
         return_value = self.admin.create_topics(
-            [NewTopic(self.topic_name, 1, 1)]
+            [NewTopic(self.topic_name, 1, 1)], timeout_ms=1500
         )
         # Assert that there where no errors during the creation of the topic
         assert return_value.topic_errors[0][1] == 0

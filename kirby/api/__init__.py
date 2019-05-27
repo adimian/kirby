@@ -12,9 +12,24 @@ class Kirby:
 
         self._register()
 
+    def get_topic_id(self, topic_name):
+        result = self._session.get(
+            "/".join([self.ctx.KIRBY_WEB_SERVER, "topic"]),
+            params={"name": topic_name},
+        )
+        assert result.status_code == 200
+        return result.json()["id"]
+
     def _register(self, params=None):
         if not params:
             params = {}
+
+        # If there is a key not in {"source_id", "destination_id"}
+        if params.keys() - {"source_id", "destination_id"}:
+            raise ValueError(
+                "There is at least one key in 'params' that is not accepted. "
+                f"'params' can only contains : 'source_id' and 'destination_id'"
+            )
 
         result = self._session.patch(
             "/".join([self.ctx.KIRBY_WEB_SERVER, "registration"]),
@@ -22,23 +37,10 @@ class Kirby:
         )
         assert result.status_code == 200
 
-    def _add_source_or_destination(self, ext, key):
-        assert key in [
-            "source_id",
-            "destination_id",
-        ], "The key passed as argument must be either 'source_id' or 'destination_id'"
-
-        ext_name = ext.topic_name
-
-        result_get_id = self._session.get(
-            "/".join([self.ctx.KIRBY_WEB_SERVER, "topic"]),
-            params={"name": ext_name},
-        )
-        assert result_get_id.status_code == 200
-        self._register({key: result_get_id.json()["id"]})
-
     def add_source(self, source):
-        self._add_source_or_destination(source, "source_id")
+        self._register({"source_id": self.get_topic_id(source.topic_name)})
 
     def add_destination(self, destination):
-        self._add_source_or_destination(destination, "destination_id")
+        self._register(
+            {"destination_id": self.get_topic_id(destination.topic_name)}
+        )
