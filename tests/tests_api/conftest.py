@@ -52,33 +52,31 @@ def kirby_app(session, kirby_hidden_env, kirby_expected_env):
     return Kirby(kirby_expected_env, session=session)
 
 
-class init_kafka_topic:
-    def __init__(self, topic_name):
-        self.topic_name = topic_name
-        self.admin = KafkaAdminClient(
-            bootstrap_servers=KAFKA_URL,
-            client_id="Admin_test",
-            ssl_cafile=SSL_CAFILE,
-            ssl_certfile=SSL_CERTFILE,
-            ssl_keyfile=SSL_KEYFILE,
-            security_protocol="SSL",
-        )
+@fixture(scope="function")
+def kirby_topic_factory(kirby_app):
 
-    def __enter__(self):
-        return_value = self.admin.create_topics(
-            [NewTopic(self.topic_name, 1, 1)], timeout_ms=1500
+    admin = KafkaAdminClient(
+        bootstrap_servers=KAFKA_URL,
+        client_id="Admin_test",
+        ssl_cafile=SSL_CAFILE,
+        ssl_certfile=SSL_CERTFILE,
+        ssl_keyfile=SSL_KEYFILE,
+        security_protocol="SSL",
+    )
+    created_topics = []
+
+    def create_kirby_topic(topic_name):
+        os.environ["TOPIC_NAME"] = topic_name
+        return_value = admin.create_topics(
+            [NewTopic(topic_name, 1, 1)], timeout_ms=1500
         )
-        # Assert that there where no errors during the creation of the topic
         assert return_value.topic_errors[0][1] == 0
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.admin.delete_topics([self.topic_name])
-        self.admin.close()
-
-
-@fixture(scope="function")
-def kirby_topic(kirby_app):
-    with init_kafka_topic(TOPIC_NAME):
         topic = Topic(kirby_app, "TOPIC_NAME")
-        yield topic
-    topic.close()
+        created_topics.append(topic_name)
+        return topic
+
+    yield create_kirby_topic
+
+    admin.delete_topics(created_topics)
+    admin.close()

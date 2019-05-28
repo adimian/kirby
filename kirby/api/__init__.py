@@ -44,15 +44,3 @@ class Kirby:
         self._register(
             {"destination_id": self.get_topic_id(destination.topic_name)}
         )
-
-
-class Table:
-    def __init__(self, table=None):
-        if not table:
-            table = []
-        pass
-
-    def add_listener(self, source, position_to_update, params=None):
-        if not params:
-            params = {}
-        pass

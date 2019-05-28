@@ -1,10 +1,15 @@
 from freezegun import freeze_time
 from datetime import datetime
-from pytest import raises
+from pytest import raises, fixture
 
-from tests.tests_api.conftest import DATE
+from tests.tests_api.conftest import DATE, TOPIC_NAME
 
 from kirby.models import db, Script, Topic
+
+
+@fixture(scope="function")
+def kirby_topic(kirby_topic_factory):
+    return kirby_topic_factory(TOPIC_NAME)
 
 
 def get_script_in_db_from_id(id_script):
