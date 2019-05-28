@@ -1,6 +1,7 @@
 import os
 
 from kirby.api.context import ContextManager
+from kirby.api.queue import Queue
 from multiprocessing import Process
 
 
@@ -27,3 +28,9 @@ def test_it_can_read_configuration():
 
     ps = Process(target=_load_config)
     ps.start()
+
+
+def test_it_can_create_a_queue():
+    q = Queue("my-queue", testing=True)
+    q.append("hello")
+    assert q.last() == "hello"
