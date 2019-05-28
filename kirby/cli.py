@@ -1,3 +1,9 @@
+from dotenv import load_dotenv
+
+from kirby.api import read_topic
+
+load_dotenv()
+
 from getpass import getpass
 
 import click
@@ -7,10 +13,18 @@ from kirby.models import db
 from kirby.models.security import user_datastore
 from kirby.supervisor import run_supervisor
 from kirby.web import app_maker
+from smart_getenv import getenv
 
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+DEFAULT_LOG_FORMAT = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
+
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format=getenv("LOG_FORMAT", default=DEFAULT_LOG_FORMAT),
+)
+logging.getLogger("kafka").setLevel(logging.CRITICAL)
 
 
 @click.command()
@@ -72,6 +86,20 @@ def demo():
 
 
 @click.group()
+def debug():
+    pass
+
+
+@click.command()
+@click.argument("name")
+def dump(name):
+    read_topic(name)
+
+
+debug.add_command(dump)
+
+
+@click.group()
 def cli():
     pass
 
@@ -80,6 +108,7 @@ cli.add_command(web)
 cli.add_command(adduser)
 cli.add_command(supervisor)
 cli.add_command(demo)
+cli.add_command(debug)
 
 
 if __name__ == "__main__":

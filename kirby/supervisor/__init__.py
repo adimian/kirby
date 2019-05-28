@@ -1,18 +1,24 @@
-from redis import Redis
-from time import sleep
-from .scheduler import Scheduler
-from .election import Election
-from ..api.queue import Queue
-from time import perf_counter
-
 import logging
+from time import perf_counter
+from time import sleep
+
+from redis import Redis
+from smart_getenv import getenv
+
+from .election import Election
+from .scheduler import Scheduler
+from ..api.queue import Queue
 
 logger = logging.getLogger(__name__)
 
 
 def run_supervisor(name, window, wakeup):
     server = Redis()
-    queue = Queue(name="job-offers")
+    queue = Queue(
+        name=getenv(
+            "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
+        )
+    )
     scheduler = Scheduler(queue=queue)
     with Election(identity=name, server=server, check_ttl=window) as me:
         while True:
