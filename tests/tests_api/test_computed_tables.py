@@ -1,4 +1,5 @@
-from kirby.api.ext import Topic
+from pytest import fixture
+
 from kirby.api import Table
 
 
@@ -9,20 +10,43 @@ def process_generator(key):
     return process_orders
 
 
-def test_it_compute_table(kirby_app):
-    orders = Topic(kirby_app, "ORDERS_TOPIC_NAME")
-    cashregister = Topic(kirby_app, "CASHREGISTER_TOPIC_NAME")
+@fixture
+def table():
+    return [[4, 6], [10, 15]]
 
-    t = Table(
-        [
-            ["product", "sum_volume", "sum_price"],
-            ["bread", "4", "6"],
-            ["pain chocolat", "10", "15"],
-        ]
+
+@fixture
+def table_repr():
+    return [
+        ["item", "sum_volume", "sum_price"],
+        ["bread", 4, 6],
+        ["pain chocolat", 10, 15],
+    ]
+
+
+@fixture(scope="function")
+def computed_table(table):
+    return Table(
+        table,
+        headers=["sum_volume", "sum_price"],
+        index=["bread", "pain chocolat"],
     )
-    t.add_listener(
+
+
+def test_it_creates_a_table(computed_table, table, table_repr):
+    assert computed_table == table
+    assert repr(computed_table) == table_repr
+
+
+@fixture
+def computed_table_with_listeners(
+    kirby_app, kirby_topic_factory, computed_table
+):
+    orders = kirby_topic_factory("orders")
+    cashregister = kirby_topic_factory("cashregister")
+
+    computed_table.add_listener(
         orders,
-        (slice(1, 3), slice(1, 3)),
         params={
             (0, 0): process_generator("bread_volume"),
             (0, 1): process_generator("bread_price"),
@@ -30,9 +54,8 @@ def test_it_compute_table(kirby_app):
             (1, 1): process_generator("pain_chocolat_price"),
         },
     )
-    t.add_listener(
+    computed_table.add_listener(
         cashregister,
-        (slice(1, 3), slice(1, 3)),
         params={
             (0, 0): process_generator("bread_volume"),
             (0, 1): process_generator("bread_price"),
@@ -40,6 +63,12 @@ def test_it_compute_table(kirby_app):
             (1, 1): process_generator("pain_chocolat_price"),
         },
     )
+    return computed_table, [orders, cashregister]
+
+
+def test_it_add_listener(computed_table_with_listeners):
+    computed_table, topics = computed_table_with_listeners
+    orders, cashregister = topics
 
     orders.send(
         {
@@ -52,4 +81,4 @@ def test_it_compute_table(kirby_app):
 
     cashregister.send({"bread_volume": 5, "bread_price": 7.5})
 
-    assert t[1:3][1:3] == [[10, 15], [12, 18]]
+    assert computed_table == [[10, 15], [12, 18]]
