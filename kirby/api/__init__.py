@@ -16,7 +16,14 @@ class Kirby:
             "/".join([self.ctx.KIRBY_WEB_SERVER, "topic"]),
             params={"name": topic_name},
         )
-        assert result.status_code == 200
+        if result.status_code != 200:
+            if result.status_code == 500:
+                raise SystemError(f"There is an issue with the web server.")
+            else:
+                raise KeyError(
+                    f"There is no id from the name {topic_name}. "
+                    f"Verify that the topic has been registered."
+                )
         return result.json()["id"]
 
     def _register(self, params=None):
@@ -34,7 +41,9 @@ class Kirby:
             "/".join([self.ctx.KIRBY_WEB_SERVER, "registration"]),
             params=dict(**params, **{"script_id": self.ctx.ID}),
         )
-        assert result.status_code == 200
+
+        if result.status_code != 200:
+            raise SystemError(f"There is an issue with the web server.")
 
     def add_source(self, source):
         self._register({"source_id": self.get_topic_id(source.topic_name)})
