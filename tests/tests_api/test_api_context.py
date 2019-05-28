@@ -16,10 +16,9 @@ def test_it_can_read_configuration():
     os.environ["HELLO"] = "WORLD"
     os.environ["MYLIST"] = "this:is:a:list"
 
-    context_manager = ContextManager(
+    ContextManager(
         {"HELLO": {"type": str}, "MYLIST": {"type": list, "separator": ":"}}
     )
-    context_manager.load()
 
     from kirby.api.context import ctx
 
