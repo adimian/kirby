@@ -6,6 +6,8 @@ flask-restplus==0.12.1
 flask-security==3.0.0
 Flask-SQLAlchemy==2.4.0
 freezegun==0.3.11
+kafka-python==1.4.6
+msgpack==0.6.1
 python-dateutil==2.8.0
 python-dotenv==0.10.1
 python-dotenv==0.10.1
