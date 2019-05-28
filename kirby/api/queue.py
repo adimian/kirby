@@ -25,12 +25,6 @@ class Queue:
                 bootstrap_servers=bootstrap_servers,
                 value_serializer=msgpack.dumps,
             )
-            self.__consumer = KafkaConsumer(
-                self.name,
-                bootstrap_servers=getenv(
-                    "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
-                ),
-            )
 
     def append(self, message):
         if self.testing:
@@ -42,6 +36,4 @@ class Queue:
         if self.testing:
             return self.__messages[-1]
         else:
-            consumer = self.__consumer
-            messages = consumer.poll()
-            return messages[-1]
+            raise NotImplementedError("this is only for testing")
