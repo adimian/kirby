@@ -130,14 +130,14 @@ class ConfigKey(db.Model):
     job = db.relationship(Job, backref=db.backref("config_keys", lazy=True))
 
     @property
-    def job_name(self):
+    def job_name(self):  # pragma: no cover
         if self.job:
             return self.job.name
         elif self.context:
             return self.context.job.name
 
     @property
-    def environment_name(self):
+    def environment_name(self):  # pragma: no cover
         if self.context:
             return self.context.environment.name
 
