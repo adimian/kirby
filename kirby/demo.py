@@ -35,7 +35,9 @@ def create_demo_db(s):
     prod_ctx.set_config(ENV="prod", SSH_SERVER="server.somewhere:22")
     s.add_all([dev_ctx, test_ctx, prod_ctx])
 
-    schedule = models.Schedule(name="every two minutes", hour="*", minute="/2")
+    schedule = models.Schedule(
+        name="every two minutes", hour="*", minute="*/2"
+    )
     s.add(schedule)
     dev_ctx.add_schedule(schedule)
     test_ctx.add_schedule(schedule)
