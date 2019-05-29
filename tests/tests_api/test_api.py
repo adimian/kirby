@@ -5,6 +5,7 @@ from pytest import raises
 from tests.tests_api.conftest import DATE
 
 from kirby.models import db, Script, Topic
+from kirby.api import ClientError
 
 
 def get_script_in_db_from_id(id_script):
@@ -51,8 +52,5 @@ def test_it_add_destination(
 
 
 def test_throw_error_if_bad_usage(kirby_app):
-    with raises(ValueError) as excinfo:
-        kirby_app._register({"bad_key": 1})
-    assert "'source_id' and 'destination_id'" in str(
-        excinfo.value
-    ), f"The function should not accept this key"
+    with raises(ClientError):
+        kirby_app._register(source_id=9999999, destination_id=90909099)
