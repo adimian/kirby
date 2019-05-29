@@ -23,7 +23,7 @@ def app_maker(config=None):
     app.config["SECRET_KEY"] = getenv("SECRET_KEY")
     app.config["SECURITY_PASSWORD_SALT"] = getenv("SECURITY_PASSWORD_SALT")
 
-    if config:
+    if config:  # pragma: no cover
         app.config.update(config)
 
     db.init_app(app)
