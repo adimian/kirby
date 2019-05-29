@@ -66,5 +66,9 @@ def test_it_do_a_transaction(computed_table):
 
     with raises(ZeroDivisionError):
         with Transaction(computed_table):
-            table.bread.sum_volume /= 0
+            computed_table.bread.sum_volume += 3
+            computed_table.bread.sum_price = (
+                computed_table.bread.sum_volume * PRICE_BREAD
+            )
+            table.pain_chocolat.sum_volume /= 0
     assert computed_table == new_table
