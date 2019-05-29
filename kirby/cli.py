@@ -1,18 +1,37 @@
-import click
+from dotenv import load_dotenv
+
+from kirby.api import read_topic
+
+load_dotenv()
 
 from getpass import getpass
 
+import click
+
 from kirby.demo import create_demo_db
-from kirby.web import app_maker
-from kirby.models.security import user_datastore
 from kirby.models import db
+from kirby.models.security import user_datastore
+from kirby.supervisor import run_supervisor
+from kirby.web import app_maker
+from smart_getenv import getenv
+
+import logging
+
+DEFAULT_LOG_FORMAT = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
+
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format=getenv("LOG_FORMAT", default=DEFAULT_LOG_FORMAT),
+)
+logging.getLogger("kafka").setLevel(logging.CRITICAL)
 
 
 @click.command()
 @click.option(
     "--host", type=str, default="127.0.0.1", help="The interface to bind to"
 )
-@click.option("--port", type=str, default="5000", help="The port to bind to")
+@click.option("--port", type=str, default="8080", help="The port to bind to")
 @click.option("--debug", type=bool, default=False, help="Start in DEBUG mode")
 def web(host, port, debug):
     app = app_maker()
@@ -40,6 +59,24 @@ def adduser(username):
 
 
 @click.command()
+@click.argument("name")
+@click.option(
+    "--window",
+    type=int,
+    default=5,
+    help="Leader election window size (in seconds)",
+)
+@click.option(
+    "--wakeup",
+    type=int,
+    default=30,
+    help="Shortest time interval between two scheduler executions",
+)
+def supervisor(name, window, wakeup):
+    run_supervisor(name, window, wakeup)
+
+
+@click.command()
 def demo():
     app = app_maker()
 
@@ -49,13 +86,30 @@ def demo():
 
 
 @click.group()
+def debug():
+    pass
+
+
+@click.command()
+@click.argument("name")
+def dump(name):
+    read_topic(name)
+
+
+debug.add_command(dump)
+
+
+@click.group()
 def cli():
     pass
 
 
 cli.add_command(web)
 cli.add_command(adduser)
+cli.add_command(supervisor)
 cli.add_command(demo)
+cli.add_command(debug)
+
 
 if __name__ == "__main__":
     cli()
