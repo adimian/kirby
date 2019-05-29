@@ -3,6 +3,8 @@ from kafka import KafkaProducer, KafkaConsumer
 from smart_getenv import getenv
 import logging
 
+import datetime
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,14 +28,25 @@ class Queue:
                 value_serializer=msgpack.dumps,
             )
 
-    def append(self, message):
+    def append(self, message, submitted=None):
+        if submitted is None:
+            submitted = datetime.datetime.utcnow()
+
         if self.testing:
-            self.__messages.append(message)
+            self.__messages.append((submitted, message))
+
         else:
             self.__producer.send(self.name, message)
 
+    def between(self, start, end):
+        if self.testing:
+            return [msg for t, msg in self.__messages if start <= t < end]
+        else:
+            raise NotImplementedError("not done yet")
+
     def last(self):
         if self.testing:
-            return self.__messages[-1]
+            _, msg = self.__messages[-1]
+            return msg
         else:
             raise NotImplementedError("this is only for testing")
