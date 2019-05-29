@@ -13,7 +13,7 @@ class Environment(db.Model):
     name = db.Column(db.String(), nullable=False, unique=True)
 
     def __repr__(self):
-        return f"<Environment name={self.name}>"
+        return self.name
 
 
 class JobType(Enum):
@@ -41,7 +41,7 @@ class Job(db.Model):
             self.config_keys.append(c)
 
     def __repr__(self):
-        return f"<Job name={self.name} type={self.type.value}>"
+        return f"{self.name} ({self.type.value})"
 
 
 schedules_to_contexts = db.Table(
@@ -78,7 +78,7 @@ class Context(db.Model):
         self.schedules.append(schedule)
 
     def __repr__(self):
-        return f"<Context job={self.job} environment={self.environment}>"
+        return f"{self.job} @ {self.environment}"
 
     def variables(self):
         export = {}
@@ -170,6 +170,9 @@ class Schedule(db.Model):
     def add_suspension(self, suspension):
         self.suspensions.append(suspension)
 
+    def __repr__(self):
+        return self.name
+
     @validates("hour", "minute", "day", "month", "weekday")
     def validate_schedule_attribute(self, key, attribute):
         cron_expression = "{minute} {hour} {day} {month} {weekday}".format(
@@ -232,6 +235,9 @@ class NotificationGroup(db.Model):
         ne = NotificationEmail(email=email)
         self.emails.append(ne)
 
+    def __repr__(self):
+        return self.name
+
 
 class NotificationEmail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -260,6 +266,9 @@ class Notification(db.Model):
         back_populates="notifications",
     )
 
+    def __repr__(self):
+        return f"{self.job} -> {','.join(g.name for g in self.groups)}"
+
 
 class Script(db.Model):
     __tablename__ = "script"
@@ -284,7 +293,7 @@ class Script(db.Model):
         self.destinations.append(destination)
 
     def __repr__(self):
-        return f"<Script name={self.package_name} package_version={self.package_version}>"
+        return f"{self.package_name} / {self.package_version}"
 
 
 class Topic(db.Model):
@@ -306,4 +315,4 @@ class Topic(db.Model):
     )
 
     def __repr__(self):
-        return f"<Topic name={self.name}>"
+        return self.name
