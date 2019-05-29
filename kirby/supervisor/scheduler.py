@@ -4,7 +4,11 @@ import json
 import requests
 from smart_getenv import getenv
 
+import logging
+
 from ..exc import CoolDownException
+
+logger = logging.getLogger(__name__)
 
 
 class Scheduler:
@@ -14,8 +18,11 @@ class Scheduler:
 
     def fetch_jobs(self):
         url = getenv("KIRBY_SCHEDULE_ENDPOINT", type=str)
-        response = requests.get(url)
-        return response.text
+        try:
+            response = requests.get(url)
+            return response.text
+        except requests.exceptions.ConnectionError:
+            logger.exception("unable to fetch jobs: ")
 
     def parse_jobs(self, content):
         jobs = []

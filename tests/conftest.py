@@ -2,6 +2,7 @@ from pytest import fixture
 import os
 from requests_flask_adapter import Session
 
+
 from kirby.web import app_maker
 from kirby.models import (
     db,
@@ -239,3 +240,36 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 
     abort_script.add_destination(errors_log)
     db.session.commit()
+
+
+@fixture(scope="function")
+def kirby_topic_factory():
+    from smart_getenv import getenv
+    from dotenv import load_dotenv
+    from contextlib import contextmanager
+    from kafka import KafkaAdminClient
+    from kafka.admin import NewTopic
+    from kafka.errors import UnknownTopicOrPartitionError
+
+    load_dotenv()
+
+    bootstrap_servers = getenv(
+        "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
+    )
+
+    admin = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
+
+    @contextmanager
+    def create_kirby_topic(topic_name):
+        try:
+            admin.delete_topics([topic_name])
+        except UnknownTopicOrPartitionError:
+            pass
+
+        admin.create_topics([NewTopic(topic_name, 1, 1)], timeout_ms=1500)
+        yield
+
+        admin.delete_topics([topic_name])
+        admin.close()
+
+    return create_kirby_topic

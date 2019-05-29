@@ -19,15 +19,16 @@ def run_supervisor(name, window, wakeup):
             "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
         )
     )
-    scheduler = Scheduler(queue=queue)
+    scheduler = Scheduler(queue=queue, wakeup=wakeup)
     with Election(identity=name, server=server, check_ttl=window) as me:
         while True:
             checkpoint = perf_counter()
             if me.is_leader():
                 content = scheduler.fetch_jobs()
-                jobs = scheduler.parse_jobs(content)
-                for job in jobs:
-                    scheduler.queue_job(job)
+                if content is not None:
+                    jobs = scheduler.parse_jobs(content)
+                    for job in jobs:
+                        scheduler.queue_job(job)
             else:
                 logger.debug("not the leader, do nothing")
 
