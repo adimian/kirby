@@ -1,3 +1,5 @@
+from os import name
+
 from kirby.models import ConfigKey
 from kirby.models.security import user_datastore
 from kirby import models
@@ -11,11 +13,20 @@ def create_demo_db(s):
     user_datastore.add_role_to_user(user=user, role=role)
     s.commit()
 
+    sysadmins = models.NotificationGroup(name="sysadmins")
+    sysadmins.add_email("alice@local.local")
+    sysadmins.add_email("bob@local.local")
+    sysadmins.add_email("charles@local.local")
+
+    s.add(sysadmins)
+    s.commit()
+
     # fill the database with dummy content
     job = models.Job(
         name="Fetch bakery realtime sales", type=models.JobType.SCHEDULED
     )
     s.add(job)
+    job.add_notification(sysadmins, on_failure=True, on_retry=False)
 
     job.set_config(
         SENTRY_DSN="http://sentry.dsn.somewhere", SSH_USERNAME="demo"

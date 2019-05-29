@@ -1,0 +1,23 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+{{ super() }}
+<div class="row-fluid">
+
+    <div>
+        <p class="lead">
+            Welcome
+            {%- if current_user.username %}
+              {{current_user.username.title()}}
+            {% endif %}
+
+        </p>
+        <p>You have the following roles:</p>
+        <ul>
+        {% for role in current_user.roles %}
+            <li>{{role.name.title()}}</li>
+        {% endfor %}
+        </ul>
+
+    </div>
+</div>
+{% endblock body %}
