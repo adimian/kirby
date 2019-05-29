@@ -53,4 +53,4 @@ def test_it_add_destination(
 
 def test_throw_error_if_bad_usage(kirby_app):
     with raises(ClientError):
-        kirby_app._register(source_id=9999999, destination_id=90909099)
+        kirby_app._register(source_id=-1, destination_id=-1)
