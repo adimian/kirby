@@ -12,7 +12,6 @@ class ContextManager:
         os.environ[KIRBY_ENV_SIGNATURE] = codecs.encode(
             pickle.dumps(self.config), "base64"
         ).decode()
-        return
 
 
 def get_signature():
