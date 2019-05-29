@@ -1,4 +1,4 @@
-from pytest import fixture
+from pytest import fixture, raises
 
 from kirby.api import Table, Transaction
 
@@ -43,18 +43,28 @@ def test_it_creates_a_table(computed_table, table, table_repr):
     assert repr(computed_table) == table_repr
 
 
-def test_it_add_listener(computed_table):
+def test_it_do_a_transaction(computed_table):
     with Transaction(computed_table):
-        table.bread.sum_volume += 3
-        table.bread.sum_price = table.bread.sum_volume * PRICE_BREAD
+        computed_table.bread.sum_volume += 3
+        computed_table.bread.sum_price = (
+            computed_table.bread.sum_volume * PRICE_BREAD
+        )
 
-        table.pain_chocolat.sum_volume += 2
-        table.pain_chocolat.sum_price = (
-            table.pain_chocolat.sum_volume * PRICE_PAIN_CHOCOLAT
+        computed_table.pain_chocolat.sum_volume += 2
+        computed_table.pain_chocolat.sum_price = (
+            computed_table.pain_chocolat.sum_volume * PRICE_PAIN_CHOCOLAT
         )
 
         new_table = [
-            [table.bread.sum_volume, table.bread.sum_price],
-            [table.pain_chocolat.sum_volume, table.pain_chocolat.sum_price],
+            [computed_table.bread.sum_volume, computed_table.bread.sum_price],
+            [
+                computed_table.pain_chocolat.sum_volume,
+                computed_table.pain_chocolat.sum_price,
+            ],
         ]
+    assert computed_table == new_table
+
+    with raises(ZeroDivisionError):
+        with Transaction(computed_table):
+            table.bread.sum_volume /= 0
     assert computed_table == new_table
