@@ -1,36 +1,41 @@
 from pytest import fixture
 
-from kirby.api import Table
+from kirby.api import Table, Transaction
 
+PRICE_BREAD = 0.95
+VOLUME_BREAD = 4
+SUM_PRICE_BREAD = PRICE_BREAD * VOLUME_BREAD
 
-def process_generator(key):
-    def process_orders(orders):
-        return orders[key]
-
-    return process_orders
+PRICE_PAIN_CHOCOLAT = 1.5
+VOLUME_PAIN_CHOCOLAT = 10
+SUM_PRICE_PAIN_CHOCOLAT = PRICE_PAIN_CHOCOLAT * VOLUME_BREAD
 
 
 @fixture
 def table():
-    return [[4, 6], [10, 15]]
+    return [
+        [VOLUME_BREAD, SUM_PRICE_BREAD],
+        [VOLUME_PAIN_CHOCOLAT, SUM_PRICE_PAIN_CHOCOLAT],
+    ]
 
 
 @fixture
 def table_repr():
     return [
         ["item", "sum_volume", "sum_price"],
-        ["bread", 4, 6],
-        ["pain chocolat", 10, 15],
+        ["bread", VOLUME_BREAD, SUM_PRICE_BREAD],
+        ["pain chocolat", VOLUME_PAIN_CHOCOLAT, SUM_PRICE_PAIN_CHOCOLAT],
     ]
 
 
 @fixture(scope="function")
 def computed_table(table):
-    return Table(
+    with Table(
         table,
         headers=["sum_volume", "sum_price"],
         index=["bread", "pain chocolat"],
-    )
+    ) as computed_table:
+        yield computed_table
 
 
 def test_it_creates_a_table(computed_table, table, table_repr):
@@ -38,47 +43,18 @@ def test_it_creates_a_table(computed_table, table, table_repr):
     assert repr(computed_table) == table_repr
 
 
-@fixture
-def computed_table_with_listeners(
-    kirby_app, kirby_topic_factory, computed_table
-):
-    orders = kirby_topic_factory("orders")
-    cashregister = kirby_topic_factory("cashregister")
+def test_it_add_listener(computed_table):
+    with Transaction(computed_table):
+        table.bread.sum_volume += 3
+        table.bread.sum_price = table.bread.sum_volume * PRICE_BREAD
 
-    computed_table.add_listener(
-        orders,
-        params={
-            (0, 0): process_generator("bread_volume"),
-            (0, 1): process_generator("bread_price"),
-            (1, 0): process_generator("pain_chocolat_volume"),
-            (1, 1): process_generator("pain_chocolat_price"),
-        },
-    )
-    computed_table.add_listener(
-        cashregister,
-        params={
-            (0, 0): process_generator("bread_volume"),
-            (0, 1): process_generator("bread_price"),
-            (1, 0): process_generator("pain_chocolat_volume"),
-            (1, 1): process_generator("pain_chocolat_price"),
-        },
-    )
-    return computed_table, [orders, cashregister]
+        table.pain_chocolat.sum_volume += 2
+        table.pain_chocolat.sum_price = (
+            table.pain_chocolat.sum_volume * PRICE_PAIN_CHOCOLAT
+        )
 
-
-def test_it_add_listener(computed_table_with_listeners):
-    computed_table, topics = computed_table_with_listeners
-    orders, cashregister = topics
-
-    orders.send(
-        {
-            "bread_volume": 1,
-            "bread_price": 1.5,
-            "pain_chocolat_volume": 2,
-            "pain_chocolat_price": 3,
-        }
-    )
-
-    cashregister.send({"bread_volume": 5, "bread_price": 7.5})
-
-    assert computed_table == [[10, 15], [12, 18]]
+        new_table = [
+            [table.bread.sum_volume, table.bread.sum_price],
+            [table.pain_chocolat.sum_volume, table.pain_chocolat.sum_price],
+        ]
+    assert computed_table == new_table
