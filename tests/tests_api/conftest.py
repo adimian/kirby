@@ -17,6 +17,8 @@ def kirby_hidden_env(db_scripts_not_registered):
         "ID": "1",
         "PACKAGE_NAME": "orders_retriever",
         "KIRBY_WEB_SERVER": API_ROOT,
+        # "KAFKA_BOOTSTRAP_SERVERS": KAFKA_BOOTSTRAP_SERVERS,
+        # ---
         # These are the one defined into the signature when Kirby is called.
         # They are specifics to the script.
         "WEBCLIENT_ENDPOINT": "http://a.place.somewhere",
