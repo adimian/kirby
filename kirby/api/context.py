@@ -9,9 +9,6 @@ KIRBY_ENV_SIGNATURE = "__KIRBY_ENV_SIGNATURE"
 class ContextManager:
     def __init__(self, config):
         self.config = config
-        return
-
-    def load(self):
         os.environ[KIRBY_ENV_SIGNATURE] = codecs.encode(
             pickle.dumps(self.config), "base64"
         ).decode()
@@ -25,7 +22,7 @@ def get_signature():
 
 class Context:
     def __getattr__(self, item):
-        signature = get_signature()[item]
+        signature = get_signature().get(item, {"type": str})
         return getenv(item, **signature)
 
     def __repr__(self):
@@ -36,6 +33,9 @@ class Context:
                 for var, signature in all_signatures.items()
             ]
         )
+
+    def __getitem__(self, item):
+        return self.__getattr__(item)
 
 
 ctx = Context()

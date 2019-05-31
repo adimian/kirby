@@ -13,6 +13,7 @@ def _load_config(q):
 
     assert ctx.HELLO == "WORLD"
     assert ctx.MYLIST == ["this", "is", "a", "list"]
+    assert ctx["HELLO"]
 
     q.put(True)
 
@@ -21,10 +22,9 @@ def test_it_can_read_configuration():
     os.environ["HELLO"] = "WORLD"
     os.environ["MYLIST"] = "this:is:a:list"
 
-    context_manager = ContextManager(
+    ContextManager(
         {"HELLO": {"type": str}, "MYLIST": {"type": list, "separator": ":"}}
     )
-    context_manager.load()
 
     from kirby.api.context import ctx
 
@@ -49,10 +49,10 @@ def test_it_can_create_a_queue():
     not os.getenv("KAFKA_BOOTSTRAP_SERVERS"),
     reason="missing KAFKA_BOOTSTRAP_SERVERS environment",
 )
-def test_it_can_create_a_queue_integration(kirby_topic_factory):
+def test_it_can_create_a_queue_integration(kafka_topic_factory):
     offset = datetime.timedelta(seconds=5)
 
-    with kirby_topic_factory("kirby-test-integration"):
+    with kafka_topic_factory("kirby-test-integration"):
         q = Queue("kirby-test-integration")
 
         start = datetime.datetime.now()
