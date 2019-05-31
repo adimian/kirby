@@ -1,5 +1,6 @@
 import json
 import attr
+from subprocess import check_output
 
 
 def convert_variables(data):
@@ -24,3 +25,8 @@ def parse_job_description(job_description):
     job = JobDescription(**kwargs)
 
     return job
+
+
+def execute_module(executable, package_name, env):
+    output = check_output([executable, "-m", package_name], env=env)
+    return output.decode("utf-8")

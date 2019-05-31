@@ -36,9 +36,19 @@ def webapp():
 
 
 @fixture
-def data_dir():
-    current_dir = os.path.dirname(__file__)
+def current_dir():
+    return os.path.dirname(__file__)
+
+
+@fixture
+def data_dir(current_dir):
     data_dir = os.path.join(current_dir, "data")
+    return data_dir
+
+
+@fixture
+def dummies_dir(current_dir):
+    data_dir = os.path.join(os.path.dirname(current_dir), "dummies")
     return data_dir
 
 

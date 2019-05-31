@@ -2,8 +2,10 @@ import os
 from tempfile import mkdtemp
 
 import pytest
+import sys
 
 from kirby.supervisor.envbuilder import create_venv
+from kirby.supervisor.executor import execute_module
 
 
 @pytest.mark.skipif(
@@ -23,8 +25,15 @@ def test_runner_can_create_virtualenv():
     assert log
 
 
-def test_runner_can_run_modules():
-    pass
+def test_runner_can_run_modules(dummies_dir):
+    marker = "hello, world!"
+    env = {"KIRBY_TEST_MARKER": marker, "PYTHONPATH": dummies_dir}
+
+    output = execute_module(
+        executable=sys.executable, package_name="dummy", env=env
+    )
+
+    assert output.strip() == marker
 
 
 def test_runner_logs_to_kafka_topic():
