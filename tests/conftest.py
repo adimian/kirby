@@ -243,7 +243,7 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 
 
 @fixture(scope="function")
-def kirby_topic_factory():
+def kafka_topic_factory():
     from smart_getenv import getenv
     from dotenv import load_dotenv
     from contextlib import contextmanager
@@ -260,7 +260,7 @@ def kirby_topic_factory():
     admin = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
 
     @contextmanager
-    def create_kirby_topic(topic_name):
+    def create_kafka_topic(topic_name):
         try:
             admin.delete_topics([topic_name])
         except UnknownTopicOrPartitionError:
@@ -272,4 +272,4 @@ def kirby_topic_factory():
         admin.delete_topics([topic_name])
         admin.close()
 
-    return create_kirby_topic
+    return create_kafka_topic

@@ -8,7 +8,7 @@ class Topic:
     ):
         self.topic_name = kirby_app.ctx[topic_name_variable_name]
         self._args = {
-            "bootstrap_servers": kirby_app.ctx.KAFKA_URL,
+            "bootstrap_servers": kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS,
             "client_id": kirby_app.ctx.PACKAGE_NAME,
         }
 

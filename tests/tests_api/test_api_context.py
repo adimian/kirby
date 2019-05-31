@@ -1,7 +1,6 @@
 import datetime
 import multiprocessing
 import os
-from multiprocessing import Process
 
 import pytest
 
@@ -50,10 +49,10 @@ def test_it_can_create_a_queue():
     not os.getenv("KAFKA_BOOTSTRAP_SERVERS"),
     reason="missing KAFKA_BOOTSTRAP_SERVERS environment",
 )
-def test_it_can_create_a_queue_integration(kirby_topic_factory):
+def test_it_can_create_a_queue_integration(kafka_topic_factory):
     offset = datetime.timedelta(seconds=5)
 
-    with kirby_topic_factory("kirby-test-integration"):
+    with kafka_topic_factory("kirby-test-integration"):
         q = Queue("kirby-test-integration")
 
         start = datetime.datetime.now()
