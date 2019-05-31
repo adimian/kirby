@@ -1,5 +1,5 @@
-import attr
 import json
+import attr
 
 
 def convert_variables(data):
