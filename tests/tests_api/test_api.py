@@ -41,7 +41,7 @@ def test_it_add_source(
     script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
 
     assert script_in_db.sources[0] == get_topic_in_db_from_name(
-        kirby_topic.topic_name
+        kirby_topic.name
     )
 
 
@@ -58,7 +58,7 @@ def test_it_add_destination(
     script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
 
     assert script_in_db.destinations[0] == get_topic_in_db_from_name(
-        kirby_topic.topic_name
+        kirby_topic.name
     )
 
 

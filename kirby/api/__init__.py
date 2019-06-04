@@ -60,11 +60,11 @@ class Kirby:
                 raise ClientError("There is an error with the id(s) given.")
 
     def add_source(self, source):
-        self._register(source_id=self.get_topic_id(source.topic_name))
+        self._register(source_id=self.get_topic_id(source.name))
 
     def add_destination(self, destination):
         self._register(
-            destination_id=self.get_topic_id(destination.topic_name)
+            destination_id=self.get_topic_id(destination.name)
         )
 
 
