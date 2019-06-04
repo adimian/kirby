@@ -2,32 +2,38 @@ import msgpack
 from kafka import KafkaProducer, KafkaConsumer
 from smart_getenv import getenv
 import logging
+import tenacity
 
-from .ext import Topic
+from .ext import Topic, retry_args
 
 logger = logging.getLogger(__name__)
 
 
 class Queue(Topic):
-    def __init__(self, name, testing=False, security_protocol="SSL"):
+    def __init__(self, name, testing=False, ssl_security_protocol=True):
         self.name = name
         self.testing = testing
+        self.ssl_security_protocol = ssl_security_protocol
+        self.init_kafka()
         mode = "testing" if self.testing else "live"
         logger.debug(f"starting queue {self.name} in {mode} mode")
-        if testing:
+
+    @tenacity.retry(**retry_args)
+    def init_kafka(self):
+        if self.testing:
             self._messages = []
         else:
             bootstrap_servers = getenv(
                 "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
             )
-            self._args = {"bootstrap_servers": bootstrap_servers}
+            kafka_args = {"bootstrap_servers": bootstrap_servers}
 
-            if security_protocol:
-                self._args.update(
+            if self.ssl_security_protocol:
+                kafka_args.update(
                     {
-                        "ssl_cafile": getenv("KAFKA_SSL_CAFILE"),
-                        "ssl_certfile": getenv("KAFKA_SSL_CERTFILE"),
-                        "ssl_keyfile": getenv("KAFKA_SSL_KEYFILE"),
+                        "ssl_cafile": getenv("KAFKA_SSL_CAFILE", type=str),
+                        "ssl_certfile": getenv("KAFKA_SSL_CERTFILE", type=str),
+                        "ssl_keyfile": getenv("KAFKA_SSL_KEYFILE", type=str),
                         "security_protocol": "SSL",
                     }
                 )
@@ -35,7 +41,7 @@ class Queue(Topic):
             logger.debug(f"bootstrap servers: {bootstrap_servers}")
 
             self._producer = KafkaProducer(
-                value_serializer=msgpack.dumps, **self._args
+                value_serializer=msgpack.dumps, **kafka_args
             )
 
             self._consumer = KafkaConsumer(
@@ -43,7 +49,7 @@ class Queue(Topic):
                 group_id=getenv("KIRBY_SUPERVISOR_GROUP_ID", type=str),
                 enable_auto_commit=True,
                 value_deserializer=msgpack.loads,
-                **self._args,
+                **kafka_args,
             )
 
     def append(self, *args, **kargs):

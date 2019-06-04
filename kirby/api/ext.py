@@ -1,35 +1,21 @@
 import logging
 import datetime
 import msgpack
+from smart_getenv import getenv
+import tenacity
+
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 
 logger = logging.getLogger(__name__)
 
-
-def retry(function):
-
-    NB_RETRY = 3
-
-    def function_decorated():
-        for counter in range(NB_RETRY):
-            try:
-                return_value = function_decorated()
-            except NoBrokersAvailable as e:
-                if counter == NB_RETRY:
-                    logger.error(
-                        f"The function {function.__name__} was "
-                        f"launched {counter + 1} times without success."
-                    )
-                    raise e
-            else:
-                logger.info(
-                    f"The function {function.__name__} was "
-                    f"launched {counter + 1} times and succeed."
-                )
-                return return_value
-
-    return function
+RETRIES = getenv("KAFKA_RETRIES", type=int)
+WAIT_BETWEEN_RETRIES = getenv("KAFKA_WAIT_BETWEEN_RETRIES", type=float)
+retry_args = {
+    "retry": tenacity.retry_if_exception_type(NoBrokersAvailable),
+    "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
+    "stop": tenacity.stop_after_attempt(RETRIES),
+}
 
 
 class Topic:
@@ -37,27 +23,29 @@ class Topic:
         self,
         kirby_app,
         topic_name_variable_name,
-        security_protocol="SSL",
+        ssl_security_protocol=True,
         testing=False,
     ):
         self.name = kirby_app.ctx[topic_name_variable_name]
         self.testing = testing
+        self.ssl_security_protocol = ssl_security_protocol
+        self.kirby_app = kirby_app
+        self.init_kafka()
         mode = "testing" if self.testing else "live"
         logger.debug(f"starting topic {self.name} in {mode} mode")
-        self.init_kafka(kirby_app, security_protocol)
 
-    @retry
-    def init_kafka(self, kirby_app, security_protocol):
-        self._args = {
-            "bootstrap_servers": kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
+    @tenacity.retry(**retry_args)
+    def init_kafka(self):
+        kafka_args = {
+            "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
         }
 
-        if security_protocol:
-            self._args.update(
+        if self.ssl_security_protocol:
+            kafka_args.update(
                 {
-                    "ssl_cafile": kirby_app.ctx.KAFKA_SSL_CAFILE,
-                    "ssl_certfile": kirby_app.ctx.KAFKA_SSL_CERTFILE,
-                    "ssl_keyfile": kirby_app.ctx.KAFKA_SSL_KEYFILE,
+                    "ssl_cafile": self.kirby_app.ctx.KAFKA_SSL_CAFILE,
+                    "ssl_certfile": self.kirby_app.ctx.KAFKA_SSL_CERTFILE,
+                    "ssl_keyfile": self.kirby_app.ctx.KAFKA_SSL_KEYFILE,
                     "security_protocol": "SSL",
                 }
             )
@@ -67,15 +55,15 @@ class Topic:
         else:
             self._consumer = KafkaConsumer(
                 self.name,
-                group_id=kirby_app.ctx.PACKAGE_NAME,
+                group_id=self.kirby_app.ctx.PACKAGE_NAME,
                 value_deserializer=lambda x: msgpack.loads(x, raw=False),
-                **self._args,
+                **kafka_args,
             )
             self._producer = KafkaProducer(
-                value_serializer=msgpack.dumps, **self._args
+                value_serializer=msgpack.dumps, **kafka_args
             )
 
-    @retry
+    @tenacity.retry(**retry_args)
     def send(self, message, submitted=None):
         if submitted is None:
             submitted = datetime.datetime.utcnow()
@@ -90,6 +78,7 @@ class Topic:
             )
             self._producer.flush()
 
+    @tenacity.retry(**retry_args)
     def between(self, start, end):
         if self.testing:
             return [msg for t, msg in self._messages if start <= t < end]
@@ -104,6 +93,7 @@ class Topic:
             start_timestamp = start.timestamp() * 1000
             end_timestamp = end.timestamp() * 1000
 
+            # with modify_temporarily_offsets(self._consumer, partitions):
             messages = []
             for partition, offsets in start_offsets.items():
                 self._consumer.seek(partition=partition, offset=offsets.offset)
@@ -125,7 +115,7 @@ class Topic:
                 for message in messages_by_topic:
                     return message.value
 
-    @retry
+    @tenacity.retry(**retry_args)
     def next(self, timeout_ms=500):
         if not self.testing:
             message = self._consumer.poll(max_records=1, timeout_ms=timeout_ms)
