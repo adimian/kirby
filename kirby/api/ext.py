@@ -143,3 +143,9 @@ class Topic:
         if not self.testing:
             self._producer.close()
             self._consumer.close(autocommit=False)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()

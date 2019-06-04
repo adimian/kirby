@@ -57,14 +57,12 @@ def kirby_topic(kirby_app, kafka_topic_factory):
     )
     if bootstrap_servers:
         with kafka_topic_factory(TOPIC_NAME):
-            topic = Topic(kirby_app, "TOPIC_NAME")
-            yield topic
-        topic.close()
+            with Topic(kirby_app, "TOPIC_NAME") as topic:
+                yield topic
     else:
         logger.warning(
             f"There is no KAFKA_BOOTSTRAP_SERVERS. "
             f"Topic will be created in testing mode"
         )
-        topic = Topic(kirby_app, "TOPIC_NAME", testing=True)
-        yield topic
-        topic.close()
+        with Topic(kirby_app, "TOPIC_NAME", testing=True) as topic:
+            yield topic
