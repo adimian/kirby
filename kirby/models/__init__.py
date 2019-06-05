@@ -18,7 +18,7 @@ class Environment(db.Model):
 
 class JobType(Enum):
     SCHEDULED = "scheduled"
-    TRIGGERED = "triggered"
+    DAEMON = "daemon"
 
 
 class Job(db.Model):

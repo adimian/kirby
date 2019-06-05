@@ -105,7 +105,7 @@ def db_jobs(db_notification_groups):
     )
     cashregister_job = Job(
         name="Collect Register",
-        type=JobType.TRIGGERED,
+        type=JobType.DAEMON,
         notifications=[
             Notification(on_retry=True, on_failure=True, groups=[admin])
         ],

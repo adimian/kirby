@@ -99,6 +99,7 @@ job_model = api.model(
     "Job",
     {
         "name": fields.String,
+        "type": fields.String,
         "environment": fields.String,
         "package_name": fields.String,
         "package_version": fields.String,
@@ -170,7 +171,7 @@ class Schedule(Resource):
             # contains the package_name and package_version are in the Context
             # data.
             for context in job.contexts:
-                if job.type == JobType.TRIGGERED or (
+                if job.type == JobType.DAEMON or (
                     context.schedules
                     and any(
                         [
@@ -183,6 +184,7 @@ class Schedule(Resource):
                         jobs.append(
                             {
                                 "name": job_name,
+                                "type": job.type,
                                 "environment": context.environment.name,
                                 "package_name": script.package_name,
                                 "package_version": script.package_version,
