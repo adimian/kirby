@@ -4,25 +4,7 @@ from tempfile import mkdtemp
 import pytest
 import sys
 
-from kirby.supervisor.envbuilder import create_venv
 from kirby.supervisor.executor import execute_module
-
-
-@pytest.mark.skipif(
-    not os.getenv("DUMMY_PACKAGE_INSTALL"),
-    reason=(
-        "You must pass the name of a PyPi package "
-        "to install with DUMMY_PACKAGE_INSTALL"
-    ),
-)
-def test_runner_can_create_virtualenv():
-    destination_directory = mkdtemp()
-    executable, log = create_venv(
-        destination_directory, package_name=os.getenv("DUMMY_PACKAGE_INSTALL")
-    )
-
-    assert executable.endswith(("python", "python3"))
-    assert log
 
 
 def test_runner_can_run_modules(dummies_dir):

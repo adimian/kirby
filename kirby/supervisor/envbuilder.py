@@ -6,50 +6,28 @@ import os
 import subprocess
 import sys
 from venv import EnvBuilder
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def install_package(executable, env_dir, name):
+    logger.debug(f"installing {name} in {env_dir}")
     args = [executable, "-m", "pip", "install", "--prefix", env_dir, name]
     return subprocess.check_output(args, env={"VIRTUAL_ENV": env_dir})
 
 
-def create_venv(directory, package_name):
-    """
-    create a new virtual environment and installs a package automatically
+def configure_env_builder(directory):
 
-    :param directory: target directory where the package will be installed.
-    :param package_name: name of the package
-    :return: (environment Python executable, installation logs)
-    """
-
+    # this is a small trick to enable venv creation when on macos
+    # with homebrew-supplied python installation
     if sys.platform == "darwin" and hasattr(sys, "real_prefix"):
         os.environ["__PYVENV_LAUNCHER__"] = os.path.join(
             sys.real_prefix, "bin", "python3"
         )
 
-    class KirbyEnvBuilder(EnvBuilder):
-        def __init__(self, package_name, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.package_name = package_name
-            self.env_executable = None
-
-        def post_setup(self, context):
-            super().post_setup(context)
-            installation_log = install_package(
-                executable=context.env_exe,
-                env_dir=context.env_dir,
-                name=self.package_name,
-            )
-            self.env_executable = context.env_exe
-            self.installation_log = installation_log
-
-    ev = KirbyEnvBuilder(
-        with_pip=True,
-        upgrade=False,
-        clear=True,
-        symlinks=False,
-        package_name=package_name,
+    builder = EnvBuilder(
+        with_pip=True, upgrade=False, clear=False, symlinks=False
     )
-    ev.create(directory)
 
-    return ev.env_executable, ev.installation_log
+    return builder
