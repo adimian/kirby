@@ -180,7 +180,13 @@ class WebClient:
             data=data,
             params=params,
         )
-        return result
+        if result.status_code == 200:
+            return result.json()
+        raise WebClientError(
+            f"POST error on {result.url}. "
+            f"Status code : {result.status_code}. "
+            f"Response : {result.text}"
+        )
 
     @tenacity.retry(**webserver_retry_args)
     def get(self, endpoint, params=None):
