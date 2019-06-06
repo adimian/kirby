@@ -1,5 +1,6 @@
 import logging
 import datetime
+import requests
 import msgpack
 from smart_getenv import getenv
 import tenacity
@@ -7,14 +8,31 @@ import tenacity
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 logger = logging.getLogger(__name__)
 
-RETRIES = getenv("KAFKA_RETRIES", type=int)
-WAIT_BETWEEN_RETRIES = getenv("KAFKA_WAIT_BETWEEN_RETRIES", type=float)
-retry_args = {
+RETRIES = getenv("EXT_RETRIES", type=int)
+WAIT_BETWEEN_RETRIES = getenv("EXT_WAIT_BETWEEN_RETRIES", type=float)
+kafka_retry_args = {
     "retry": tenacity.retry_if_exception_type(NoBrokersAvailable),
     "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
     "stop": tenacity.stop_after_attempt(RETRIES),
+    "reraise": True,
+}
+
+
+class WebClientError(Exception):
+    pass
+
+
+webserver_retry_args = {
+    "retry": tenacity.retry_if_exception_type(WebClientError),
+    "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
+    "stop": tenacity.stop_after_attempt(RETRIES),
+    "reraise": True,
 }
 
 
@@ -34,7 +52,7 @@ class Topic:
         mode = "testing" if self.testing else "live"
         logger.debug(f"starting topic {self.name} in {mode} mode")
 
-    @tenacity.retry(**retry_args)
+    @tenacity.retry(**kafka_retry_args)
     def init_kafka(self):
         kafka_args = {
             "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
@@ -63,7 +81,7 @@ class Topic:
                 value_serializer=msgpack.dumps, **kafka_args
             )
 
-    @tenacity.retry(**retry_args)
+    @tenacity.retry(**kafka_retry_args)
     def send(self, message, submitted=None):
         if submitted is None:
             submitted = datetime.datetime.utcnow()
@@ -78,7 +96,7 @@ class Topic:
             )
             self._producer.flush()
 
-    @tenacity.retry(**retry_args)
+    @tenacity.retry(**kafka_retry_args)
     def between(self, start, end):
         if self.testing:
             return [msg for t, msg in self._messages if start <= t < end]
@@ -115,7 +133,7 @@ class Topic:
                 for message in messages_by_topic:
                     return message.value
 
-    @tenacity.retry(**retry_args)
+    @tenacity.retry(**kafka_retry_args)
     def next(self, timeout_ms=500):
         if not self.testing:
             message = self._consumer.poll(max_records=1, timeout_ms=timeout_ms)
@@ -139,3 +157,48 @@ class Topic:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+
+class WebClient:
+    def __init__(self, name, web_endpoint_base, session=None):
+        self.name = name
+        self.web_endpoint_base = web_endpoint_base
+        self._session = session or requests.session()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    @tenacity.retry(**webserver_retry_args)
+    def post(self, endpoint, data, params=None):
+        if not params:
+            params = {}
+        result = self._session.post(
+            "/".join([self.web_endpoint_base, endpoint]),
+            data=data,
+            params=params,
+        )
+        if result.status_code == 200:
+            return result.json()
+        raise WebClientError(
+            f"POST error on {result.url}. "
+            f"Status code : {result.status_code}. "
+            f"Response : {result.text}"
+        )
+
+    @tenacity.retry(**webserver_retry_args)
+    def get(self, endpoint, params=None):
+        result = self._session.get(
+            "/".join([self.web_endpoint_base, endpoint]), params=params
+        )
+        if result.status_code == 200:
+            json = result.json()
+            if json:
+                return json
+        raise WebClientError(
+            f"GET error on {result.url}. "
+            f"Status code : {result.status_code}. "
+            f"Response : {result.text}"
+        )

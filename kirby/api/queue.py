@@ -4,7 +4,7 @@ from smart_getenv import getenv
 import logging
 import tenacity
 
-from .ext import Topic, retry_args
+from .ext import Topic, kafka_retry_args
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class Queue(Topic):
         mode = "testing" if self.testing else "live"
         logger.debug(f"starting queue {self.name} in {mode} mode")
 
-    @tenacity.retry(**retry_args)
+    @tenacity.retry(**kafka_retry_args)
     def init_kafka(self):
         if self.testing:
             self._messages = []
