@@ -68,6 +68,11 @@ def test_kirby_ext_web_client_handle_get_errors(session_mock):
             assert result == data
 
 
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not (RETRIES and WAIT_BETWEEN_RETRIES),
+    reason="missing EXT_RETRIES and/or WAIT_BETWEEN_RETRIES environment variable",
+)
 @patch("requests.session")
 def test_kirby_ext_web_client_handle_post_errors(session_mock):
     data = {"foo": True}
