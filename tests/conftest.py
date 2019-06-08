@@ -243,33 +243,53 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 
 
 @fixture(scope="function")
-def kirby_topic_factory():
+def kafka_topic_factory():
     from smart_getenv import getenv
     from dotenv import load_dotenv
     from contextlib import contextmanager
     from kafka import KafkaAdminClient
     from kafka.admin import NewTopic
     from kafka.errors import UnknownTopicOrPartitionError
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     load_dotenv()
 
     bootstrap_servers = getenv(
         "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
     )
+    if bootstrap_servers:
+        security_protocol = getenv("KAFKA_SECURITY_PROTOCOL")
+        if security_protocol == "SSL":
+            args = {
+                "security_protocol": security_protocol,
+                "ssl_cafile": getenv("KAFKA_SSL_CAFILE"),
+                "ssl_certfile": getenv("KAFKA_SSL_CERTFILE"),
+                "ssl_keyfile": getenv("KAFKA_SSL_KEYFILE"),
+            }
+        else:
+            args = {}
 
-    admin = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
+        admin = KafkaAdminClient(bootstrap_servers=bootstrap_servers, **args)
 
-    @contextmanager
-    def create_kirby_topic(topic_name):
-        try:
+        @contextmanager
+        def create_kafka_topic(topic_name):
+            try:
+                admin.delete_topics([topic_name])
+            except UnknownTopicOrPartitionError:
+                pass
+
+            admin.create_topics([NewTopic(topic_name, 1, 1)], timeout_ms=1500)
+            yield
+
             admin.delete_topics([topic_name])
-        except UnknownTopicOrPartitionError:
-            pass
+            admin.close()
 
-        admin.create_topics([NewTopic(topic_name, 1, 1)], timeout_ms=1500)
-        yield
+        return create_kafka_topic
 
-        admin.delete_topics([topic_name])
-        admin.close()
-
-    return create_kirby_topic
+    else:
+        logger.warning(
+            f"There is no KAFKA_BOOTSTRAP_SERVERS. "
+            f"Creation of kafka_topic skipped."
+        )
