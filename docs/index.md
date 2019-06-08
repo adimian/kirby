@@ -1,7 +1,0 @@
-# Kirby
-
-## Requirements 
-
-## Installation
-
-# API
