@@ -245,7 +245,6 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 @fixture(scope="function")
 def kafka_topic_factory():
     from smart_getenv import getenv
-    from dotenv import load_dotenv
     from contextlib import contextmanager
     from kafka import KafkaAdminClient
     from kafka.admin import NewTopic
@@ -253,8 +252,6 @@ def kafka_topic_factory():
     import logging
 
     logger = logging.getLogger(__name__)
-
-    load_dotenv()
 
     bootstrap_servers = getenv(
         "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","

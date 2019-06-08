@@ -8,10 +8,6 @@ import tenacity
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 logger = logging.getLogger(__name__)
 
 RETRIES = getenv("EXT_RETRIES", type=int)

@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from flask import Flask, url_for
 from flask_admin import helpers as admin_helpers
 from smart_getenv import getenv
@@ -12,8 +11,6 @@ from ..models.security import user_datastore, security, UserRoles
 
 def app_maker(config=None):
     app = Flask("kirby")
-
-    load_dotenv()
 
     app.config["TESTING"] = getenv("TESTING", type=bool)
     app.config["SQLALCHEMY_DATABASE_URI"] = getenv("SQLALCHEMY_DATABASE_URI")
