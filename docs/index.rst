@@ -3,22 +3,31 @@
 Welcome to Kirby documentation!
 ===============================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents
+..  toctree::
+    :maxdepth: 2
+    :caption: Contents
 
-   readme
+    readme
+    concepts
+    features
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Package Reference
+..  toctree::
+    :maxdepth: 2
+    :caption: Package Reference
 
+..  toctree::
+    :maxdepth: 2
+    :caption: Development
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Miscellaneous
+    contribute
+    changelog
 
-   changelog
+..  toctree::
+    :maxdepth: 1
+    :caption: Miscellaneous
+
+    comparisons
+
 
 Indices and tables
 ==================
