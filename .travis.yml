@@ -20,5 +20,5 @@ services:
 deploy:
   provider: pypi
   on:
-    branch: production
+    branch: master
     tags: true
