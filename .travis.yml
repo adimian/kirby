@@ -16,3 +16,9 @@ after_success:
 
 services:
   - redis-server
+
+deploy:
+  provider: pypi
+  on:
+    branch: production
+    tags: true
