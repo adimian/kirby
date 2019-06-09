@@ -4,19 +4,20 @@ Welcome to Kirby documentation!
 ===============================
 
 ..  toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Contents
 
     readme
     concepts
     features
+    usage
 
 ..  toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Package Reference
 
 ..  toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Development
 
     contribute
