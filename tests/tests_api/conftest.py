@@ -7,10 +7,6 @@ from kirby.api import Kirby
 from kirby.api.ext import Topic
 from tests.conftest import API_ROOT
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 
 DATE = "2019-05-22 15:18"
 TOPIC_NAME = "orders"
