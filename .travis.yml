@@ -21,4 +21,3 @@ deploy:
   provider: pypi
   on:
     branch: master
-    tags: true
