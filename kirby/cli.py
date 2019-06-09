@@ -1,7 +1,5 @@
 from dotenv import load_dotenv
 
-from kirby.api import read_topic
-
 load_dotenv()
 
 from getpass import getpass
@@ -25,6 +23,38 @@ logging.basicConfig(
     format=getenv("LOG_FORMAT", default=DEFAULT_LOG_FORMAT),
 )
 logging.getLogger("kafka").setLevel(logging.CRITICAL)
+
+logger = logging.getLogger(__name__)
+
+
+def read_topic(name):
+    """
+    debug function to consume the messages in a kafka topic
+    :param name: name of the topic
+    """
+    from kafka import KafkaConsumer
+    import msgpack
+    import json
+    from pprint import pformat
+
+    bootstrap_servers = getenv(
+        "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
+    )
+    consumer = KafkaConsumer(
+        name,
+        bootstrap_servers=bootstrap_servers,
+        auto_offset_reset="earliest",
+        enable_auto_commit=True,
+        value_deserializer=msgpack.loads,
+    )
+
+    for idx, message in enumerate(consumer, start=1):
+        message = message.value
+        try:
+            message = json.loads(message.decode("utf-8"))
+            logger.debug(pformat(message))
+        except Exception:
+            logger.debug(message)
 
 
 @click.command()
@@ -51,10 +81,13 @@ def adduser(username):
                 username=username, password=getpass()
             )
 
+        msg = ""
         if click.confirm("Give admin rights?"):
+            msg = "with admin rights"
             role = user_datastore.find_role("admin")
             user_datastore.add_role_to_user(user=user, role=role)
 
+        click.echo(f"User {username} added {msg}")
         db.session.commit()
 
 
@@ -83,6 +116,8 @@ def demo():
     with app.app_context():
         app.try_trigger_before_first_request_functions()
         create_demo_db(db.session)
+
+    click.echo("demo data inserted in the database")
 
 
 @click.group()
