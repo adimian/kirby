@@ -21,3 +21,4 @@ deploy:
   provider: pypi
   on:
     branch: production
+    tags: true
