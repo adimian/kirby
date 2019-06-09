@@ -256,6 +256,7 @@ class Notification(db.Model):
 
     on_retry = db.Column(db.Boolean, nullable=False, default=False)
     on_failure = db.Column(db.Boolean, nullable=False, default=True)
+    on_missed_mark = db.Column(db.Boolean, nullable=False, default=True)
 
     job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=False)
     job = db.relationship(Job, backref=db.backref("notifications", lazy=True))
@@ -267,7 +268,18 @@ class Notification(db.Model):
     )
 
     def __repr__(self):
-        return f"{self.job} -> {','.join(g.name for g in self.groups)}"
+        on = []
+        if self.on_retry:
+            on.append("retry")
+        if self.on_failure:
+            on.append("failure")
+        if self.on_missed_mark:
+            on.append("missed mark")
+
+        return "%s for {%s}" % (
+            ", ".join(g.name for g in self.groups),
+            ", ".join(on),
+        )
 
 
 class Script(db.Model):

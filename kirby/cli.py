@@ -22,7 +22,9 @@ logging.basicConfig(
     level=logging.DEBUG,
     format=getenv("LOG_FORMAT", default=DEFAULT_LOG_FORMAT),
 )
-logging.getLogger("kafka").setLevel(logging.CRITICAL)
+
+for ignored in ("kafka", "passlib.registry"):
+    logging.getLogger(ignored).setLevel(logging.CRITICAL)
 
 logger = logging.getLogger(__name__)
 
