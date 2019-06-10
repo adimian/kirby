@@ -1,26 +1,20 @@
 language: python
 python:
-  - "3.6"
-
+- '3.6'
 cache: pip
-
 install:
-  - pip install -r requirements-dev.txt
-  - pip install -e .
-
+- pip install -r requirements-dev.txt
+- pip install -e .
 script:
-  - pytest --cov=kirby --cov-report term-missing
-
+- pytest --cov=kirby --cov-report term-missing
 after_success:
-  - coveralls
-
+- coveralls
 services:
-  - redis-server
-
+- redis-server
 deploy:
   user: adimian
   provider: pypi
   password:
-    secure: Ctv7jhwpMFX+ZL9v2S7ICw2tNbpNz8svbWj1sYeU5nU/V9YOL7BTZBf7yZvDNXYH6Y/kfGxKNFLyn96eW1FujuJYcf43PSofRbRwMkxdnv1aFdYiDn/jWGphh7DL1pDneRLAq9EXV9jaaNYaeTjRPe03fTqM9xw9R72bAUXX5h7Xb2ZWrusHQXTChVbP/Q+wyJMcpdk0fGKJdLwP1XfhRI9PvrZNg330TIhny7E/1HtwOOKgSHTb4zSqJOC5ApbZ1Sm0xf+qCsloqMIdWUdHpDR8TeRmP9yXWZDOZ5sHxYmMVElVhiimmivrVjFUinzftnNqGTv5i79plnpED0Y0ADKZIN/G5SwdM5s80zXZ1B09IhiXNd8BdBR7ooBZ8nPZ/fHAponNPb/6e7pSQ/vvgYrI1u9Pm3R2TByLTWkYD/ytHodKchxDIynX2WviQrBKNgdpjDEMaOs2q2oDaiAHmgbBp86qKj4xR6uIPph3URQoMzPz6GB512ybN9QoLbhoDSJLM/jq9C7ulM/P/Z2aP5OP0NxpKcdg20GaHA+aZIWTLHJk3oVpnbM6imFMpnI8rB7B+tpukOKlhV+t7rhH7cc4BS+bpiqzcmfBM/x1yFY9r5x3k8A4B9qYnErBndwsAfdpHwy0QzSg21Awo7avBLHc7jH6Byrk+du8gscETCg=
+    secure: KB8L1lGa/+ufM+JQ99DPTchDsenVrOxAC3giD3GLZ36v6o3CfCeJnFUfA8qc1zZyxERv+56Ufg+VgKps1QbeL+sSIalVlThXDlF2BGsiD9oBiFMkHsbEjLoNgguP3RtColauNwgiS1iD6O9xAWSz7W0gjYg7kojIx29jn1OHjACnDdDmmzI3f7ra5Vn8cTGhyWJUpnRzn1xWg4iktfJJ+HrN+EsrAltBQEkqmv6F14d6wX/FkZnaoFciBrtJDZPWNuy7/NenyUYTdyYTy67Zk6uBezHxFGjd2ZiGpZWZqWmWtisxHrE6zkW0G7KUu7AiddHVNoNFQ+nrbgzM6HF9VgfZtvmvsWT0VU6mSc4chtBIbCE99Pk1oi6cccP1shl8lqEtOB8GumHAkAjvWl+B/xYVHJDSWt4vPZOEpmmfS6fEcGXGn8LjSpCjg0XWUmWboslWYDd0WN64+OgW8fplzmPZVzg7KXhM0FSDx8koww6/N2um+IfpyMntoaIxpfS1UE3XqbEgW+Slx+MfBt3wBsaf73Bpe8aJldDRBM6Z+mQql4PCGG0nECIXYdon79ROkrXl9NxPKyxJzqDiIJrQIBrMC9fxQYgouVPq6uVfY8Dv4Z3e8zexPB4/MNWxysAkLBthdEW4eUU15o3SZFQPAakQVyrlLO5V6A+ifb6GLXs=
   on:
     branch: master
