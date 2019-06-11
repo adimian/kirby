@@ -38,13 +38,14 @@ class Kirby:
         return result.json()["id"]
 
     def _register(self, source_id=None, destination_id=None):
+        params = {"script_id": self.ctx.ID}
+        if source_id:
+            params.update({"source_id": source_id})
+        if destination_id:
+            params.update({"destination_id": destination_id})
+
         result = self._session.patch(
-            "/".join([self.ctx.KIRBY_WEB_SERVER, "registration"]),
-            params={
-                "script_id": self.ctx.ID,
-                "source_id": source_id,
-                "destination_id": destination_id,
-            },
+            "/".join([self.ctx.KIRBY_WEB_SERVER, "registration"]), data=params
         )
 
         if result.status_code != 200:
