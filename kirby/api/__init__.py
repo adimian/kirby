@@ -3,10 +3,6 @@ import logging
 
 from .context import ContextManager, ctx
 
-import kirby.api.ext as ext
-import kirby.api.context as context
-import kirby.api.queue as queue
-
 logger = logging.getLogger(__name__)
 
 
