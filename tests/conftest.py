@@ -15,7 +15,7 @@ from kirby.models import (
     NotificationEmail,
     Notification,
     Script,
-    Topic,
+    ThirdParty,
 )
 
 API_ROOT = "http://some-test-server.somewhere"
@@ -190,12 +190,12 @@ def db_scripts_not_registered(db_contexts):
 
 @fixture
 def db_topics(session):
-    cashregister = Topic(name="cashregister")
-    orders = Topic(name="orders")
-    errors_log = Topic(name="errors_log")
-    asset_management = Topic(name="asset_management")
-    factory = Topic(name="factory")
-    timeseries = Topic(name="timeseries")
+    cashregister = ThirdParty(name="cashregister")
+    orders = ThirdParty(name="orders")
+    errors_log = ThirdParty(name="errors_log")
+    asset_management = ThirdParty(name="asset_management")
+    factory = ThirdParty(name="factory")
+    timeseries = ThirdParty(name="timeseries")
 
     topics = [
         cashregister,

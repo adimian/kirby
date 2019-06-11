@@ -91,7 +91,7 @@ from ..models import (
     NotificationGroup,
     Notification,
     Script,
-    Topic,
+    ThirdParty,
 )
 from ..models.security import User
 
@@ -107,7 +107,7 @@ models = {
     "Scheduling": [Schedule, Suspension],
     "Notifications": [Notification],
     "Jobs": [Environment],
-    "Documentation": [Topic],
+    "Documentation": [ThirdParty],
 }
 
 

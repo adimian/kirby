@@ -5,7 +5,7 @@ from cronex import CronExpression
 import copy
 from flask_restplus import Api, Resource, reqparse, fields
 
-from ..models import db, Script, Topic, Job, JobType
+from ..models import db, Script, ThirdParty, Job, JobType
 
 api = Api()
 
@@ -40,7 +40,9 @@ class Registration(Resource):
         # Add sources and destinations
         for source_id in args["source_id"]:
             try:
-                source = db.session.query(Topic).filter_by(id=source_id).one()
+                source = (
+                    db.session.query(ThirdParty).filter_by(id=source_id).one()
+                )
                 script.add_source(source)
             except NoResultFound:
                 db.session.rollback()
@@ -52,7 +54,9 @@ class Registration(Resource):
         for destination_id in args["destination_id"]:
             try:
                 destination = (
-                    db.session.query(Topic).filter_by(id=destination_id).one()
+                    db.session.query(ThirdParty)
+                    .filter_by(id=destination_id)
+                    .one()
                 )
                 script.add_destination(destination)
             except NoResultFound:
@@ -68,17 +72,25 @@ class Registration(Resource):
         return {"message": "Sucess"}
 
 
-topic_parser = reqparse.RequestParser()
-topic_parser.add_argument("name", type=str, required=True)
+thirdparty_parser = reqparse.RequestParser()
+thirdparty_parser.add_argument("name", type=str, required=True)
 
 
-@api.route("/topic")
-class TopicView(Resource):
-    @api.expect(topic_parser)
+@api.route("/thirdparty")
+class ThirdpartyView(Resource):
+    @api.expect(thirdparty_parser)
     def get(self):
-        args = topic_parser.parse_args()
-        topic = db.session.query(Topic).filter_by(name=args["name"]).one()
-        return {"id": topic.id, "name": topic.name}
+        args = thirdparty_parser.parse_args()
+        try:
+            thirdparty = (
+                db.session.query(ThirdParty).filter_by(name=args["name"]).one()
+            )
+            return {"id": thirdparty.id, "name": thirdparty.name}
+        except NoResultFound:
+            abort(
+                400,
+                f"The topic with the 'name':{args['name']}, doesn't exist.",
+            )
 
 
 group_model = api.model(

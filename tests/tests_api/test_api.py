@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 
 from tests.tests_api.conftest import DATE
 
-from kirby.models import db, Script, Topic
+from kirby.models import db, Script, ThirdParty
 from kirby.api import Kirby, ClientError, ServerError
 
 
@@ -15,7 +15,7 @@ def get_script_in_db_from_id(id_script):
 
 
 def get_topic_in_db_from_name(name_topic):
-    return db.session.query(Topic).filter_by(name=name_topic).one()
+    return db.session.query(ThirdParty).filter_by(name=name_topic).one()
 
 
 @freeze_time(DATE)

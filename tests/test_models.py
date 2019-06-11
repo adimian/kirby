@@ -12,7 +12,7 @@ from kirby.models import (
     Suspension,
     NotificationGroup,
     Script,
-    Topic,
+    ThirdParty,
     ConfigKey,
     ConfigScope,
 )
@@ -75,9 +75,9 @@ def test_it_creates_a_script(webapp):
         first_seen=datetime.now(),
     )
 
-    source = Topic(name="source")
+    source = ThirdParty(name="source")
     db.session.add(source)
-    destination = Topic(name="destination")
+    destination = ThirdParty(name="destination")
     db.session.add(destination)
     script.add_source(source)
     script.add_destination(destination)

@@ -31,7 +31,7 @@ def test_it_get_the_current_schedule(session, db_scripts_registered):
 
 def get_topic_id(session, name):
     response = session.get(
-        "/".join([API_ROOT, "topic"]), params={"name": name}
+        "/".join([API_ROOT, "thirdparty"]), params={"name": name}
     )
     assert response.status_code == 200
     return response.json()["id"]

@@ -54,9 +54,9 @@ def create_demo_db(s):
     test_ctx.add_schedule(schedule)
     prod_ctx.add_schedule(schedule)
 
-    source = models.Topic(name="bakery")
+    source = models.ThirdParty(name="bakery")
     s.add(source)
-    destination = models.Topic(name="timeseries")
+    destination = models.ThirdParty(name="timeseries")
     s.add(destination)
 
     dev_script = models.Script(

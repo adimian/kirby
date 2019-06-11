@@ -296,7 +296,7 @@ class Script(db.Model):
         return f"{self.package_name} / {self.package_version}"
 
 
-class Topic(db.Model):
+class ThirdParty(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False, unique=True)
 
