@@ -102,3 +102,9 @@ def test_throw_error_at_source_registration_if_error(
         kirby_app.add_destination(MagicMock(id=1))
     with pytest.raises(ClientError):
         kirby_app.add_destination(MagicMock(id=-1))
+
+
+def test_it_raise_error_if_bad_usage_of_testing_mode():
+    kirby_app = Kirby({}, testing=True)
+    with pytest.raises(NotImplementedError):
+        kirby_app.get_topic_id(topic_name="")
