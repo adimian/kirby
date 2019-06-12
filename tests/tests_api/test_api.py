@@ -29,6 +29,89 @@ def test_it_create_a_kirby_app(kirby_app, kirby_hidden_env):
     assert script_in_db.last_seen == datetime.utcnow()
 
 
+def test_throw_error_if_bad_usage(kirby_app):
+    with pytest.raises(ClientError):
+        kirby_app._register(source_id=-1, destination_id=-1)
+
+
+@patch("requests.session")
+def test_throw_error_at_init_if_server_error(
+    session_mock, kirby_expected_env, kirby_hidden_env
+):
+    session_mock.return_value.patch.return_value = MagicMock(
+        status_code=500, json=MagicMock(return_value={})
+    )
+
+    # Kirby register itself at init, at least to update 'last_seen' in the DB
+    with pytest.raises(ServerError):
+        Kirby(kirby_expected_env)
+
+
+@patch("requests.session")
+def test_throw_error_at_destination_registration_if_error(
+    session_mock, kirby_expected_env, kirby_hidden_env
+):
+    session_mock.return_value.get.side_effect = [
+        MagicMock(
+            status_code=500, json=MagicMock(return_value={"Server Error"})
+        ),
+        MagicMock(
+            status_code=400, json=MagicMock(return_value={"Client Error"})
+        ),
+    ]
+    session_mock.return_value.patch.return_value = MagicMock(
+        status_code=200, json=MagicMock(return_value={})
+    )
+
+    kirby_app = Kirby(kirby_expected_env)
+    with pytest.raises(ServerError):
+        kirby_app.add_destination(MagicMock(id=1))
+    with pytest.raises(ClientError):
+        kirby_app.add_destination(MagicMock(id=-1))
+
+
+@patch("requests.session")
+def test_throw_error_at_source_registration_if_error(
+    session_mock, kirby_expected_env, kirby_hidden_env
+):
+    session_mock.return_value.get.side_effect = [
+        MagicMock(
+            status_code=500, json=MagicMock(return_value={"Server Error"})
+        ),
+        MagicMock(
+            status_code=400, json=MagicMock(return_value={"Client Error"})
+        ),
+    ]
+    session_mock.return_value.patch.return_value = MagicMock(
+        status_code=200, json=MagicMock(return_value={})
+    )
+
+    kirby_app = Kirby(kirby_expected_env)
+    with pytest.raises(ServerError):
+        kirby_app.add_source(MagicMock(id=1))
+    with pytest.raises(ClientError):
+        kirby_app.add_source(MagicMock(id=-1))
+
+
+def test_it_raise_error_if_bad_usage_of_testing_mode():
+    kirby_app = Kirby({}, testing=True)
+    with pytest.raises(NotImplementedError):
+        kirby_app.get_topic_id(topic_name="")
+
+
+@patch("requests.session")
+def test_it_get_topic_id(session_mock, kirby_hidden_env):
+    session_mock.return_value.get.return_value = MagicMock(
+        status_code=200, json=MagicMock(return_value={"id": 1})
+    )
+    session_mock.return_value.patch.return_value = MagicMock(
+        status_code=200, json=MagicMock(return_value={})
+    )
+
+    kirby_app = Kirby({})
+    assert kirby_app.get_topic_id("topic_name_example") == 1
+
+
 @pytest.mark.integration
 @pytest.mark.skipif(
     not os.getenv("KAFKA_BOOTSTRAP_SERVERS"),
@@ -61,50 +144,3 @@ def test_it_add_destination(
     assert script_in_db.destinations[0] == get_topic_in_db_from_name(
         kirby_topic.name
     )
-
-
-def test_throw_error_if_bad_usage(kirby_app):
-    with pytest.raises(ClientError):
-        kirby_app._register(source_id=-1, destination_id=-1)
-
-
-@patch("requests.session")
-def test_throw_error_at_init_if_server_error(
-    session_mock, kirby_expected_env, kirby_hidden_env
-):
-    session_mock.return_value.patch.return_value = MagicMock(
-        status_code=500, json=MagicMock(return_value={})
-    )
-
-    # Kirby register itself at init, at least to update 'last_seen' in the DB
-    with pytest.raises(ServerError):
-        Kirby(kirby_expected_env)
-
-
-@patch("requests.session")
-def test_throw_error_at_source_registration_if_error(
-    session_mock, kirby_expected_env, kirby_hidden_env
-):
-    session_mock.return_value.get.side_effect = [
-        MagicMock(
-            status_code=500, json=MagicMock(return_value={"Server Error"})
-        ),
-        MagicMock(
-            status_code=400, json=MagicMock(return_value={"Client Error"})
-        ),
-    ]
-    session_mock.return_value.patch.return_value = MagicMock(
-        status_code=200, json=MagicMock(return_value={})
-    )
-
-    kirby_app = Kirby(kirby_expected_env)
-    with pytest.raises(ServerError):
-        kirby_app.add_destination(MagicMock(id=1))
-    with pytest.raises(ClientError):
-        kirby_app.add_destination(MagicMock(id=-1))
-
-
-def test_it_raise_error_if_bad_usage_of_testing_mode():
-    kirby_app = Kirby({}, testing=True)
-    with pytest.raises(NotImplementedError):
-        kirby_app.get_topic_id(topic_name="")
