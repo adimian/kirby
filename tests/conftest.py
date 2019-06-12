@@ -21,7 +21,7 @@ from kirby.models import (
 API_ROOT = "http://some-test-server.somewhere"
 
 
-@fixture(scope="function")
+@fixture
 def webapp():
     app = app_maker(
         config={
@@ -242,7 +242,7 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
     db.session.commit()
 
 
-@fixture(scope="function")
+@fixture
 def kafka_topic_factory():
     from smart_getenv import getenv
     from contextlib import contextmanager
