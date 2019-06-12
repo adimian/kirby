@@ -40,8 +40,7 @@ class Kirby:
             return result.json()["id"]
         else:
             raise NotImplementedError(
-                f"The app has been initialized in testing mode. "
-                f"You cannot find any id without connection."
+                "The app has been initialized in testing mode. You cannot find any id without connection."
             )
 
     def _register(self, source_id=None, destination_id=None):
@@ -66,8 +65,7 @@ class Kirby:
             self._register(source_id=self.get_topic_id(source.name))
         else:
             logger.info(
-                f"add_source has been skipped, since app"
-                f" has been initialized in testing mode"
+                "add_source has been skipped, since app has been initialized in testing mode"
             )
 
     def add_destination(self, destination):
@@ -75,6 +73,5 @@ class Kirby:
             self._register(destination_id=self.get_topic_id(destination.name))
         else:
             logger.info(
-                f"add_destination has been skipped, since app"
-                f" has been initialized in testing mode"
+                "add_destination has been skipped, since app has been initialized in testing mode"
             )
