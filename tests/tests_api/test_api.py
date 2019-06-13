@@ -99,23 +99,20 @@ def test_it_raise_error_if_bad_usage_of_testing_mode():
         kirby_app.get_topic_id(topic_name="")
 
 
-@patch("requests.session")
-def test_it_get_topic_id(session_mock, kirby_hidden_env):
-    session_mock.return_value.get.return_value = MagicMock(
-        status_code=200, json=MagicMock(return_value={"id": 1})
-    )
-    session_mock.return_value.patch.return_value = MagicMock(
-        status_code=200, json=MagicMock(return_value={})
-    )
-
-    kirby_app = Kirby({})
-    assert kirby_app.get_topic_id("topic_name_example") == 1
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not os.getenv("KIRBY_WEB_SERVER"),
+    reason="missing KIRBY_WEB_SERVER environment",
+)
+def test_it_get_topic_id(kirby_app, db_topics):
+    topic = db_topics[0]
+    assert kirby_app.get_topic_id(topic.name) == topic.id
 
 
 @pytest.mark.integration
 @pytest.mark.skipif(
-    not os.getenv("KAFKA_BOOTSTRAP_SERVERS"),
-    reason="missing KAFKA_BOOTSTRAP_SERVERS environment",
+    not os.getenv("KIRBY_WEB_SERVER"),
+    reason="missing KIRBY_WEB_SERVER environment",
 )
 def test_it_add_source(
     kirby_app, kirby_topic, db_scripts_not_registered, db_topics
@@ -131,8 +128,8 @@ def test_it_add_source(
 
 @pytest.mark.integration
 @pytest.mark.skipif(
-    not os.getenv("KAFKA_BOOTSTRAP_SERVERS"),
-    reason="missing KAFKA_BOOTSTRAP_SERVERS environment",
+    not os.getenv("KIRBY_WEB_SERVER"),
+    reason="missing KIRBY_WEB_SERVER environment",
 )
 def test_it_add_destination(
     session, kirby_app, kirby_topic, db_scripts_not_registered, db_topics
