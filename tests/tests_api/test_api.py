@@ -70,27 +70,28 @@ def test_throw_error_at_destination_registration_if_error(
         kirby_app.add_destination(MagicMock(id=-1))
 
 
+@pytest.mark.parametrize(
+    "error_code, error_value, error_type",
+    [(500, "Server Error", ServerError), (400, "Client Error", ClientError)],
+)
 @patch("requests.session")
 def test_throw_error_at_source_registration_if_error(
-    session_mock, kirby_expected_env, kirby_hidden_env
+    session_mock,
+    kirby_expected_env,
+    kirby_hidden_env,
+    error_code,
+    error_value,
+    error_type,
 ):
-    session_mock.return_value.get.side_effect = [
-        MagicMock(
-            status_code=500, json=MagicMock(return_value={"Server Error"})
-        ),
-        MagicMock(
-            status_code=400, json=MagicMock(return_value={"Client Error"})
-        ),
-    ]
+    session_mock.return_value.get.return_value = MagicMock(
+        status_code=error_code, json=MagicMock(return_value={error_value})
+    )
     session_mock.return_value.patch.return_value = MagicMock(
         status_code=200, json=MagicMock(return_value={})
     )
-
     kirby_app = Kirby(kirby_expected_env)
-    with pytest.raises(ServerError):
+    with pytest.raises(error_type):
         kirby_app.add_source(MagicMock(id=1))
-    with pytest.raises(ClientError):
-        kirby_app.add_source(MagicMock(id=-1))
 
 
 def test_it_raise_error_if_bad_usage_of_testing_mode():
