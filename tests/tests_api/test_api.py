@@ -31,7 +31,7 @@ def test_the_creation_of_a_kirby_app_by_testing_its_attribute(
     assert script_in_db.last_seen == datetime.utcnow()
 
 
-def test_throw_error_if_bad_usage_of_kirby_app_register(kirby_app):
+def test_throw_error_if_wrong_id_on_registration(kirby_app):
     with pytest.raises(ClientError):
         kirby_app._register(source_id=-1, destination_id=-1)
 
