@@ -1,4 +1,5 @@
 import requests
+from urllib.parse import urljoin
 import logging
 
 from .context import ContextManager, ctx
@@ -26,7 +27,7 @@ class Kirby:
     def get_topic_id(self, topic_name):
         if not self.testing:
             result = self._session.get(
-                "/".join([self.ctx.KIRBY_WEB_SERVER, "topic"]),
+                urljoin(self.ctx.KIRBY_WEB_SERVER, "topic"),
                 params={"name": topic_name},
             )
             if result.status_code != 200:
@@ -51,7 +52,7 @@ class Kirby:
             params.update({"destination_id": destination_id})
 
         result = self._session.patch(
-            "/".join([self.ctx.KIRBY_WEB_SERVER, "registration"]), data=params
+            urljoin(self.ctx.KIRBY_WEB_SERVER, "registration"), data=params
         )
 
         if result.status_code != 200:

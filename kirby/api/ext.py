@@ -1,5 +1,6 @@
 import logging
 import datetime
+from urllib.parse import urljoin
 import requests
 import msgpack
 from smart_getenv import getenv
@@ -154,6 +155,12 @@ class Topic:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next(timeout_ms=float("inf"))
+
 
 class WebClient:
     def __init__(self, name, web_endpoint_base, session=None):
@@ -165,16 +172,14 @@ class WebClient:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        self._session.close()
 
     @tenacity.retry(**webserver_retry_args)
     def post(self, endpoint, data, params=None):
         if not params:
             params = {}
         result = self._session.post(
-            "/".join([self.web_endpoint_base, endpoint]),
-            data=data,
-            params=params,
+            urljoin(self.web_endpoint_base, endpoint), data=data, params=params
         )
         if result.status_code == 200:
             return result.json()
@@ -187,7 +192,7 @@ class WebClient:
     @tenacity.retry(**webserver_retry_args)
     def get(self, endpoint, params=None):
         result = self._session.get(
-            "/".join([self.web_endpoint_base, endpoint]), params=params
+            urljoin(self.web_endpoint_base, endpoint), params=params
         )
         if result.status_code == 200:
             json = result.json()
