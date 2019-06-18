@@ -169,10 +169,10 @@ def topic_sender():
         "bootstrap_servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
         "value_serializer": msgpack.dumps,
     }
-    if os.getenv("SECURITY_PROTOCOL"):
+    if os.getenv("KAFKA_SECURITY_PROTOCOL"):
         args.update(
             {
-                "security_protocol": os.environ["SECURITY_PROTOCOL"],
+                "security_protocol": os.environ["KAFKA_SECURITY_PROTOCOL"],
                 "ssl_cafile": os.environ["KAFKA_SSL_CAFILE"],
                 "ssl_certfile": os.environ["KAFKA_SSL_CERTFILE"],
                 "ssl_keyfile": os.environ["KAFKA_SSL_KEYFILE"],
