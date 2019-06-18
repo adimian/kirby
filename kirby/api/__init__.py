@@ -31,7 +31,7 @@ class Kirby:
                 params={"name": topic_name},
             )
             if result.status_code != 200:
-                if result.status_code == 500:
+                if result.status_code in range(500, 600):
                     raise ServerError("There is an issue with the web server.")
                 else:
                     raise ClientError(
