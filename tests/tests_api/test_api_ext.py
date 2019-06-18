@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 import pytest
 
-from kirby.api.ext import WebClient, RETRIES, WAIT_BETWEEN_RETRIES
+from kirby.api.ext import WebClient
 
 
 def test_creation_of_a_kirby_topic(kirby_topic):
@@ -12,14 +12,6 @@ def test_creation_of_a_kirby_topic(kirby_topic):
     assert kirby_topic.next() == "Hello world"
 
 
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not RETRIES, reason="missing EXT_RETRIES environment variable"
-)
-@pytest.mark.skipif(
-    not WAIT_BETWEEN_RETRIES,
-    reason="missing WAIT_BETWEEN_RETRIES environment variable",
-)
 @patch("requests.session")
 def test_creation_of_a_web_client(session_mock):
     data = {"foo": True}
@@ -38,14 +30,6 @@ def test_creation_of_a_web_client(session_mock):
         assert web_client.get("orders") == data
 
 
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not RETRIES, reason="missing EXT_RETRIES environment variable"
-)
-@pytest.mark.skipif(
-    not WAIT_BETWEEN_RETRIES,
-    reason="missing WAIT_BETWEEN_RETRIES environment variable",
-)
 @pytest.mark.parametrize("bad_return_value", [502, 504, 500, 501, 200])
 @patch("requests.session")
 def test_web_client_handle_get_errors(session_mock, bad_return_value):
@@ -68,14 +52,6 @@ def test_web_client_handle_get_errors(session_mock, bad_return_value):
         assert result == data
 
 
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not RETRIES, reason="missing EXT_RETRIES environment variable"
-)
-@pytest.mark.skipif(
-    not WAIT_BETWEEN_RETRIES,
-    reason="missing WAIT_BETWEEN_RETRIES environment variable",
-)
 @patch("requests.session")
 def test_web_client_handle_post_errors(session_mock):
     data = {"foo": True}

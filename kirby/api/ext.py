@@ -11,8 +11,10 @@ from kafka.errors import NoBrokersAvailable
 
 logger = logging.getLogger(__name__)
 
-RETRIES = getenv("EXT_RETRIES", type=int)
-WAIT_BETWEEN_RETRIES = getenv("EXT_WAIT_BETWEEN_RETRIES", type=float)
+RETRIES = getenv("EXT_RETRIES", type=int, default=3)
+WAIT_BETWEEN_RETRIES = getenv(
+    "EXT_WAIT_BETWEEN_RETRIES", type=float, default=0.4
+)
 kafka_retry_args = {
     "retry": tenacity.retry_if_exception_type(NoBrokersAvailable),
     "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
