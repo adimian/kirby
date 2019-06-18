@@ -52,8 +52,7 @@ class Kirby:
             params.update({"destination_id": destination_id})
 
         result = self._session.patch(
-            urljoin(self.ctx.KIRBY_WEB_SERVER, "registration"), data=params
-        )
+            urljoin(self.ctx.KIRBY_WEB_SERVER, "registration"), data=params)
 
         if result.status_code != 200:
             if result.status_code == 500:
