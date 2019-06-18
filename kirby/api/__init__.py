@@ -36,7 +36,7 @@ class Kirby:
                 else:
                     raise ClientError(
                         f"There is no id from the name {topic_name}. "
-                        f"Verify that the topic has been registered."
+                        "Verify that the topic has been registered."
                     )
             return result.json()["id"]
         else:
