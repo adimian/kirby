@@ -3,6 +3,7 @@ from kirby import models
 
 BAKERY_API = "http://some.server.somewhere"
 KAFKA_BOOTSTRAP_SERVERS = "some.kafka.server:9999"
+KIRBY_WEB_SERVER = "some.kirby.server:9090"
 
 ENVS = {
     "Development": ("dev", "1.0.5"),
@@ -97,8 +98,9 @@ def create_contexts(s, jobs, envs):
     def create_context(job, env_name, env):
         ctx = models.Context(job=job, environment=env)
         ctx.set_config(
+            ID=job.id,
             ENV=env_name,
-            SSH_SERVER=f"{env_name}.server.somewhere:22",
+            KIRBY_WEB_SERVER=KIRBY_WEB_SERVER,
             KAFKA_BOOTSTRAP_SERVERS=KAFKA_BOOTSTRAP_SERVERS,
         )
         s.add(ctx)
