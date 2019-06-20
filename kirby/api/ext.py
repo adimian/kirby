@@ -177,31 +177,26 @@ class WebClient:
         self._session.close()
 
     @tenacity.retry(**webserver_retry_args)
-    def post(self, endpoint, data, params=None):
-        if not params:
-            params = {}
-        result = self._session.post(
-            urljoin(self.web_endpoint_base, endpoint), data=data, params=params
-        )
+    def _request(self, method, endpoint, params):
+        url = urljoin(self.web_endpoint_base, endpoint)
+
+        if method == "GET":
+            result = self._session.get(url, params=params)
+        elif method == "POST":
+            result = self._session.post(url, params=params)
+        else:
+            raise NotImplementedError(f"Method {method} not yet implemented")
+
         if result.status_code == 200:
             return result.json()
         raise WebClientError(
-            f"POST error on {result.url}. "
+            f"{method} error on {result.url}. "
             f"Status code : {result.status_code}. "
             f"Response : {result.text}"
         )
 
-    @tenacity.retry(**webserver_retry_args)
+    def post(self, endpoint, params=None):
+        return self._request("POST", endpoint, params or {})
+
     def get(self, endpoint, params=None):
-        result = self._session.get(
-            urljoin(self.web_endpoint_base, endpoint), params=params
-        )
-        if result.status_code == 200:
-            json = result.json()
-            if json:
-                return json
-        raise WebClientError(
-            f"GET error on {result.url}. "
-            f"Status code : {result.status_code}. "
-            f"Response : {result.text}"
-        )
+        return self._request("GET", endpoint, params or {})
