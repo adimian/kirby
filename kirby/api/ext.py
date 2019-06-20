@@ -178,14 +178,9 @@ class WebClient:
 
     @tenacity.retry(**webserver_retry_args)
     def _request(self, method, endpoint, params):
-        url = urljoin(self.web_endpoint_base, endpoint)
-
-        if method == "GET":
-            result = self._session.get(url, params=params)
-        elif method == "POST":
-            result = self._session.post(url, params=params)
-        else:
-            raise NotImplementedError(f"Method {method} not yet implemented")
+        result = method(
+            urljoin(self.web_endpoint_base, endpoint), params=params
+        )
 
         if result.status_code == 200:
             return result.json()
@@ -195,8 +190,17 @@ class WebClient:
             f"Response : {result.text}"
         )
 
-    def post(self, endpoint, params=None):
-        return self._request("POST", endpoint, params or {})
-
     def get(self, endpoint, params=None):
-        return self._request("GET", endpoint, params or {})
+        return self._request(self._session.get, endpoint, params or {})
+
+    def post(self, endpoint, params=None):
+        return self._request(self._session.post, endpoint, params or {})
+
+    def put(self, endpoint, params=None):
+        return self._request(self._session.put, endpoint, params or {})
+
+    def patch(self, endpoint, params=None):
+        return self._request(self._session.patch, endpoint, params or {})
+
+    def delete(self, endpoint, params=None):
+        return self._request(self._session.delete, endpoint, params or {})
