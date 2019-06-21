@@ -176,31 +176,34 @@ class WebClient:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._session.close()
 
-    @tenacity.retry(**webserver_retry_args)
-    def _request(self, method, endpoint, params):
-        result = method(
-            urljoin(self.web_endpoint_base, endpoint), params=params
+    def _request_decorator(self, method):
+        @tenacity.retry(**webserver_retry_args)
+        def _request(endpoint, **kwargs):
+            result = method(
+                urljoin(self.web_endpoint_base, endpoint), **kwargs
+            )
+
+            if result.status_code == 200:
+                return result.json()
+            raise WebClientError(
+                f"{method} error on {result.url}. "
+                f"Status code : {result.status_code}. "
+                f"Response : {result.text}"
+            )
+
+        return _request
+
+    def __getattr__(self, item):
+        if item in dir(self):
+            # If the item requested is a WebClient item, return the item
+            return self.item
+        elif item in dir(self._session):
+            # If there is the item in the session which is callable
+            # return the item decorated by the function _request_decorator
+            method = getattr(self._session, item)
+            if callable(method):
+                return self._request_decorator(method)
+
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{item}'"
         )
-
-        if result.status_code == 200:
-            return result.json()
-        raise WebClientError(
-            f"{method} error on {result.url}. "
-            f"Status code : {result.status_code}. "
-            f"Response : {result.text}"
-        )
-
-    def get(self, endpoint, params=None):
-        return self._request(self._session.get, endpoint, params or {})
-
-    def post(self, endpoint, params=None):
-        return self._request(self._session.post, endpoint, params or {})
-
-    def put(self, endpoint, params=None):
-        return self._request(self._session.put, endpoint, params or {})
-
-    def patch(self, endpoint, params=None):
-        return self._request(self._session.patch, endpoint, params or {})
-
-    def delete(self, endpoint, params=None):
-        return self._request(self._session.delete, endpoint, params or {})
