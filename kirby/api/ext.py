@@ -1,3 +1,4 @@
+import os
 import logging
 import datetime
 from urllib.parse import urljoin
@@ -5,6 +6,7 @@ import requests
 import msgpack
 from smart_getenv import getenv
 import tenacity
+from contextlib import contextmanager
 
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
@@ -36,16 +38,10 @@ webserver_retry_args = {
 
 
 class Topic:
-    def __init__(
-        self,
-        kirby_app,
-        topic_name_variable_name,
-        ssl_security_protocol=True,
-        testing=False,
-    ):
-        self.name = kirby_app.ctx[topic_name_variable_name]
+    def __init__(self, kirby_app, topic_name, use_tls=True, testing=False):
+        self.name = topic_name
         self.testing = testing
-        self.ssl_security_protocol = ssl_security_protocol
+        self.use_tls = use_tls
         self.kirby_app = kirby_app
         self.init_kafka()
         mode = "testing" if self.testing else "live"
@@ -57,7 +53,7 @@ class Topic:
             "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
         }
 
-        if self.ssl_security_protocol:
+        if self.use_tls:
             kafka_args.update(
                 {
                     "ssl_cafile": self.kirby_app.ctx.KAFKA_SSL_CAFILE,
@@ -162,6 +158,32 @@ class Topic:
 
     def __next__(self):
         return self.next(timeout_ms=float("inf"))
+
+
+@contextmanager
+def topic_sender():
+    args = {
+        "client_id": "test_client",
+        "bootstrap_servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
+        "value_serializer": msgpack.dumps,
+    }
+    if os.getenv("KAFKA_SECURITY_PROTOCOL"):
+        args.update(
+            {
+                "security_protocol": os.environ["KAFKA_SECURITY_PROTOCOL"],
+                "ssl_cafile": os.environ["KAFKA_SSL_CAFILE"],
+                "ssl_certfile": os.environ["KAFKA_SSL_CERTFILE"],
+                "ssl_keyfile": os.environ["KAFKA_SSL_KEYFILE"],
+            }
+        )
+    producer = KafkaProducer(**args)
+
+    def send(topic, data):
+        producer.send(topic, data)
+        producer.flush()
+
+    yield send
+    producer.close()
 
 
 class WebClient:

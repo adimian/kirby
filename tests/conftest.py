@@ -288,5 +288,5 @@ def kafka_topic_factory():
     else:
         logger.warning(
             f"There is no KAFKA_BOOTSTRAP_SERVERS. "
-            f"Creation of kafka_topic skipped."
+            "Creation of kafka_topic skipped."
         )

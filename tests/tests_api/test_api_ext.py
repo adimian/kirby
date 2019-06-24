@@ -1,7 +1,10 @@
+import os
 from unittest.mock import patch, MagicMock
 import pytest
 
-from kirby.api.ext import WebClient
+from tests.tests_api.conftest import TOPIC_NAME
+
+from kirby.api.ext import WebClient, topic_sender
 
 
 def test_creation_of_a_kirby_topic(kirby_topic):
@@ -66,3 +69,19 @@ def test_web_client_handle_post_errors(session_mock):
     ) as web_client:
         web_client.post("orders", params=data)
         assert web_client.get("orders") == data
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not os.getenv("KAFKA_BOOTSTRAP_SERVERS"),
+    reason="missing KAFKA_BOOTSTRAP_SERVERS environment",
+)
+def test_that_topic_sender_populate_a_topic(kirby_topic):
+    data = "Hello world"
+
+    assert not kirby_topic.next()
+
+    with topic_sender() as send_function:
+        send_function(TOPIC_NAME, data)
+
+    assert kirby_topic.next() == data
