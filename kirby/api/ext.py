@@ -194,16 +194,6 @@ class WebClient:
         return _request
 
     def __getattr__(self, item):
-        if item in dir(self):
-            # If the item requested is a WebClient item, return the item
-            return self.item
-        elif item in dir(self._session):
-            # If there is the item in the session which is callable
-            # return the item decorated by the function _request_decorator
-            method = getattr(self._session, item)
-            if callable(method):
-                return self._request_decorator(method)
-
-        raise AttributeError(
-            f"'{self.__class__.__name__}' object has no attribute '{item}'"
-        )
+        method = getattr(self._session, item)
+        if callable(method):
+            return self._request_decorator(method)

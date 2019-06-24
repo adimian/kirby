@@ -28,8 +28,6 @@ def test_creation_of_a_web_client(session_mock):
     ) as web_client:
         web_client.post("orders", params=data)
         got = web_client.get("orders")
-        print(got)
-        print(data)
         assert got == data
 
 
