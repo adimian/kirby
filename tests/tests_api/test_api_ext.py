@@ -27,8 +27,7 @@ def test_creation_of_a_web_client(session_mock):
         "external_server", "http://some.external.server"
     ) as web_client:
         web_client.post("orders", params=data)
-        got = web_client.get("orders")
-        assert got == data
+        assert web_client.get("orders") == data
 
 
 @pytest.mark.parametrize("bad_return_value", [502, 504, 500, 501])
@@ -49,8 +48,7 @@ def test_web_client_handle_get_errors(session_mock, bad_return_value):
         "external_server", "http://some.external.server"
     ) as web_client:
         web_client.post("orders", params=data)
-        result = web_client.get("orders")
-        assert result == data
+        assert web_client.get("orders") == data
 
 
 @patch("requests.session")
@@ -67,5 +65,4 @@ def test_web_client_handle_post_errors(session_mock):
         "external_server", "http://some.external.server"
     ) as web_client:
         web_client.post("orders", params=data)
-        result = web_client.get("orders")
-        assert result == data
+        assert web_client.get("orders") == data
