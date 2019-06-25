@@ -1,5 +1,5 @@
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 import pytest
 
 from tests.tests_api.conftest import TOPIC_NAME
@@ -62,6 +62,9 @@ def test_web_client_handle_errors(session_mock, method, bad_return_value):
         "external_server", "http://some.external.server"
     ) as web_client:
         assert getattr(web_client, method)("an_endoint") == data
+        method_mocked.assert_called_with(
+            "http://some.external.server/an_endoint"
+        )
 
 
 @pytest.mark.integration
