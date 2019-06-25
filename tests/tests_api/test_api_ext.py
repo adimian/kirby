@@ -40,41 +40,28 @@ def test_web_client_calls_requests_session_methods(session_mock, method):
 
 
 @pytest.mark.parametrize("bad_return_value", [502, 504, 500, 501])
+@pytest.mark.parametrize(
+    "method", ["get", "post", "put", "delete", "head", "options"]
+)
 @patch("requests.session")
-def test_web_client_handle_get_errors(session_mock, bad_return_value):
+def test_web_client_handle_errors(session_mock, method, bad_return_value):
     data = {"foo": True}
-    session_mock.return_value.post.return_value = MagicMock(
-        status_code=200, json=MagicMock(return_value={})
+
+    method_mocked = MagicMock(
+        side_effect=[
+            MagicMock(
+                status_code=bad_return_value, json=MagicMock(return_value={})
+            ),
+            MagicMock(status_code=200, json=MagicMock(return_value=data)),
+        ]
     )
-    session_mock.return_value.get.side_effect = [
-        MagicMock(
-            status_code=bad_return_value, json=MagicMock(return_value={})
-        ),
-        MagicMock(status_code=200, json=MagicMock(return_value=data)),
-    ]
+
+    session_mock.return_value = MagicMock(**{method: method_mocked})
 
     with WebClient(
         "external_server", "http://some.external.server"
     ) as web_client:
-        web_client.post("orders", params=data)
-        assert web_client.get("orders") == data
-
-
-@patch("requests.session")
-def test_web_client_handle_post_errors(session_mock):
-    data = {"foo": True}
-    session_mock.return_value.get.return_value = MagicMock(
-        status_code=200, json=MagicMock(return_value=data)
-    )
-    session_mock.return_value.post.side_effect = [
-        MagicMock(status_code=500, json=MagicMock(return_value={})),
-        MagicMock(status_code=200, json=MagicMock(return_value={})),
-    ]
-    with WebClient(
-        "external_server", "http://some.external.server"
-    ) as web_client:
-        web_client.post("orders", params=data)
-        assert web_client.get("orders") == data
+        assert getattr(web_client, method)("an_endoint") == data
 
 
 @pytest.mark.integration
