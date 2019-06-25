@@ -109,7 +109,7 @@ def test_it_raise_error_if_usage_of_testing_mode_with_get_topic_id():
     not os.getenv("KIRBY_WEB_SERVER"),
     reason="missing KIRBY_WEB_SERVER environment",
 )
-def test_gets_the_it_of_a_topic(kirby_app, db_topics):
+def test_gets_the_id_of_a_topic(kirby_app, db_topics):
     topic = db_topics[0]
     assert kirby_app.get_topic_id(topic.name) == topic.id
 
