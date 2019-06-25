@@ -259,10 +259,7 @@ def kafka_topic_factory():
         "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
     )
     if bootstrap_servers:
-        args = {
-            "bootstrap_servers": bootstrap_servers,
-            "reconnect_backoff_ms": 400,
-        }
+        args = {"bootstrap_servers": bootstrap_servers}
         if getenv("KAFKA_USE_TLS", type=bool):
             args.update(
                 {
