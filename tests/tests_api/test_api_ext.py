@@ -15,22 +15,28 @@ def test_creation_of_a_kirby_topic(kirby_topic):
     assert kirby_topic.next() == "Hello world"
 
 
+@pytest.mark.parametrize(
+    "method", ["get", "post", "put", "delete", "head", "options"]
+)
 @patch("requests.session")
-def test_creation_of_a_web_client(session_mock):
+def test_web_client_calls_requests_session_methods(session_mock, method):
     data = {"foo": True}
 
-    session_mock.return_value.get.return_value = MagicMock(
-        status_code=200, json=MagicMock(return_value=data)
+    method_mocked = MagicMock(
+        return_value=MagicMock(
+            status_code=200, json=MagicMock(return_value=data)
+        )
     )
 
-    session_mock.return_value.post.return_value = MagicMock(
-        status_code=200, json=MagicMock(return_value={})
-    )
+    session_mock.return_value = MagicMock(**{method: method_mocked})
+
     with WebClient(
         "external_server", "http://some.external.server"
     ) as web_client:
-        web_client.post("orders", params=data)
-        assert web_client.get("orders") == data
+        assert getattr(web_client, method)("an_endoint") == data
+        method_mocked.assert_called_once_with(
+            "http://some.external.server/an_endoint"
+        )
 
 
 @pytest.mark.parametrize("bad_return_value", [502, 504, 500, 501])

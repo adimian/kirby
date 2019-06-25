@@ -199,8 +199,7 @@ class WebClient:
         self._session.close()
 
     def _request_decorator(self, method):
-        @tenacity.retry(**webserver_retry_args)
-        def _request(endpoint, **kwargs):
+        def request(endpoint, **kwargs):
             result = method(
                 urljoin(self.web_endpoint_base, endpoint), **kwargs
             )
@@ -213,7 +212,7 @@ class WebClient:
                 f"Response : {result.text}"
             )
 
-        return _request
+        return tenacity.retry(**webserver_retry_args)(request)
 
     def __getattr__(self, item):
         method = getattr(self._session, item)
