@@ -44,7 +44,9 @@ def test_web_client_calls_requests_session_methods(session_mock, method):
     "method", ["get", "post", "put", "delete", "head", "options"]
 )
 @patch("requests.session")
-def test_web_client_handle_errors(session_mock, method, bad_return_value):
+def test_web_client_handle_errors_of_connection(
+    session_mock, method, bad_return_value
+):
     data = {"foo": True}
 
     method_mocked = MagicMock(
@@ -65,6 +67,14 @@ def test_web_client_handle_errors(session_mock, method, bad_return_value):
         method_mocked.assert_called_with(
             "http://some.external.server/an_endoint"
         )
+
+
+def test_web_client_cannot_access_session_attribute():
+    with WebClient(
+        "external_server", "http://some.external.server"
+    ) as web_client:
+        with pytest.raises(AttributeError):
+            assert web_client.headers
 
 
 @pytest.mark.integration

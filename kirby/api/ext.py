@@ -218,3 +218,7 @@ class WebClient:
         method = getattr(self._session, item)
         if callable(method):
             return self._request_decorator(method)
+        else:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{item}'"
+            )
