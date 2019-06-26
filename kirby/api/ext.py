@@ -38,10 +38,9 @@ webserver_retry_args = {
 
 
 class Topic:
-    def __init__(self, kirby_app, topic_name, use_tls=True, testing=False):
-        self.name = topic_name
+    def __init__(self, name, kirby_app, testing=False):
+        self.name = name
         self.testing = testing
-        self.use_tls = use_tls
         self.kirby_app = kirby_app
         self.init_kafka()
         mode = "testing" if self.testing else "live"
@@ -53,7 +52,11 @@ class Topic:
             "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
         }
 
-        if self.use_tls:
+        ssl_security_protocol = getenv(
+            "KAFKA_USE_SSL", type=bool, default=False
+        )
+
+        if ssl_security_protocol:
             kafka_args.update(
                 {
                     "ssl_cafile": self.kirby_app.ctx.KAFKA_SSL_CAFILE,

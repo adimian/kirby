@@ -10,13 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class Queue(Topic):
-    def __init__(self, name, testing=False, ssl_security_protocol=True):
-        self.name = name
-        self.testing = testing
-        self.ssl_security_protocol = ssl_security_protocol
-        self.init_kafka()
-        mode = "testing" if self.testing else "live"
-        logger.debug(f"starting queue {self.name} in {mode} mode")
+    def __init__(self, name, testing=False):
+        super().__init__(name=name, testing=testing, kirby_app=None)
 
     @tenacity.retry(**kafka_retry_args)
     def init_kafka(self):
@@ -28,7 +23,11 @@ class Queue(Topic):
             )
             kafka_args = {"bootstrap_servers": bootstrap_servers}
 
-            if self.ssl_security_protocol:
+            ssl_security_protocol = getenv(
+                "KAFKA_USE_SSL", type=bool, default=False
+            )
+
+            if ssl_security_protocol:
                 kafka_args.update(
                     {
                         "ssl_cafile": getenv("KAFKA_SSL_CAFILE", type=str),

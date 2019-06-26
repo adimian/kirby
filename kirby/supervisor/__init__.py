@@ -17,7 +17,8 @@ def run_supervisor(name, window, wakeup):
     queue = Queue(
         name=getenv(
             "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
-        )
+        ),
+        ssl_security_protocol=getenv("KAFKA_USE_TLS"),
     )
     scheduler = Scheduler(queue=queue, wakeup=wakeup)
     with Election(identity=name, server=server, check_ttl=window) as me:
