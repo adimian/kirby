@@ -1,7 +1,9 @@
-# Architecture
+# Components
 
-.. todo:: add architecture diagram
+## Services
 
-# Services
+.. image:: _static/kirby-components.png
 
-.. todo:: add services diagram
+## Processes
+
+.. image:: _static/kirby-processes.png
