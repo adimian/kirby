@@ -39,10 +39,18 @@ webserver_retry_args = {
 
 
 class Topic:
-    def __init__(self, kirby_app, topic_name, use_tls=True, testing=False):
+    def __init__(
+        self,
+        kirby_app,
+        topic_name,
+        use_tls=True,
+        raw_record=False,
+        testing=False,
+    ):
         self.name = topic_name
         self.testing = testing
         self.use_tls = use_tls
+        self.raw_record = raw_record
         self.kirby_app = kirby_app
         self.init_kafka()
         mode = "testing" if self.testing else "live"
@@ -122,19 +130,21 @@ class Topic:
             messages.sort(key=lambda x: x[0])
             return [v for t, v in messages]
 
-    @staticmethod
-    def message_to_item(raw_message):
-        if raw_message:
-            for messages_by_topic in raw_message.values():
-                for message in messages_by_topic:
-                    return message.value
+    def parse_records(self, records_by_partition):
+        if records_by_partition:
+            for records in records_by_partition.values():
+                for record in records:
+                    if self.raw_record:
+                        return record
+                    else:
+                        return record.value
 
     @tenacity.retry(**kafka_retry_args)
     def next(self, timeout_ms=500):
         if not self.testing:
             message = self._consumer.poll(max_records=1, timeout_ms=timeout_ms)
             self._consumer.commit()
-            return self.message_to_item(message)
+            return self.parse_records(message)
         else:
             if self._messages:
                 (_, message) = self._messages[self.cursor_position]
@@ -157,7 +167,7 @@ class Topic:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self, raw_record):
         return self.next(timeout_ms=float("inf"))
 
 

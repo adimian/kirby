@@ -57,10 +57,10 @@ def kirby_topic_factory(kirby_app, kafka_topic_factory):
 
     @tenacity.retry(**kafka_retry_args)
     @contextmanager
-    def create_kirby_topic(topic_name):
+    def create_kirby_topic(topic_name, **kargs):
         if bootstrap_servers:
             with kafka_topic_factory(topic_name):
-                topic = Topic(kirby_app, topic_name)
+                topic = Topic(kirby_app, topic_name, **kargs)
                 topics.append(topic)
                 yield topic
         else:
