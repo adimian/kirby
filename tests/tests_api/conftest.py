@@ -2,9 +2,10 @@ import os
 from smart_getenv import getenv
 from pytest import fixture
 from freezegun import freeze_time
+import tenacity
 
 from kirby.api import Kirby
-from kirby.api.ext import Topic
+from kirby.api.ext import Topic, kafka_retry_args
 from tests.conftest import API_ROOT
 
 
@@ -43,7 +44,8 @@ def kirby_app(session, kirby_hidden_env, kirby_expected_env):
     return Kirby(kirby_expected_env, session=session)
 
 
-@fixture(scope="function")
+@tenacity.retry(**kafka_retry_args)
+@fixture
 def kirby_topic(kirby_app, kafka_topic_factory):
     import logging
 

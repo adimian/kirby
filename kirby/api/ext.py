@@ -1,4 +1,3 @@
-import os
 import logging
 import datetime
 from urllib.parse import urljoin
@@ -6,10 +5,9 @@ import requests
 import msgpack
 from smart_getenv import getenv
 import tenacity
-from contextlib import contextmanager
 
 from kafka import KafkaConsumer, KafkaProducer
-from kafka.errors import NoBrokersAvailable
+from kafka.errors import NoBrokersAvailable, NodeNotReadyError
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +16,10 @@ WAIT_BETWEEN_RETRIES = getenv(
     "EXT_WAIT_BETWEEN_RETRIES", type=float, default=0.4
 )
 kafka_retry_args = {
-    "retry": tenacity.retry_if_exception_type(NoBrokersAvailable),
+    "retry": (
+        tenacity.retry_if_exception_type(NoBrokersAvailable)
+        | tenacity.retry_if_exception_type(NodeNotReadyError)
+    ),
     "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
     "stop": tenacity.stop_after_attempt(RETRIES),
     "reraise": True,
@@ -158,32 +159,6 @@ class Topic:
 
     def __next__(self):
         return self.next(timeout_ms=float("inf"))
-
-
-@contextmanager
-def topic_sender():
-    args = {
-        "client_id": "test_client",
-        "bootstrap_servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
-        "value_serializer": msgpack.dumps,
-    }
-    if os.getenv("KAFKA_SECURITY_PROTOCOL"):
-        args.update(
-            {
-                "security_protocol": os.environ["KAFKA_SECURITY_PROTOCOL"],
-                "ssl_cafile": os.environ["KAFKA_SSL_CAFILE"],
-                "ssl_certfile": os.environ["KAFKA_SSL_CERTFILE"],
-                "ssl_keyfile": os.environ["KAFKA_SSL_KEYFILE"],
-            }
-        )
-    producer = KafkaProducer(**args)
-
-    def send(topic, data):
-        producer.send(topic, data)
-        producer.flush()
-
-    yield send
-    producer.close()
 
 
 class WebClient:
