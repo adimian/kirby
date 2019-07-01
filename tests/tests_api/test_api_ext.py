@@ -4,12 +4,13 @@ import pytest
 from kirby.api.ext import WebClient
 
 
-def test_creation_of_a_kirby_topic(kirby_topic):
-    assert not kirby_topic.next()
+def test_creation_of_a_kirby_topic(kirby_topic_factory):
+    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
+        assert not kirby_topic.next()
 
-    kirby_topic.send("Hello world")
+        kirby_topic.send("Hello world")
 
-    assert kirby_topic.next() == "Hello world"
+        assert kirby_topic.next() == "Hello world"
 
 
 @pytest.mark.parametrize(

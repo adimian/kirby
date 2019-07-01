@@ -1,5 +1,6 @@
 import os
 from smart_getenv import getenv
+from contextlib import contextmanager
 from pytest import fixture
 from freezegun import freeze_time
 import tenacity
@@ -44,23 +45,34 @@ def kirby_app(session, kirby_hidden_env, kirby_expected_env):
     return Kirby(kirby_expected_env, session=session)
 
 
-@tenacity.retry(**kafka_retry_args)
 @fixture
-def kirby_topic(kirby_app, kafka_topic_factory):
+def kirby_topic_factory(kirby_app, kafka_topic_factory):
     import logging
 
     logger = logging.getLogger(__name__)
     bootstrap_servers = getenv(
         "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
     )
-    if bootstrap_servers:
-        with kafka_topic_factory(TOPIC_NAME):
-            with Topic(kirby_app, TOPIC_NAME) as topic:
+    topics = []
+
+    @tenacity.retry(**kafka_retry_args)
+    @contextmanager
+    def create_kirby_topic(topic_name):
+        if bootstrap_servers:
+            with kafka_topic_factory(topic_name):
+                topic = Topic(kirby_app, topic_name)
+                topics.append(topic)
                 yield topic
-    else:
-        logger.warning(
-            f"There is no KAFKA_BOOTSTRAP_SERVERS. "
-            "Topic will be created in testing mode"
-        )
-        with Topic(kirby_app, TOPIC_NAME, testing=True) as topic:
+        else:
+            logger.warning(
+                f"There is no KAFKA_BOOTSTRAP_SERVERS. "
+                "Topic will be created in testing mode"
+            )
+            topic = Topic(kirby_app, topic_name, testing=True)
+            topics.append(topic)
             yield topic
+
+    yield create_kirby_topic
+
+    for topic in topics:
+        topic.close()

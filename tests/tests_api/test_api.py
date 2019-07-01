@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 from unittest.mock import patch, MagicMock
 
-from tests.tests_api.conftest import DATE
+from tests.tests_api.conftest import DATE, TOPIC_NAME
 
 from kirby.models import db, Script, Topic
 from kirby.api import Kirby, ClientError, ServerError
@@ -120,15 +120,16 @@ def test_gets_the_id_of_a_topic(kirby_app, db_topics):
     reason="missing KIRBY_WEB_SERVER environment",
 )
 def test_it_add_a_source_to_kirby_app_into_db_of_web_server(
-    kirby_app, kirby_topic, db_scripts_not_registered, db_topics
+    kirby_app, kirby_topic_factory, db_scripts_not_registered, db_topics
 ):
-    kirby_app.add_source(kirby_topic)
+    with kirby_topic_factory(TOPIC_NAME) as kirby_topic:
+        kirby_app.add_source(kirby_topic)
 
-    script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
+        script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
 
-    assert script_in_db.sources[0] == get_topic_in_db_from_name(
-        kirby_topic.name
-    )
+        assert script_in_db.sources[0] == get_topic_in_db_from_name(
+            kirby_topic.name
+        )
 
 
 @pytest.mark.integration
@@ -137,12 +138,17 @@ def test_it_add_a_source_to_kirby_app_into_db_of_web_server(
     reason="missing KIRBY_WEB_SERVER environment",
 )
 def test_it_add_a_destination_to_kirby_app_into_db_of_web_server(
-    session, kirby_app, kirby_topic, db_scripts_not_registered, db_topics
+    session,
+    kirby_app,
+    kirby_topic_factory,
+    db_scripts_not_registered,
+    db_topics,
 ):
-    kirby_app.add_destination(kirby_topic)
+    with kirby_topic_factory(TOPIC_NAME) as kirby_topic:
+        kirby_app.add_destination(kirby_topic)
 
-    script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
+        script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
 
-    assert script_in_db.destinations[0] == get_topic_in_db_from_name(
-        kirby_topic.name
-    )
+        assert script_in_db.destinations[0] == get_topic_in_db_from_name(
+            kirby_topic.name
+        )
