@@ -198,32 +198,27 @@ class WebClient:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._session.close()
 
-    @tenacity.retry(**webserver_retry_args)
-    def post(self, endpoint, data, params=None):
-        if not params:
-            params = {}
-        result = self._session.post(
-            urljoin(self.web_endpoint_base, endpoint), data=data, params=params
-        )
-        if result.status_code == 200:
-            return result.json()
-        raise WebClientError(
-            f"POST error on {result.url}. "
-            f"Status code : {result.status_code}. "
-            f"Response : {result.text}"
-        )
+    def _request_decorator(self, method):
+        def request(endpoint, **kwargs):
+            result = method(
+                urljoin(self.web_endpoint_base, endpoint), **kwargs
+            )
 
-    @tenacity.retry(**webserver_retry_args)
-    def get(self, endpoint, params=None):
-        result = self._session.get(
-            urljoin(self.web_endpoint_base, endpoint), params=params
-        )
-        if result.status_code == 200:
-            json = result.json()
-            if json:
-                return json
-        raise WebClientError(
-            f"GET error on {result.url}. "
-            f"Status code : {result.status_code}. "
-            f"Response : {result.text}"
-        )
+            if result.status_code == 200:
+                return result.json()
+            raise WebClientError(
+                f"{method} error on {result.url}. "
+                f"Status code : {result.status_code}. "
+                f"Response : {result.text}"
+            )
+
+        return tenacity.retry(**webserver_retry_args)(request)
+
+    def __getattr__(self, item):
+        method = getattr(self._session, item)
+        if callable(method):
+            return self._request_decorator(method)
+        else:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{item}'"
+            )
