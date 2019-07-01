@@ -167,7 +167,7 @@ class Topic:
     def __iter__(self):
         return self
 
-    def __next__(self, raw_record):
+    def __next__(self):
         return self.next(timeout_ms=float("inf"))
 
 
