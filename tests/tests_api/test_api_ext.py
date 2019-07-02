@@ -82,7 +82,7 @@ def test_web_client_cannot_access_session_attribute():
         ([("hello", "world")], [("hello", b"\xa5world")]),
         ({}, []),
         ({"hello": "world"}, [("hello", b"\xa5world")]),
-        {"test": ["why", "not"]},
+        ({"test": ["why", "not"]}, [("test", b"\x92\xa3why\xa3not")]),
     ],
 )
 def test_it_format_headers_correctly(headers_to_format, expected_result):
@@ -90,6 +90,6 @@ def test_it_format_headers_correctly(headers_to_format, expected_result):
 
 
 @pytest.mark.parametrize("wrong_headers", [{"hello", "world"}, "wrong", -198])
-def test_it_format_headers_correctly(wrong_headers):
+def test_it_raise_error_while_format_headers_error(wrong_headers):
     with pytest.raises(RuntimeError):
         Topic.format_headers(wrong_headers)
