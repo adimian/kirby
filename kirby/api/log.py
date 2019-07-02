@@ -4,13 +4,23 @@ LOGGER_TOPIC_NAME = "_logs"
 
 
 class Logger:
-    def __init__(self):
+    # Logger is an adapter to a Queue
+    # It is intended to imitate the behaviour of logger
+    # in the standard library. There is 6 levels in the standard library:
+    # CRITICAL      ERROR       WARNING     INFO     DEBUG       NOTSET
+
+    def __init__(self, default_level="noset"):
         self.queue = Queue(LOGGER_TOPIC_NAME)
         self.name = __name__
+        self.default_level = default_level
 
     def _send_log_factory(self, level):
+        # Each time a level of log is called the factory is called to
+        # create the right function to call.
+        # To log with the default log level, the function log can be
+        # called.
         if level == "log":
-            level = "noset"
+            level = self.default_level
 
         def send_log(message):
             self.queue.send(
