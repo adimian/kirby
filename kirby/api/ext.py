@@ -1,6 +1,7 @@
 import logging
 import datetime
 from urllib.parse import urljoin
+import copy
 import requests
 import msgpack
 from smart_getenv import getenv
@@ -36,6 +37,13 @@ webserver_retry_args = {
     "stop": tenacity.stop_after_attempt(RETRIES),
     "reraise": True,
 }
+
+
+def kirby_value_deserializer(x):
+    return msgpack.loads(x, raw=False)
+
+
+kirby_value_serializer = msgpack.dumps
 
 
 class Topic:
@@ -78,17 +86,30 @@ class Topic:
             self._consumer = KafkaConsumer(
                 self.name,
                 group_id=self.kirby_app.ctx.PACKAGE_NAME,
-                value_deserializer=lambda x: msgpack.loads(x, raw=False),
+                value_deserializer=kirby_value_deserializer,
                 **kafka_args,
             )
+            self._consumer.poll()
             self._producer = KafkaProducer(
-                value_serializer=msgpack.dumps, **kafka_args
+                value_serializer=kirby_value_serializer, **kafka_args
             )
 
+    @staticmethod
+    def format_headers(headers):
+        if isinstance(headers, dict):
+            headers = list(headers.items())
+        return [
+            (header[0], kirby_value_serializer(header[1]))
+            for header in headers
+        ]
+
     @tenacity.retry(**kafka_retry_args)
-    def send(self, message, submitted=None):
+    def send(self, message, submitted=None, headers=None):
         if submitted is None:
             submitted = datetime.datetime.utcnow()
+
+        if headers is None:
+            headers = []
 
         if self.testing:
             self._messages.append((submitted, message))
@@ -96,7 +117,10 @@ class Topic:
         else:
             timestamp_ms = int(submitted.timestamp() * 1000)
             self._producer.send(
-                self.name, value=message, timestamp_ms=timestamp_ms
+                self.name,
+                value=message,
+                timestamp_ms=timestamp_ms,
+                headers=self.format_headers(headers),
             )
             self._producer.flush()
 
@@ -135,7 +159,11 @@ class Topic:
             for records in records_by_partition.values():
                 for record in records:
                     if self.raw_record:
-                        return record
+                        headers_deserialized = {
+                            k: kirby_value_deserializer(v)
+                            for k, v in record.headers
+                        }
+                        return record._replace(headers=headers_deserialized)
                     else:
                         return record.value
 
