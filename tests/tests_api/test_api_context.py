@@ -1,7 +1,6 @@
-import datetime
-import multiprocessing
 import os
-
+import multiprocessing
+import datetime
 import pytest
 
 from kirby.api.context import ContextManager
@@ -63,4 +62,4 @@ def test_it_can_create_a_queue_integration(kafka_topic_factory):
 
         messages = q.between(start, start + offset)
 
-        assert messages == [b"hello world"]
+        assert messages == ["hello world"]
