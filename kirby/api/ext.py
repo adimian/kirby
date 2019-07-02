@@ -1,7 +1,6 @@
 import logging
 import datetime
 from urllib.parse import urljoin
-import copy
 import requests
 import msgpack
 from smart_getenv import getenv
