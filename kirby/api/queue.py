@@ -48,7 +48,7 @@ class Queue(Topic):
                 self.name,
                 group_id=getenv("KIRBY_SUPERVISOR_GROUP_ID", type=str),
                 enable_auto_commit=True,
-                value_deserializer=msgpack.loads,
+                value_deserializer=(lambda x: msgpack.loads(x, raw=False)),
                 **kafka_args,
             )
 
