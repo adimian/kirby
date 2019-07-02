@@ -1,10 +1,14 @@
-import msgpack
 from kafka import KafkaProducer, KafkaConsumer
 from smart_getenv import getenv
 import logging
 import tenacity
 
-from .ext import Topic, kafka_retry_args
+from .ext import (
+    Topic,
+    kafka_retry_args,
+    kirby_value_deserializer,
+    kirby_value_serializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +45,14 @@ class Queue(Topic):
             logger.debug(f"bootstrap servers: {bootstrap_servers}")
 
             self._producer = KafkaProducer(
-                value_serializer=msgpack.dumps, **kafka_args
+                value_serializer=kirby_value_serializer, **kafka_args
             )
 
             self._consumer = KafkaConsumer(
                 self.name,
                 group_id=getenv("KIRBY_SUPERVISOR_GROUP_ID", type=str),
                 enable_auto_commit=True,
-                value_deserializer=(lambda x: msgpack.loads(x, raw=False)),
+                value_deserializer=kirby_value_deserializer,
                 **kafka_args,
             )
 

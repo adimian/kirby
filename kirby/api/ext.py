@@ -3,6 +3,7 @@ import datetime
 from urllib.parse import urljoin
 import requests
 import msgpack
+from functools import partial
 from smart_getenv import getenv
 import tenacity
 
@@ -38,10 +39,7 @@ webserver_retry_args = {
 }
 
 
-def kirby_value_deserializer(x):
-    return msgpack.loads(x, raw=False)
-
-
+kirby_value_deserializer = partial(msgpack.loads, raw=False)
 kirby_value_serializer = msgpack.dumps
 
 
@@ -96,17 +94,14 @@ class Topic:
     @staticmethod
     def format_headers(headers):
         if isinstance(headers, dict):
-            headers = list(headers.items())
-
-        if isinstance(headers, list):
             return [
                 (header[0], kirby_value_serializer(header[1]))
-                for header in headers
+                for header in list(headers.items())
             ]
         else:
             raise RuntimeError(
                 f"The format of given headers ({headers}) is not correct "
-                "it must be a list of tuple or a dictionary"
+                "it must be a dictionary"
             )
 
     @tenacity.retry(**kafka_retry_args)
@@ -115,7 +110,7 @@ class Topic:
             submitted = datetime.datetime.utcnow()
 
         if headers is None:
-            headers = []
+            headers = {}
 
         if self.testing:
             self._messages.append((submitted, message))
