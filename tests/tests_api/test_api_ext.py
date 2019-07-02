@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 import pytest
 
-from kirby.api.ext import WebClient
+from kirby.api.ext import WebClient, Topic
 
 
 def test_creation_of_a_kirby_topic(kirby_topic_factory):
@@ -73,3 +73,23 @@ def test_web_client_cannot_access_session_attribute():
     ) as web_client:
         with pytest.raises(AttributeError):
             assert web_client.headers
+
+
+@pytest.mark.parametrize(
+    "headers_to_format,expected_result",
+    [
+        ([], []),
+        ([("hello", "world")], [("hello", b"\xa5world")]),
+        ({}, []),
+        ({"hello": "world"}, [("hello", b"\xa5world")]),
+        {"test": ["why", "not"]},
+    ],
+)
+def test_it_format_headers_correctly(headers_to_format, expected_result):
+    assert Topic.format_headers(headers_to_format) == expected_result
+
+
+@pytest.mark.parametrize("wrong_headers", [{"hello", "world"}, "wrong", -198])
+def test_it_format_headers_correctly(wrong_headers):
+    with pytest.raises(RuntimeError):
+        Topic.format_headers(wrong_headers)

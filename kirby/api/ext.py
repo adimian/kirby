@@ -97,10 +97,17 @@ class Topic:
     def format_headers(headers):
         if isinstance(headers, dict):
             headers = list(headers.items())
-        return [
-            (header[0], kirby_value_serializer(header[1]))
-            for header in headers
-        ]
+
+        if isinstance(headers, list):
+            return [
+                (header[0], kirby_value_serializer(header[1]))
+                for header in headers
+            ]
+        else:
+            raise RuntimeError(
+                f"The format of given headers ({headers}) is not correct "
+                "it must be a list of tuple or a dictionary"
+            )
 
     @tenacity.retry(**kafka_retry_args)
     def send(self, message, submitted=None, headers=None):
