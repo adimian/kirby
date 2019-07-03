@@ -1,5 +1,6 @@
 from unittest.mock import patch, MagicMock
 import pytest
+from hypothesis import given, strategies
 
 from kirby.api.ext import WebClient, Topic
 
@@ -75,6 +76,21 @@ def test_web_client_cannot_access_session_attribute():
             assert web_client.headers
 
 
+@strategies.composite
+def wrong_headers(draw):
+    data_strategies = strategies.one_of(
+        strategies.text(), strategies.integers(), strategies.none()
+    )
+    return draw(
+        strategies.recursive(
+            data_strategies,
+            lambda data: strategies.one_of(
+                strategies.iterables(data), strategies.lists(data)
+            ),
+        )
+    )
+
+
 @pytest.mark.parametrize(
     "headers_to_format,expected_result",
     [
@@ -87,10 +103,7 @@ def test_it_format_headers_correctly(headers_to_format, expected_result):
     assert Topic.format_headers(headers_to_format) == expected_result
 
 
-@pytest.mark.parametrize(
-    "wrong_headers",
-    [[], [("hello", "world")], {"hello", "world"}, "wrong", -198],
-)
-def test_it_raise_error_while_format_headers_error(wrong_headers):
+@given(wrong_headers())
+def test_it_raise_error_while_format_headers_error(headers):
     with pytest.raises(RuntimeError):
-        Topic.format_headers(wrong_headers)
+        Topic.format_headers(headers)
