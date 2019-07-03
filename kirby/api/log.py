@@ -5,9 +5,9 @@ LOGGER_TOPIC_NAME = "_logs"
 
 class Logger:
     # Logger is an adapter to a Queue
-    # It is intended to imitate the behaviour of logger
-    # in the standard library. There is 6 levels in the standard library:
-    # CRITICAL      ERROR       WARNING     INFO     DEBUG       NOTSET
+    # It is intended to imitate the behaviour of logger in the standard
+    # library. There is 6 levels in the standard library:
+    # CRITICAL  >   ERROR   >  WARNING  >   INFO    >   DEBUG   >   NOTSET
 
     def __init__(self, default_level="noset"):
         self.queue = Queue(LOGGER_TOPIC_NAME)
