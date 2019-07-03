@@ -24,7 +24,7 @@ class Logger:
 
         def send_log(message):
             self.queue.send(
-                message, headers={"level": level, "name": self.name}
+                message, headers={"level": level, "package_name": self.name}
             )
 
         return send_log

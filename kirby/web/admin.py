@@ -1,8 +1,10 @@
-from flask_admin import Admin, AdminIndexView, expose
+import datetime
+import json
+from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import InlineFormAdmin
 from flask_login import current_user
-from flask import redirect, url_for, request
+from flask import redirect, url_for, request, abort
 
 from kirby.models import ConfigKey, NotificationEmail
 
@@ -130,3 +132,46 @@ admin.add_view(
     )
 )
 admin.add_view(ScriptView(Script, db.session, category="Jobs"))
+
+
+class LogView(BaseView):
+    @expose("/")
+    def index(self):
+        if not is_authenticated(current_user):
+            return redirect(url_for("security.login", next=request.url))
+        return self.render("logs/index.html")
+
+    @staticmethod
+    def get_logs(package_name):
+        if package_name:
+            return ["Nothing."]
+        return []
+
+    @expose("/raw_logs")
+    def raw_logs(self):
+        if not is_authenticated(current_user):
+            return redirect(url_for("security.login", next=request.url))
+        else:
+            package_name = request.args.get("package_name")
+
+            if package_name:
+                raw_logs = self.get_logs(package_name)
+                if raw_logs:
+                    logs_output = {
+                        "package_name": package_name,
+                        "date": datetime.datetime.utcnow().isoformat(),
+                        "logs": raw_logs,
+                    }
+                    return json.dumps(logs_output)
+            else:
+                abort(400, f"Please give a package_name.")
+
+    @expose("/topic_list")
+    def topic_list(self):
+        if not is_authenticated(current_user):
+            return redirect(url_for("security.login", next=request.url))
+        topic_names = [topic.name for topic in db.session.query(Topic).all()]
+        return json.dumps(topic_names)
+
+
+admin.add_view(LogView(name="Logs", url="/admin/log"))
