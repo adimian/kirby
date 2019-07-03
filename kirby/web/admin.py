@@ -166,12 +166,14 @@ class LogView(BaseView):
             else:
                 abort(400, f"Please give a package_name.")
 
-    @expose("/topic_list")
+    @expose("/script_list")
     def topic_list(self):
         if not is_authenticated(current_user):
             return redirect(url_for("security.login", next=request.url))
-        topic_names = [topic.name for topic in db.session.query(Topic).all()]
-        return json.dumps(topic_names)
+        script_names = [
+            script.package_name for script in db.session.query(Script).all()
+        ]
+        return json.dumps(script_names)
 
 
 admin.add_view(LogView(name="Logs", url="/admin/log"))

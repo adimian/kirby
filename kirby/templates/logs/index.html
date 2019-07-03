@@ -29,13 +29,13 @@ window.onload = initLogPage;
 function initLogPage() {
     // Init package_name_input
     $.ajax({
-        url: "/admin/log/topic_list",
+        url: "/admin/log/script_names",
         type: "get",
         data: {},
         success: function(json) {
-            topic_list = JSON.parse(json);
-            $.each(topic_list, function(idx, topic){
-            $("#package_name_input").append("<option>" + topic +"</option>");
+            script_list = JSON.parse(json);
+            $.each(script_list, function(idx, script){
+            $("#package_name_input").append("<option>" + script +"</option>");
             });
         },
         error: function(xhr) {
