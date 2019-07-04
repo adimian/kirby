@@ -8,6 +8,11 @@ from flask import redirect, url_for, request, abort
 
 from kirby.models import ConfigKey, NotificationEmail
 from kirby.api.log import LogReader
+from kirby.api.context import EnvironmentVariableAbsence
+
+import logging
+
+admin_logger = logging.getLogger(__name__)
 
 
 def is_authenticated(user):
@@ -137,10 +142,6 @@ admin.add_view(ScriptView(Script, db.session, category="Jobs"))
 
 class LogView(BaseView):
     def __init__(self, *args, **kargs):
-        import dotenv
-
-        dotenv.load_dotenv()
-
         self.log_reader = LogReader()
         super().__init__(*args, **kargs)
 
@@ -193,4 +194,10 @@ class LogView(BaseView):
         return json.dumps(script_names)
 
 
-admin.add_view(LogView(name="Logs", url="/admin/log"))
+try:
+    admin.add_view(LogView(name="Logs", url="/admin/log"))
+except EnvironmentVariableAbsence as e:
+    admin_logger.error(
+        "The Log view isn't initialized because of the following error:"
+    )
+    admin_logger.error(e)

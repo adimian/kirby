@@ -6,6 +6,10 @@ import codecs
 KIRBY_ENV_SIGNATURE = "__KIRBY_ENV_SIGNATURE"
 
 
+class EnvironmentVariableAbsence(Exception):
+    pass
+
+
 class ContextManager:
     def __init__(self, config):
         self.config = config
@@ -31,7 +35,7 @@ class Context:
         if attr:
             return attr
         else:
-            raise KeyError(
+            raise EnvironmentVariableAbsence(
                 f"The environment variable {item} hasn't been initialized."
             )
 
