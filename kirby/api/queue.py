@@ -1,5 +1,4 @@
 from kafka import KafkaProducer, KafkaConsumer
-from smart_getenv import getenv
 import logging
 import tenacity
 
@@ -9,15 +8,17 @@ from .ext import (
     kirby_value_deserializer,
     kirby_value_serializer,
 )
+from .context import ctx
 
 logger = logging.getLogger(__name__)
 
 
 class Queue(Topic):
-    def __init__(self, name, testing=False, ssl_security_protocol=True):
+    def __init__(self, name, use_tls=True, raw_record=False, testing=False):
         self.name = name
+        self.use_tls = use_tls
+        self.raw_record = raw_record
         self.testing = testing
-        self.ssl_security_protocol = ssl_security_protocol
         self.init_kafka()
         mode = "testing" if self.testing else "live"
         logger.debug(f"starting queue {self.name} in {mode} mode")
@@ -27,22 +28,19 @@ class Queue(Topic):
         if self.testing:
             self._messages = []
         else:
-            bootstrap_servers = getenv(
-                "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
-            )
+            bootstrap_servers = ctx.KAFKA_BOOTSTRAP_SERVERS
             kafka_args = {"bootstrap_servers": bootstrap_servers}
 
-            if self.ssl_security_protocol:
+            if self.use_tls:
                 kafka_args.update(
                     {
-                        "ssl_cafile": getenv("KAFKA_SSL_CAFILE", type=str),
-                        "ssl_certfile": getenv("KAFKA_SSL_CERTFILE", type=str),
-                        "ssl_keyfile": getenv("KAFKA_SSL_KEYFILE", type=str),
+                        "ssl_cafile": ctx.KAFKA_SSL_CAFILE,
+                        "ssl_certfile": ctx.KAFKA_SSL_CERTFILE,
+                        "ssl_keyfile": ctx.KAFKA_SSL_KEYFILE,
                         "security_protocol": "SSL",
                     }
                 )
-
-            logger.debug(f"bootstrap servers: {bootstrap_servers}")
+            logger.debug(f"kafka args: {kafka_args}")
 
             self._producer = KafkaProducer(
                 value_serializer=kirby_value_serializer, **kafka_args
@@ -50,11 +48,12 @@ class Queue(Topic):
 
             self._consumer = KafkaConsumer(
                 self.name,
-                group_id=getenv("KIRBY_SUPERVISOR_GROUP_ID", type=str),
+                group_id=ctx.KIRBY_SUPERVISOR_GROUP_ID,
                 enable_auto_commit=True,
                 value_deserializer=kirby_value_deserializer,
                 **kafka_args,
             )
+            self._consumer.poll()
 
     def append(self, *args, **kargs):
         super().send(*args, **kargs)
