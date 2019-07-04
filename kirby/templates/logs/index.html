@@ -3,9 +3,6 @@
 {% block body %}
 
 
-Package name: <select id="package_name_input"></select>
-
-<div id="log_display"></div>
 
 <style>
 #log_display {
@@ -17,8 +14,30 @@ Package name: <select id="package_name_input"></select>
     padding-bottom: 0px;
     padding-left: 10px;
     margin-top: 20px;
+    border: 1px solid #ececec;
+}
+
+#critical{
+    color: red;
+}
+#error{
+    color: red;
+}
+#warning{
+    color: yellow;
+}
+#info{
+    font-style: italic;
+}
+#debug{
+    color: grey;
 }
 </style>
+
+
+Package name: <select id="package_name_input"></select>
+
+<div id="log_display"></div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
@@ -31,7 +50,9 @@ function getNewLogs(){
         success: function(raw_json) {
             json = JSON.parse(raw_json);
             $.each(json.logs, function(idx, log){
-                $("#log_display").append("<b>" + json.date + " : " + json.package_name + " : </b><br><t><i>" + log + "<i><br>");
+                var html_content = log.timestamp + " : " + json.package_name + " : <br><t> <pre id='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</pre><br>";
+                console.log(html_content);
+                $("#log_display").append(html_content);
             });
         }
     });
@@ -55,7 +76,7 @@ function initLogPage() {
     });
 
     // setInterval
-    setInterval("getNewLogs();",400);
+    setInterval("getNewLogs();",500);
 }
 
 function clearLogDisplay() {

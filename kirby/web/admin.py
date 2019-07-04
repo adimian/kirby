@@ -7,6 +7,7 @@ from flask_login import current_user
 from flask import redirect, url_for, request, abort
 
 from kirby.models import ConfigKey, NotificationEmail
+from kirby.api.log import LogReader
 
 
 def is_authenticated(user):
@@ -135,6 +136,14 @@ admin.add_view(ScriptView(Script, db.session, category="Jobs"))
 
 
 class LogView(BaseView):
+    def __init__(self, *args, **kargs):
+        import dotenv
+
+        dotenv.load_dotenv()
+
+        self.log_reader = LogReader()
+        super().__init__(*args, **kargs)
+
     @expose("/")
     def index(self):
         if not is_authenticated(current_user):
@@ -142,17 +151,16 @@ class LogView(BaseView):
         return self.render("logs/index.html")
 
     def get_logs(self, package_name):
-        import random
-
+        raw_logs = self.log_reader.next(package_name=package_name)
         return [
-            random.choice(
-                [
-                    "Nothing appends.",
-                    "Connected.",
-                    "Processing file.",
-                    "Sleeping.",
-                ]
-            )
+            {
+                "message": log.value,
+                "timestamp": datetime.datetime.fromtimestamp(
+                    log.timestamp / 1000
+                ).isoformat(),
+                "level": log.headers["level"],
+            }
+            for log in raw_logs
         ]
 
     @expose("/new_logs")
@@ -165,7 +173,6 @@ class LogView(BaseView):
                 return json.dumps(
                     {
                         "package_name": package_name,
-                        "date": datetime.datetime.utcnow().isoformat(),
                         "logs": self.get_logs(package_name),
                     }
                 )
