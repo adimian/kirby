@@ -2,29 +2,42 @@
 {% extends 'admin/master.html' %}
 {% block body %}
 
+
+Package name: <select id="package_name_input"></select>
+
+<div id="log_display"></div>
+
+<style>
+#log_display {
+    height: 60vh;
+    overflow-y: scroll;
+    padding: 0 10px;
+    padding-top: 0px;
+    padding-right: 10px;
+    padding-bottom: 0px;
+    padding-left: 10px;
+    margin-top: 20px;
+}
+</style>
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
 <script>
-function updateLogContainer(){
-  var text = $("#package_name_input").val();
-
+function getNewLogs(){
     $.ajax({
-        url: "/admin/log/raw_logs",
+        url: "/admin/log/new_logs",
         type: "get",
-        data: {package_name: text},
+        data: {package_name: $("#package_name_input").val()},
         success: function(raw_json) {
             json = JSON.parse(raw_json);
             $.each(json.logs, function(idx, log){
-            $("#log_display").append("<b>" + json.date + " : " + json.package_name + " : " + log + "</b><br>");
+                $("#log_display").append("<b>" + json.date + " : " + json.package_name + " : </b><br><t><i>" + log + "<i><br>");
             });
-        },
-        error: function(xhr) {
-            //Do Something to handle error
         }
     });
-};
-
-window.onload = initLogPage;
+    var objDiv = document.getElementById("log_display");
+    objDiv.scrollTop = objDiv.scrollHeight;
+}
 
 function initLogPage() {
     // Init package_name_input
@@ -34,24 +47,21 @@ function initLogPage() {
         data: {},
         success: function(json) {
             script_list = JSON.parse(json);
+            $("#package_name_input").append("<option>--Select package--</option>");
             $.each(script_list, function(idx, script){
             $("#package_name_input").append("<option>" + script +"</option>");
             });
-        },
-        error: function(xhr) {
-            //Do Something to handle error
         }
     });
 
     // setInterval
-    setInterval("updateLogContainer();",1000);
+    setInterval("getNewLogs();",400);
 }
 
-$("#package_name_input").keyup(updateLogContainer);
+function clearLogDisplay() {
+    $("#log_display").empty();
+}
+$("#package_name_input").change(clearLogDisplay);
+window.onload = initLogPage;
 </script>
-
-
-Package name: <select id="package_name_input" name="selectBox"></select>
-
-<div id="log_display"></div>
 {% endblock body %}

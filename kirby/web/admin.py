@@ -141,30 +141,40 @@ class LogView(BaseView):
             return redirect(url_for("security.login", next=request.url))
         return self.render("logs/index.html")
 
-    @staticmethod
-    def get_logs(package_name):
-        if package_name:
-            return ["Nothing."]
-        return []
+    def get_logs(self, package_name):
+        import random
 
-    @expose("/raw_logs")
-    def raw_logs(self):
+        return [
+            random.choice(
+                [
+                    "Nothing appends.",
+                    "Connected.",
+                    "Processing file.",
+                    "Sleeping.",
+                ]
+            )
+        ]
+
+    @expose("/new_logs")
+    def new_logs(self):
         if not is_authenticated(current_user):
             return redirect(url_for("security.login", next=request.url))
         else:
             package_name = request.args.get("package_name")
-
-            if package_name:
-                raw_logs = self.get_logs(package_name)
-                if raw_logs:
-                    logs_output = {
+            if package_name and package_name != "--Select package--":
+                return json.dumps(
+                    {
                         "package_name": package_name,
                         "date": datetime.datetime.utcnow().isoformat(),
-                        "logs": raw_logs,
+                        "logs": self.get_logs(package_name),
                     }
-                    return json.dumps(logs_output)
+                )
             else:
-                abort(400, f"Please give a package_name.")
+                abort(400, "Please give a package_name.")
+
+    @expose("/old_logs")
+    def old_logs(self):
+        abort(501, "This is not implemented yet.")
 
     @expose("/script_list")
     def topic_list(self):
