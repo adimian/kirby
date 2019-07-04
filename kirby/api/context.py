@@ -15,15 +15,25 @@ class ContextManager:
 
 
 def get_signature():
-    return pickle.loads(
-        codecs.decode(os.environ[KIRBY_ENV_SIGNATURE].encode(), "base64")
-    )
+    kirby_env_signature = os.getenv(KIRBY_ENV_SIGNATURE)
+    if kirby_env_signature:
+        return pickle.loads(
+            codecs.decode(os.getenv(KIRBY_ENV_SIGNATURE).encode(), "base64")
+        )
+    else:
+        return {}
 
 
 class Context:
     def __getattr__(self, item):
         signature = get_signature().get(item, {})
-        return getenv(item, **signature)
+        attr = getenv(item, **signature)
+        if attr:
+            return attr
+        else:
+            raise KeyError(
+                f"The environment variable {item} hasn't been initialized."
+            )
 
     def __repr__(self):
         all_signatures = get_signature()
