@@ -182,11 +182,14 @@ class Topic:
                 max_records=max_records, timeout_ms=timeout_ms
             )
             self._consumer.commit()
-            parsed_messages = self.parse_records(message)
-            if max_records == 1:
-                return parsed_messages[0]
+            if message:
+                parsed_messages = self.parse_records(message)
+                if max_records == 1:
+                    return parsed_messages[0]
+                else:
+                    return parsed_messages
             else:
-                return parsed_messages
+                return None
         else:
             if self._messages:
                 (_, message) = self._messages[self.cursor_position]
