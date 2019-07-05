@@ -93,7 +93,7 @@ class LogReader(Queue):
         # if max_records == None, the max_records will be set to
         # max_poll_records, which is set at KafkaConsumer init
         # https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.poll
-        messages = super().next(timeout_ms, max_records=1)
+        messages = super().next(timeout_ms, max_records=max_records)
 
         # Filter messages
         if messages:
