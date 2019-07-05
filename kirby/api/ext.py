@@ -62,23 +62,23 @@ class Topic:
 
     @tenacity.retry(**kafka_retry_args)
     def init_kafka(self):
-        kafka_args = {
-            "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
-        }
-
-        if self.use_tls:
-            kafka_args.update(
-                {
-                    "ssl_cafile": self.kirby_app.ctx.KAFKA_SSL_CAFILE,
-                    "ssl_certfile": self.kirby_app.ctx.KAFKA_SSL_CERTFILE,
-                    "ssl_keyfile": self.kirby_app.ctx.KAFKA_SSL_KEYFILE,
-                    "security_protocol": "SSL",
-                }
-            )
         if self.testing:
             self._messages = []
             self.cursor_position = 0
         else:
+            kafka_args = {
+                "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
+            }
+
+            if self.use_tls:
+                kafka_args.update(
+                    {
+                        "ssl_cafile": self.kirby_app.ctx.KAFKA_SSL_CAFILE,
+                        "ssl_certfile": self.kirby_app.ctx.KAFKA_SSL_CERTFILE,
+                        "ssl_keyfile": self.kirby_app.ctx.KAFKA_SSL_KEYFILE,
+                        "security_protocol": "SSL",
+                    }
+                )
             self._consumer = KafkaConsumer(
                 self.name,
                 group_id=self.kirby_app.ctx.PACKAGE_NAME,

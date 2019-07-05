@@ -6,7 +6,7 @@ from kirby.api.ext import WebClient, Topic
 
 
 def test_creation_of_a_kirby_topic(kirby_topic_factory):
-    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
+    with kirby_topic_factory("TOPIC_NAME", testing=True) as kirby_topic:
         assert not kirby_topic.next()
 
         kirby_topic.send("Hello world")
