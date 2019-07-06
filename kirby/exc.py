@@ -4,3 +4,11 @@ class CoolDownException(Exception):
     """
 
     pass
+
+
+class ConfigException(Exception):
+    """
+        Configuration is incomplete.
+    """
+
+    pass
