@@ -20,11 +20,7 @@ from kirby.models import (
 from kirby.web import app_maker
 
 
-def test_database_config_exception():
-    """
-    Test that a ConfigException is returned when the SQLALCHEMY_DATABASE_URI
-    config variable is not defined.
-    """
+def test_exception_is_raised_when_db_config_is_missing():
     with raises(ConfigException):
         app_maker(config={
             "TESTING": True,

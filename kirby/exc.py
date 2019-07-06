@@ -7,8 +7,4 @@ class CoolDownException(Exception):
 
 
 class ConfigException(Exception):
-    """
-        Configuration is incomplete.
-    """
-
     pass
