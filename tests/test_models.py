@@ -21,6 +21,10 @@ from kirby.web import app_maker
 
 
 def test_database_config_exception():
+    """
+    Test that a ConfigException is returned when the SQLALCHEMY_DATABASE_URI
+    config variable is not defined.
+    """
     with raises(ConfigException):
         app_maker(config={
             "TESTING": True,
