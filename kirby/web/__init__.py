@@ -5,6 +5,7 @@ from smart_getenv import getenv
 from .admin import admin
 from .endpoints import api
 from .forms import LoginForm
+from ..exc import ConfigException
 from ..models import db
 from ..models.security import user_datastore, security, UserRoles
 
@@ -22,6 +23,9 @@ def app_maker(config=None):
 
     if config:  # pragma: no cover
         app.config.update(config)
+
+    if not app.config.get("SQLALCHEMY_DATABASE_URI"):
+        raise ConfigException("Database is not defined. Please specify 'SQLALCHEMY_DATABASE_URI'")
 
     db.init_app(app)
     admin.init_app(app)
