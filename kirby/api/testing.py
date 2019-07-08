@@ -8,24 +8,23 @@ import tenacity
 from kafka import KafkaProducer
 
 from kirby.api.ext import kafka_retry_args
+from kirby.api.context import ctx
 
 
 @contextmanager
 def topic_sender():
     args = {
         "client_id": "topic_sender",
-        "bootstrap_servers": getenv(
-            "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
-        ),
+        "bootstrap_servers": ctx.KAFKA_BOOTSTRAP_SERVERS,
         "value_serializer": msgpack.dumps,
     }
     if getenv("KAFKA_USE_TLS", type=bool):
         args.update(
             {
                 "security_protocol": "SSL",
-                "ssl_cafile": os.environ["KAFKA_SSL_CAFILE"],
-                "ssl_certfile": os.environ["KAFKA_SSL_CERTFILE"],
-                "ssl_keyfile": os.environ["KAFKA_SSL_KEYFILE"],
+                "ssl_cafile": ctx.KAFKA_SSL_CAFILE,
+                "ssl_certfile": ctx.KAFKA_SSL_CERTFILE,
+                "ssl_keyfile": ctx.KAFKA_SSL_KEYFILE,
             }
         )
     producer = KafkaProducer(**args)
