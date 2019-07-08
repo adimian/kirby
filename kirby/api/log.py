@@ -57,15 +57,16 @@ class LogReader(Queue):
     def __init__(self, use_tls=True):
         self.name = LOGGER_TOPIC_NAME
         self.testing = False
-        self.use_tls = use_tls
-        self.raw_record = True
-        self.init_kafka()
+        self.raw_records = True
 
-    @tenacity.retry(**kafka_retry_args)
-    def init_kafka(self):
-        self.kafka_args = {"bootstrap_servers": ctx.KAFKA_BOOTSTRAP_SERVERS}
+        self.group_id = f"LogReader_{LogReader.viewer}"
+        self.kafka_args = {
+            "bootstrap_servers": ctx.KAFKA_BOOTSTRAP_SERVERS,
+            "value_deserializer": kirby_value_deserializer,
+            "group_id": self.group_id,
+        }
 
-        if self.use_tls:
+        if use_tls:
             self.kafka_args.update(
                 {
                     "ssl_cafile": ctx.KAFKA_SSL_CAFILE,
@@ -80,30 +81,25 @@ class LogReader(Queue):
     @property
     def _consumer(self):
         if not hasattr(self, "_hidden_consumer"):
-            self._hidden_consumer = KafkaConsumer(
-                self.name,
-                group_id=f"LogReader_{LogReader.viewer}",
-                value_deserializer=kirby_value_deserializer,
-                **self.kafka_args,
-            )
-            self._hidden_consumer.poll()
+            self._hidden_consumer = tenacity.retry(**kafka_retry_args)(
+                KafkaConsumer
+            )(self.name, **self.kafka_args)
         return self._hidden_consumer
 
-    def next(self, timeout_ms=500, package_name=None, max_records=None):
+    def nexts(self, timeout_ms=500, package_name=None, max_records=None):
         # if max_records == None, the max_records will be set to
         # max_poll_records, which is set at KafkaConsumer init
         # https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html#kafka.KafkaConsumer.poll
-        messages = super().next(timeout_ms, max_records=max_records)
+        messages = super().nexts(timeout_ms, max_records=max_records)
 
         # Filter messages
         if messages:
-            if not package_name:
-                return messages
-            else:
-                return [
+            if package_name:
+                messages = [
                     message
                     for message in messages
                     if message.headers["package_name"] == package_name
                 ]
+            return messages
         else:
             return []

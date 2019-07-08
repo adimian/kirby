@@ -187,8 +187,9 @@ class Topic:
     def next(self, timeout_ms=500):
         messages = self.nexts(timeout_ms=timeout_ms, max_records=1)
         if messages:
-            messages = messages[0]
-        return messages
+            return messages[0]
+        else:
+            return None
 
     def nexts(self, timeout_ms=500, max_records=None):
         if not self.testing:

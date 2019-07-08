@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 import pytest
-from hypothesis import given, strategies
+from hypothesis import given, strategies, settings
 
 from kafka.structs import TopicPartition
 from kafka.consumer.fetcher import ConsumerRecord
@@ -152,6 +152,7 @@ def record_by_partition(draw):
     )
 
 
+@settings(deadline=500)
 @given(record_by_partition())
 def test_topic_can_parse_any_records(
     kirby_topic_factory, records_by_partition
