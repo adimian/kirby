@@ -2,12 +2,13 @@ import datetime
 import logging
 from functools import partial
 from urllib.parse import urljoin
+from smart_getenv import getenv
 import msgpack
 import requests
 import tenacity
+
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable, NodeNotReadyError
-from smart_getenv import getenv
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +49,13 @@ class Topic:
         kirby_app,
         topic_name,
         use_tls=True,
-        raw_record=False,
+        raw_records=False,
         testing=False,
     ):
         self.name = topic_name
         self.testing = testing
         self.use_tls = use_tls
-        self.raw_record = raw_record
+        self.raw_records = raw_records
         self.kirby_app = kirby_app
         self.init_kafka()
         mode = "testing" if self.testing else "live"
@@ -156,7 +157,7 @@ class Topic:
 
     def parse_records(self, records_by_partition):
         if records_by_partition:
-            if self.raw_record:
+            if self.raw_records:
                 records_to_return = []
                 for records in records_by_partition.values():
                     for record in records:
@@ -176,25 +177,30 @@ class Topic:
                 ]
 
     @tenacity.retry(**kafka_retry_args)
-    def next(self, timeout_ms=500, max_records=1):
+    def _get_records(self, timeout_ms, max_records):
+        messages = self._consumer.poll(
+            max_records=max_records, timeout_ms=timeout_ms
+        )
+        self._consumer.commit()
+        return messages
+
+    def next(self, timeout_ms=500):
+        messages = self.nexts(timeout_ms=timeout_ms, max_records=1)
+        if messages:
+            messages = messages[0]
+        return messages
+
+    def nexts(self, timeout_ms=500, max_records=None):
         if not self.testing:
-            message = self._consumer.poll(
-                max_records=max_records, timeout_ms=timeout_ms
+            return self.parse_records(
+                self._get_records(timeout_ms, max_records)
             )
-            self._consumer.commit()
-            if message:
-                parsed_messages = self.parse_records(message)
-                if max_records == 1:
-                    return parsed_messages[0]
-                else:
-                    return parsed_messages
-            else:
-                return None
         else:
             if self._messages:
-                (_, message) = self._messages[self.cursor_position]
-                self.cursor_position += 1
-                return message
+                start = self.cursor_position
+                end = self.cursor_position + max_records
+                self.cursor_position += max_records
+                return [message[1] for message in self._messages[start:end]]
             else:
                 return None
 

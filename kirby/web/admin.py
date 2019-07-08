@@ -1,10 +1,10 @@
 import datetime
 import json
+from flask import redirect, url_for, request, abort
 from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import InlineFormAdmin
 from flask_login import current_user
-from flask import redirect, url_for, request, abort
 
 from kirby.models import ConfigKey, NotificationEmail
 from kirby.api.log import LogReader
@@ -152,7 +152,7 @@ class LogView(BaseView):
         return self.render("logs/index.html")
 
     def get_logs(self, package_name):
-        raw_logs = self.log_reader.next(package_name=package_name)
+        raw_logs = self.log_reader.nexts(package_name=package_name)
         return [
             {
                 "message": log.value,

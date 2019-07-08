@@ -53,7 +53,6 @@ def kirby_topic_factory(kirby_app, kafka_topic_factory):
     bootstrap_servers = getenv(
         "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
     )
-    topics = []
 
     @tenacity.retry(**kafka_retry_args)
     @contextmanager
@@ -61,18 +60,15 @@ def kirby_topic_factory(kirby_app, kafka_topic_factory):
         if bootstrap_servers:
             with kafka_topic_factory(topic_name):
                 topic = Topic(kirby_app, topic_name, **kargs)
-                topics.append(topic)
                 yield topic
         else:
             logger.warning(
                 f"There is no KAFKA_BOOTSTRAP_SERVERS. "
                 "Topic will be created in testing mode"
             )
-            topic = Topic(kirby_app, topic_name, testing=True)
-            topics.append(topic)
+            kargs.update(testing=True)
+            topic = Topic(kirby_app, topic_name, **kargs)
             yield topic
+        topic.close()
 
     yield create_kirby_topic
-
-    for topic in topics:
-        topic.close()
