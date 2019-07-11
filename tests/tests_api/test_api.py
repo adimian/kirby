@@ -8,6 +8,7 @@ from tests.tests_api.conftest import DATE, TOPIC_NAME
 
 from kirby.models import db, Script, Topic
 from kirby.api import Kirby, ClientError, ServerError
+from kirby.api import ctx
 
 
 def get_script_in_db_from_id(id_script):
@@ -22,12 +23,7 @@ def get_topic_in_db_from_name(name_topic):
 def test_the_creation_of_a_kirby_app_by_testing_its_attribute(
     kirby_app, kirby_hidden_env
 ):
-    assert (
-        kirby_app.ctx.WEBCLIENT_ENDPOINT
-        == kirby_hidden_env["WEBCLIENT_ENDPOINT"]
-    )
-
-    script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
+    script_in_db = get_script_in_db_from_id(ctx.ID)
     assert script_in_db.last_seen == datetime.utcnow()
 
 
@@ -125,7 +121,7 @@ def test_it_add_a_source_to_kirby_app_into_db_of_web_server(
     with kirby_topic_factory(TOPIC_NAME) as kirby_topic:
         kirby_app.add_source(kirby_topic)
 
-        script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
+        script_in_db = get_script_in_db_from_id(ctx.ID)
 
         assert script_in_db.sources[0] == get_topic_in_db_from_name(
             kirby_topic.name
@@ -147,7 +143,7 @@ def test_it_add_a_destination_to_kirby_app_into_db_of_web_server(
     with kirby_topic_factory(TOPIC_NAME) as kirby_topic:
         kirby_app.add_destination(kirby_topic)
 
-        script_in_db = get_script_in_db_from_id(kirby_app.ctx.ID)
+        script_in_db = get_script_in_db_from_id(ctx.ID)
 
         assert script_in_db.destinations[0] == get_topic_in_db_from_name(
             kirby_topic.name
