@@ -2,6 +2,7 @@ import os
 import multiprocessing
 import datetime
 import pytest
+from smart_getenv import getenv
 
 from kirby.api.context import ContextManager
 from kirby.api.queue import Queue
@@ -52,7 +53,10 @@ def test_it_can_create_a_queue_integration(kafka_topic_factory):
     offset = datetime.timedelta(seconds=5)
 
     with kafka_topic_factory("kirby-test-integration"):
-        q = Queue("kirby-test-integration")
+        q = Queue(
+            "kirby-test-integration",
+            use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True),
+        )
 
         start = datetime.datetime.now()
 
@@ -60,6 +64,6 @@ def test_it_can_create_a_queue_integration(kafka_topic_factory):
         q.append("hello world", submitted=start + offset)
         q.append("too late", submitted=start + offset + offset)
 
-        messages = q.between(start, start + offset)
+        messages = q.between(start, start + (3 / 2) * offset)
 
         assert messages == ["hello world"]
