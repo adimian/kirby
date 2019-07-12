@@ -1,20 +1,25 @@
 from unittest.mock import patch, MagicMock
 import pytest
-from hypothesis import given, strategies, settings
+from hypothesis import given, strategies
 
 from kafka.structs import TopicPartition
 from kafka.consumer.fetcher import ConsumerRecord
 
-from kirby.api.ext import WebClient, Topic, kirby_value_serializer
+from kirby.api.ext import (
+    WebClient,
+    Producer,
+    kirby_value_serializer,
+    parse_records,
+)
 
 
 def test_creation_of_a_kirby_topic(kirby_topic_factory):
-    with kirby_topic_factory("TOPIC_NAME", testing=True) as kirby_topic:
-        assert not kirby_topic.next()
+    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
+        assert not kirby_topic.next(timeout_ms=100)
 
         kirby_topic.send("Hello world")
 
-        assert kirby_topic.next() == "Hello world"
+        assert kirby_topic.next(timeout_ms=500) == "Hello world"
 
 
 @pytest.mark.parametrize(
@@ -103,13 +108,13 @@ def wrong_headers(draw):
     ],
 )
 def test_it_format_headers_correctly(headers_to_format, expected_result):
-    assert Topic.format_headers(headers_to_format) == expected_result
+    assert Producer.format_headers(headers_to_format) == expected_result
 
 
 @given(wrong_headers())
 def test_it_raise_error_while_format_headers_error(headers):
     with pytest.raises(RuntimeError):
-        Topic.format_headers(headers)
+        Producer.format_headers(headers)
 
 
 @strategies.composite
@@ -145,22 +150,17 @@ def record_by_partition(draw):
                         serialized_key_size=strategies.integers(),
                         serialized_value_size=strategies.integers(),
                         serialized_header_size=strategies.integers(),
-                    )
+                    ),
+                    min_size=1,
                 )
             }
         )
     )
 
 
-@settings(deadline=500)
 @given(record_by_partition())
-def test_topic_can_parse_any_records(
-    kirby_topic_factory, records_by_partition
-):
-    with kirby_topic_factory(
-        "test", testing=True, raw_records=True
-    ) as kirby_topic:
-        kirby_topic.parse_records(records_by_partition=records_by_partition)
+def test_topic_can_parse_any_records(records_by_partition):
+    parse_records(records_by_partition)
 
 
 def test_topic_parse_corectly_records(kirby_topic_factory):
@@ -192,12 +192,7 @@ def test_topic_parse_corectly_records(kirby_topic_factory):
         ]
     }
 
-    with kirby_topic_factory(
-        "test", testing=True, raw_records=True
-    ) as kirby_topic:
-        parsed_records = kirby_topic.parse_records(
-            records_by_partition=records_by_partition
-        )
-        assert parsed_records[0].headers == {
-            header[0]: header[1] for header in headers
-        }
+    parsed_records = parse_records(records_by_partition, raw_records=True)
+    assert parsed_records[0].headers == {
+        header[0]: header[1] for header in headers
+    }

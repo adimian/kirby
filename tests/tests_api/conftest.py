@@ -3,10 +3,10 @@ from smart_getenv import getenv
 from contextlib import contextmanager
 from pytest import fixture
 from freezegun import freeze_time
-import tenacity
 
 from kirby.api import Kirby
-from kirby.api.ext import Topic, kafka_retry_args
+from kirby.api.ext import Topic
+
 from tests.conftest import API_ROOT
 
 
@@ -21,7 +21,6 @@ def kirby_hidden_env(db_scripts_not_registered):
         "ID": "1",
         "PACKAGE_NAME": "orders_retriever",
         "KIRBY_WEB_SERVER": API_ROOT,
-        # "KAFKA_BOOTSTRAP_SERVERS": KAFKA_BOOTSTRAP_SERVERS,
         # ---
         # These are the one defined into the signature when Kirby is called.
         # They are specifics to the script.
@@ -39,14 +38,14 @@ def kirby_expected_env():
     return {"WEBCLIENT_ENDPOINT": {"type": str}, "TOPIC_NAME": {"type": str}}
 
 
-@fixture(scope="function")
+@fixture
 @freeze_time(DATE)
 def kirby_app(session, kirby_hidden_env, kirby_expected_env):
     return Kirby(kirby_expected_env, session=session)
 
 
 @fixture
-def kirby_topic_factory(kirby_app, kafka_topic_factory):
+def kirby_topic_factory(kafka_topic_factory):
     import logging
 
     logger = logging.getLogger(__name__)
@@ -54,21 +53,22 @@ def kirby_topic_factory(kirby_app, kafka_topic_factory):
         "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
     )
 
-    @tenacity.retry(**kafka_retry_args)
     @contextmanager
-    def create_kirby_topic(topic_name, **kargs):
+    def create_kirby_topic(topic_name, *args, **kargs):
         if bootstrap_servers:
+            kargs.update(
+                use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True)
+            )
             with kafka_topic_factory(topic_name):
-                topic = Topic(kirby_app, topic_name, **kargs)
-                yield topic
+                with Topic(topic_name, *args, **kargs) as kirby_topic:
+                    yield kirby_topic
         else:
             logger.warning(
                 f"There is no KAFKA_BOOTSTRAP_SERVERS. "
                 "Topic will be created in testing mode"
             )
             kargs.update(testing=True)
-            topic = Topic(kirby_app, topic_name, **kargs)
-            yield topic
-        topic.close()
+            with Topic(topic_name, *args, **kargs) as kirby_topic:
+                yield kirby_topic
 
     yield create_kirby_topic

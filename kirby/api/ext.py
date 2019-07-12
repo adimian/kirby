@@ -1,14 +1,17 @@
 import datetime
 import logging
-from functools import partial
-from urllib.parse import urljoin
-from smart_getenv import getenv
 import msgpack
 import requests
 import tenacity
+from functools import partial
+from smart_getenv import getenv
+from urllib.parse import urljoin
 
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable, NodeNotReadyError
+from kafka.consumer.fetcher import ConsumerRecord
+
+from .context import ctx
 
 logger = logging.getLogger(__name__)
 
@@ -16,122 +19,123 @@ RETRIES = getenv("EXT_RETRIES", type=int, default=3)
 WAIT_BETWEEN_RETRIES = getenv(
     "EXT_WAIT_BETWEEN_RETRIES", type=float, default=0.4
 )
-kafka_retry_args = {
-    "retry": (
+topic_retry_decorator = tenacity.retry(
+    retry=(
         tenacity.retry_if_exception_type(NoBrokersAvailable)
         | tenacity.retry_if_exception_type(NodeNotReadyError)
     ),
-    "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
-    "stop": tenacity.stop_after_attempt(RETRIES),
-    "reraise": True,
-}
+    wait=tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
+    stop=tenacity.stop_after_attempt(RETRIES),
+    reraise=True,
+)
 
 
 class WebClientError(Exception):
     pass
 
 
-webserver_retry_args = {
-    "retry": tenacity.retry_if_exception_type(WebClientError),
-    "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
-    "stop": tenacity.stop_after_attempt(RETRIES),
-    "reraise": True,
-}
+webserver_retry_decorator = tenacity.retry(
+    retry=tenacity.retry_if_exception_type(WebClientError),
+    wait=tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
+    stop=tenacity.stop_after_attempt(RETRIES),
+    reraise=True,
+)
 
 
 kirby_value_deserializer = partial(msgpack.loads, raw=False)
 kirby_value_serializer = msgpack.dumps
 
 
-class Topic:
-    def __init__(
-        self,
-        kirby_app,
-        topic_name,
-        use_tls=True,
-        raw_records=False,
-        testing=False,
-    ):
-        self.name = topic_name
-        self.testing = testing
-        self.use_tls = use_tls
-        self.raw_records = raw_records
-        self.kirby_app = kirby_app
-        self.init_kafka()
-        mode = "testing" if self.testing else "live"
-        logger.debug(f"starting topic {self.name} in {mode} mode")
-
-    @tenacity.retry(**kafka_retry_args)
-    def init_kafka(self):
-        if self.testing:
-            self._messages = []
-            self.cursor_position = 0
-        else:
-            kafka_args = {
-                "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
-            }
-
-            if self.use_tls:
-                kafka_args.update(
-                    {
-                        "ssl_cafile": self.kirby_app.ctx.KAFKA_SSL_CAFILE,
-                        "ssl_certfile": self.kirby_app.ctx.KAFKA_SSL_CERTFILE,
-                        "ssl_keyfile": self.kirby_app.ctx.KAFKA_SSL_KEYFILE,
-                        "security_protocol": "SSL",
+def parse_records(records_by_partition, raw_records=False):
+    if records_by_partition:
+        if raw_records:
+            # The records are Namedtuple.
+            # Namedtuple._replace return the same Namedtuple with the
+            # values modified and let the original one untouched.
+            return [
+                record._replace(
+                    headers={
+                        k: kirby_value_deserializer(v)
+                        for k, v in record.headers
                     }
                 )
-            self._consumer = KafkaConsumer(
-                self.name,
-                group_id=self.kirby_app.ctx.PACKAGE_NAME,
-                value_deserializer=kirby_value_deserializer,
-                **kafka_args,
-            )
-            self._consumer.poll()
-            self._producer = KafkaProducer(
-                value_serializer=kirby_value_serializer, **kafka_args
-            )
-
-    @staticmethod
-    def format_headers(headers):
-        if isinstance(headers, dict):
-            return [
-                (header[0], kirby_value_serializer(header[1]))
-                for header in list(headers.items())
+                for records in records_by_partition.values()
+                for record in records
             ]
         else:
-            raise RuntimeError(
-                f"The format of given headers ({headers}) is not correct "
-                "it must be a dictionary"
+            return [
+                record.value
+                for records in records_by_partition.values()
+                for record in records
+            ]
+
+
+class Consumer:
+    def __init__(self, topic):
+        self.topic = topic
+        if not self.topic.testing:
+            self._consumer = KafkaConsumer(
+                self.topic.name,
+                group_id=self.topic.group_id,
+                value_deserializer=kirby_value_deserializer,
+                **topic.get_kafka_args(),
             )
+            self._consumer.poll()
 
-    @tenacity.retry(**kafka_retry_args)
-    def send(self, message, submitted=None, headers=None):
-        if submitted is None:
-            submitted = datetime.datetime.utcnow()
+    @topic_retry_decorator
+    def _get_nexts_kafka_records(self, timeout_ms, max_records):
+        messages = self._consumer.poll(
+            max_records=max_records, timeout_ms=timeout_ms
+        )
+        self._consumer.commit()
+        return messages
 
-        if headers is None:
-            headers = {}
-
-        if self.testing:
-            self._messages.append((submitted, message))
-
+    def next(self, timeout_ms=500):
+        messages = self.nexts(timeout_ms=timeout_ms, max_records=1)
+        if messages:
+            return messages[0]
         else:
-            timestamp_ms = int(submitted.timestamp() * 1000)
-            self._producer.send(
-                self.name,
-                value=message,
-                timestamp_ms=timestamp_ms,
-                headers=self.format_headers(headers),
-            )
-            self._producer.flush()
+            return None
 
-    @tenacity.retry(**kafka_retry_args)
+    def nexts(self, timeout_ms=500, max_records=None):
+        if not self.topic.testing:
+            return parse_records(
+                self._get_nexts_kafka_records(timeout_ms, max_records),
+                raw_records=self.topic.raw_records,
+            )
+        else:
+            if self.topic._messages:
+                start = self.topic.cursor_position
+                end = self.topic.cursor_position + max_records
+                self.topic.cursor_position += max_records
+                if self.topic.raw_records:
+                    return [
+                        message
+                        for (_, message) in self.topic._messages[start:end]
+                    ]
+                else:
+                    return [
+                        message.value
+                        for (_, message) in self.topic._messages[start:end]
+                    ]
+            else:
+                return None
+
+    @topic_retry_decorator
     def between(self, start, end):
-        if self.testing:
-            return [msg for t, msg in self._messages if start <= t < end]
+        if self.topic.testing:
+            messages = [
+                msg for t, msg in self.topic._messages if start <= t < end
+            ]
+            if messages:
+                self.topic.cursor_position = [
+                    msg for t, msg in self.topic._messages
+                ].index(messages[-1])
+            if not self.topic.raw_records:
+                return [message.value for message in messages]
+            else:
+                return messages
         else:
-            self._consumer.poll(timeout_ms=5000)
-
             partitions = self._consumer.assignment()
 
             start_mapping = {p: start.timestamp() for p in partitions}
@@ -155,72 +159,176 @@ class Topic:
             messages.sort(key=lambda x: x[0])
             return [v for t, v in messages]
 
-    def parse_records(self, records_by_partition):
-        if records_by_partition:
-            if self.raw_records:
-                records_to_return = []
-                for records in records_by_partition.values():
-                    for record in records:
-                        headers_deserialized = {
-                            k: kirby_value_deserializer(v)
-                            for k, v in record.headers
-                        }
-                        records_to_return.append(
-                            record._replace(headers=headers_deserialized)
-                        )
-                return records_to_return
-            else:
-                return [
-                    record.value
-                    for records in records_by_partition.values()
-                    for record in records
-                ]
-
-    @tenacity.retry(**kafka_retry_args)
-    def _get_records(self, timeout_ms, max_records):
-        messages = self._consumer.poll(
-            max_records=max_records, timeout_ms=timeout_ms
-        )
-        self._consumer.commit()
-        return messages
-
-    def next(self, timeout_ms=500):
-        messages = self.nexts(timeout_ms=timeout_ms, max_records=1)
-        if messages:
-            return messages[0]
-        else:
-            return None
-
-    def nexts(self, timeout_ms=500, max_records=None):
-        if not self.testing:
-            return self.parse_records(
-                self._get_records(timeout_ms, max_records)
-            )
-        else:
-            if self._messages:
-                start = self.cursor_position
-                end = self.cursor_position + max_records
-                self.cursor_position += max_records
-                return [message[1] for message in self._messages[start:end]]
-            else:
-                return None
-
     def close(self):
-        if not self.testing:
-            self._producer.close()
+        if not self.topic.testing:
             self._consumer.close(autocommit=False)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
 
     def __iter__(self):
         return self
 
     def __next__(self):
         return self.next(timeout_ms=float("inf"))
+
+
+class Producer:
+    def __init__(self, topic):
+        self.topic = topic
+        if not self.topic.testing:
+            self._producer = KafkaProducer(
+                value_serializer=kirby_value_serializer,
+                **topic.get_kafka_args(),
+            )
+
+    @staticmethod
+    def format_headers(headers):
+        if isinstance(headers, dict):
+            return [
+                (k, kirby_value_serializer(v))
+                for k, v in list(headers.items())
+            ]
+        else:
+            raise RuntimeError(
+                f"The format of given headers ({headers}) is not correct "
+                "it must be a dictionary"
+            )
+
+    def send(self, message, submitted=None, headers=None):
+        if submitted is None:
+            submitted = datetime.datetime.utcnow()
+
+        if headers is None:
+            headers = {}
+
+        if not self.topic.testing:
+            timestamp_ms = int(submitted.timestamp() * 1000)
+            topic_retry_decorator(self._producer.send)(
+                self.topic.name,
+                value=message,
+                timestamp_ms=timestamp_ms,
+                headers=self.format_headers(headers),
+            )
+            self._producer.flush()
+        else:
+            self.topic._messages.append(
+                (
+                    submitted,
+                    ConsumerRecord(
+                        topic=self.topic.name,
+                        partition=0,
+                        offset=len(self.topic._messages),
+                        timestamp=submitted,
+                        timestamp_type=0,
+                        key=None,
+                        value=message,
+                        headers=[(k, v) for k, v in headers.items()],
+                        checksum=None,
+                        serialized_key_size=None,
+                        serialized_value_size=None,
+                        serialized_header_size=None,
+                    ),
+                )
+            )
+
+    def close(self):
+        if not self.topic.testing:
+            self._producer.close()
+
+
+class Topic:
+    def __init__(
+        self,
+        topic_name,
+        group_id=None,
+        use_tls=True,
+        testing=False,
+        raw_records=False,
+    ):
+        self.name = topic_name
+        self.testing = testing
+        self.use_tls = use_tls
+        self.raw_records = raw_records
+
+        if self.testing:
+            self.group_id = group_id
+            self._messages = []
+            self.cursor_position = 0
+        else:
+            self.group_id = ctx.PACKAGE_NAME if not group_id else group_id
+
+        mode = "testing" if self.testing else "live"
+        logger.debug(f"starting topic {self.name} in {mode} mode")
+
+    def safely_set_attribute_if_does_not_exist(
+        self, item, class_, *args, **kargs
+    ):
+        try:
+            object.__getattribute__(self, item)
+        except AttributeError:
+            object.__setattr__(self, item, class_(*args, **kargs))
+
+    def get_kafka_args(self):
+        if not self.testing:
+            kafka_args = {"bootstrap_servers": ctx.KAFKA_BOOTSTRAP_SERVERS}
+            if self.use_tls:
+                kafka_args.update(
+                    {
+                        "ssl_cafile": ctx.KAFKA_SSL_CAFILE,
+                        "ssl_certfile": ctx.KAFKA_SSL_CERTFILE,
+                        "ssl_keyfile": ctx.KAFKA_SSL_KEYFILE,
+                        "security_protocol": "SSL",
+                    }
+                )
+            return kafka_args
+        else:
+            return {}
+
+    @property
+    def _producer(self):
+        args = [self]
+        self.safely_set_attribute_if_does_not_exist(
+            "_hidden_producer", Producer, *args
+        )
+        return self._hidden_producer
+
+    @property
+    def _consumer(self):
+        args = [self]
+        self.safely_set_attribute_if_does_not_exist(
+            "_hidden_consumer", Consumer, *args
+        )
+        return self._hidden_consumer
+
+    def __getattr__(self, item):
+        consumer_methods = [
+            k for k, v in Consumer.__dict__.items() if callable(v)
+        ]
+        producer_methods = [
+            k for k, v in Producer.__dict__.items() if callable(v)
+        ]
+
+        if item in consumer_methods:
+            return getattr(object.__getattribute__(self, "_consumer"), item)
+        elif item in producer_methods:
+            return getattr(object.__getattribute__(self, "_producer"), item)
+        else:
+            raise AttributeError(
+                f"Neither Topic, Consumer nor Producer "
+                f"has an attribute named {item}"
+            )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not self.testing:
+            try:
+                object.__getattribute__(self, "_hidden_producer").close()
+            except AttributeError:
+                pass
+            try:
+                object.__getattribute__(self, "_hidden_consumer").close()
+            except AttributeError:
+                pass
 
 
 class WebClient:
@@ -249,7 +357,7 @@ class WebClient:
                 f"Response : {result.text}"
             )
 
-        return tenacity.retry(**webserver_retry_args)(request)
+        return webserver_retry_decorator(request)
 
     def __getattr__(self, item):
         method = getattr(self._session, item)

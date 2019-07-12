@@ -270,22 +270,28 @@ def kafka_topic_factory():
                 }
             )
 
-        admin = tenacity.retry(**kafka_retry_args)(KafkaAdminClient)(**args)
+        admin = KafkaAdminClient(**args)
 
-        @tenacity.retry(**kafka_retry_args)
-        @contextmanager
-        def create_kafka_topic(topic_name, timeout_ms=1500):
+        def delete_topic(topic_name, timeout_ms):
             try:
-                admin.delete_topics([topic_name])
-            except UnknownTopicOrPartitionError:
+                tenacity.retry(**kafka_retry_args)(admin.delete_topics)(
+                    [topic_name], timeout_ms=timeout_ms
+                )
+            except UnknownTopicOrPartitionError as e:
+                logger.debug(
+                    "Got a UnknownTopicOrPartitionError but handle it.", e
+                )
                 pass
 
-            admin.create_topics(
+        @contextmanager
+        def create_kafka_topic(topic_name, timeout_ms=1500):
+            delete_topic(topic_name, timeout_ms)
+
+            tenacity.retry(**kafka_retry_args)(admin.create_topics)(
                 [NewTopic(topic_name, 1, 1)], timeout_ms=timeout_ms
             )
             yield
-
-            admin.delete_topics([topic_name])
+            delete_topic(topic_name, timeout_ms=timeout_ms)
 
         yield create_kafka_topic
 
