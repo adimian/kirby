@@ -1,12 +1,11 @@
 import datetime
 import msgpack
-from smart_getenv import getenv
 from contextlib import contextmanager
-import tenacity
+from smart_getenv import getenv
 
 from kafka import KafkaProducer
 
-from kirby.api.ext import kafka_retry_args
+from kirby.api.ext import topic_retry_decorator
 from kirby.api.context import ctx
 
 
@@ -28,7 +27,7 @@ def topic_sender():
         )
     producer = KafkaProducer(**args)
 
-    @tenacity.retry(**kafka_retry_args)
+    @topic_retry_decorator
     def send(topic_name, data, submitted=None):
         if submitted is None:
             submitted = datetime.datetime.utcnow()
