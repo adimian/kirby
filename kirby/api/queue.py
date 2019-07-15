@@ -17,8 +17,8 @@ class Queue(Topic):
 
     def last(self):
         if self.testing:
-            _, msg = self._messages[-1]
-            if not self.raw_records:
+            _, msg = self.topic_config.messages[-1]
+            if not self.topic_config.raw_records:
                 msg = msg.value
             return msg
         else:

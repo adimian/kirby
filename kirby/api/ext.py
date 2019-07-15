@@ -3,6 +3,7 @@ import logging
 import msgpack
 import requests
 import tenacity
+from collections import namedtuple
 from functools import partial
 from smart_getenv import getenv
 from urllib.parse import urljoin
@@ -27,6 +28,13 @@ topic_retry_decorator = tenacity.retry(
     wait=tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
     stop=tenacity.stop_after_attempt(RETRIES),
     reraise=True,
+)
+
+TopicConfig = namedtuple(
+    "TopicConfig", ["name", "group_id", "use_tls", "raw_records"]
+)
+TopicTestModeConfig = namedtuple(
+    "TopicConfig", ["name", "cursor_position", "raw_records", "messages"]
 )
 
 
@@ -70,15 +78,36 @@ def parse_records(records_by_partition, raw_records=False):
             ]
 
 
+def is_in_test_mode(topic_config):
+    return isinstance(topic_config, TopicTestModeConfig)
+
+
+def get_kafka_args(topic_config):
+    if not is_in_test_mode(topic_config):
+        kafka_args = {"bootstrap_servers": ctx.KAFKA_BOOTSTRAP_SERVERS}
+        if topic_config.use_tls:
+            kafka_args.update(
+                {
+                    "ssl_cafile": ctx.KAFKA_SSL_CAFILE,
+                    "ssl_certfile": ctx.KAFKA_SSL_CERTFILE,
+                    "ssl_keyfile": ctx.KAFKA_SSL_KEYFILE,
+                    "security_protocol": "SSL",
+                }
+            )
+        return kafka_args
+    else:
+        return {}
+
+
 class Consumer:
-    def __init__(self, topic):
-        self.topic = topic
-        if not self.topic.testing:
+    def __init__(self, topic_config):
+        self.topic_config = topic_config
+        if not is_in_test_mode(topic_config):
             self._consumer = KafkaConsumer(
-                self.topic.name,
-                group_id=self.topic.group_id,
+                self.topic_config.name,
+                group_id=topic_config.group_id,
                 value_deserializer=kirby_value_deserializer,
-                **topic.get_kafka_args(),
+                **get_kafka_args(topic_config),
             )
             self._consumer.poll()
 
@@ -98,40 +127,51 @@ class Consumer:
             return None
 
     def nexts(self, timeout_ms=500, max_records=None):
-        if not self.topic.testing:
+        if not is_in_test_mode(self.topic_config):
             return parse_records(
                 self._get_nexts_kafka_records(timeout_ms, max_records),
-                raw_records=self.topic.raw_records,
+                raw_records=self.topic_config.raw_records,
             )
         else:
-            if self.topic._messages:
-                start = self.topic.cursor_position
-                end = self.topic.cursor_position + max_records
-                self.topic.cursor_position += max_records
-                if self.topic.raw_records:
+            if self.topic_config.messages:
+                start = self.topic_config.cursor_position
+                end = self.topic_config.cursor_position + max_records
+                self.topic_config = self.topic_config._replace(
+                    cursor_position=self.topic_config.cursor_position
+                    + max_records
+                )
+                if self.topic_config.raw_records:
                     return [
                         message
-                        for (_, message) in self.topic._messages[start:end]
+                        for (_, message) in self.topic_config.messages[
+                            start:end
+                        ]
                     ]
                 else:
                     return [
                         message.value
-                        for (_, message) in self.topic._messages[start:end]
+                        for (_, message) in self.topic_config.messages[
+                            start:end
+                        ]
                     ]
             else:
                 return None
 
     @topic_retry_decorator
     def between(self, start, end):
-        if self.topic.testing:
+        if is_in_test_mode(self.topic_config):
             messages = [
-                msg for t, msg in self.topic._messages if start <= t < end
+                msg
+                for t, msg in self.topic_config.messages
+                if start <= t < end
             ]
             if messages:
-                self.topic.cursor_position = [
-                    msg for t, msg in self.topic._messages
-                ].index(messages[-1])
-            if not self.topic.raw_records:
+                self.topic_config = self.topic_config._replace(
+                    cursor_position=[
+                        msg for t, msg in self.topic_config.messages
+                    ].index(messages[-1])
+                )
+            if not self.topic_config.raw_records:
                 return [message.value for message in messages]
             else:
                 return messages
@@ -160,7 +200,7 @@ class Consumer:
             return [v for t, v in messages]
 
     def close(self):
-        if not self.topic.testing:
+        if not is_in_test_mode(self.topic_config):
             self._consumer.close(autocommit=False)
 
     def __iter__(self):
@@ -171,12 +211,12 @@ class Consumer:
 
 
 class Producer:
-    def __init__(self, topic):
-        self.topic = topic
-        if not self.topic.testing:
+    def __init__(self, topic_config):
+        self.topic_config = topic_config
+        if not is_in_test_mode(topic_config):
             self._producer = KafkaProducer(
                 value_serializer=kirby_value_serializer,
-                **topic.get_kafka_args(),
+                **get_kafka_args(topic_config),
             )
 
     @staticmethod
@@ -199,23 +239,23 @@ class Producer:
         if headers is None:
             headers = {}
 
-        if not self.topic.testing:
+        if not is_in_test_mode(self.topic_config):
             timestamp_ms = int(submitted.timestamp() * 1000)
             topic_retry_decorator(self._producer.send)(
-                self.topic.name,
+                self.topic_config.name,
                 value=message,
                 timestamp_ms=timestamp_ms,
                 headers=self.format_headers(headers),
             )
             self._producer.flush()
         else:
-            self.topic._messages.append(
+            self.topic_config.messages.append(
                 (
                     submitted,
                     ConsumerRecord(
-                        topic=self.topic.name,
+                        topic=self.topic_config.name,
                         partition=0,
-                        offset=len(self.topic._messages),
+                        offset=len(self.topic_config.messages),
                         timestamp=submitted,
                         timestamp_type=0,
                         key=None,
@@ -230,7 +270,7 @@ class Producer:
             )
 
     def close(self):
-        if not self.topic.testing:
+        if not is_in_test_mode(self.topic_config):
             self._producer.close()
 
 
@@ -245,18 +285,23 @@ class Topic:
     ):
         self.name = topic_name
         self.testing = testing
-        self.use_tls = use_tls
-        self.raw_records = raw_records
-
-        if self.testing:
-            self.group_id = group_id
-            self._messages = []
-            self.cursor_position = 0
+        if testing:
+            self.topic_config = TopicTestModeConfig(
+                name=topic_name,
+                cursor_position=0,
+                raw_records=raw_records,
+                messages=[],
+            )
         else:
-            self.group_id = ctx.PACKAGE_NAME if not group_id else group_id
+            self.topic_config = TopicConfig(
+                name=topic_name,
+                group_id=ctx.PACKAGE_NAME if not group_id else group_id,
+                use_tls=use_tls,
+                raw_records=raw_records,
+            )
 
         mode = "testing" if self.testing else "live"
-        logger.debug(f"starting topic {self.name} in {mode} mode")
+        logger.debug(f"starting topic {topic_name} in {mode} mode")
 
     def safely_set_attribute_if_does_not_exist(
         self, item, class_, *args, **kargs
@@ -266,35 +311,17 @@ class Topic:
         except AttributeError:
             object.__setattr__(self, item, class_(*args, **kargs))
 
-    def get_kafka_args(self):
-        if not self.testing:
-            kafka_args = {"bootstrap_servers": ctx.KAFKA_BOOTSTRAP_SERVERS}
-            if self.use_tls:
-                kafka_args.update(
-                    {
-                        "ssl_cafile": ctx.KAFKA_SSL_CAFILE,
-                        "ssl_certfile": ctx.KAFKA_SSL_CERTFILE,
-                        "ssl_keyfile": ctx.KAFKA_SSL_KEYFILE,
-                        "security_protocol": "SSL",
-                    }
-                )
-            return kafka_args
-        else:
-            return {}
-
     @property
     def _producer(self):
-        args = [self]
         self.safely_set_attribute_if_does_not_exist(
-            "_hidden_producer", Producer, *args
+            "_hidden_producer", Producer, self.topic_config
         )
         return self._hidden_producer
 
     @property
     def _consumer(self):
-        args = [self]
         self.safely_set_attribute_if_does_not_exist(
-            "_hidden_consumer", Consumer, *args
+            "_hidden_consumer", Consumer, self.topic_config
         )
         return self._hidden_consumer
 
