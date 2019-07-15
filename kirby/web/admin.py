@@ -158,7 +158,7 @@ class LogView(BaseView):
                 "message": log.value,
                 "timestamp": datetime.datetime.fromtimestamp(
                     log.timestamp / 1000
-                ).isoformat(),
+                ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
                 "level": log.headers["level"],
             }
             for log in raw_logs
@@ -170,7 +170,7 @@ class LogView(BaseView):
             return redirect(url_for("security.login", next=request.url))
         else:
             package_name = request.args.get("package_name")
-            if package_name and package_name != "--Select package--":
+            if package_name:
                 return json.dumps(
                     {
                         "package_name": package_name,

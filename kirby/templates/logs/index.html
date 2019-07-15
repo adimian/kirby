@@ -2,8 +2,6 @@
 {% extends 'admin/master.html' %}
 {% block body %}
 
-
-
 <style>
 #log_display {
     height: 60vh;
@@ -17,27 +15,44 @@
     border: 1px solid #ececec;
 }
 
-#critical{
-    color: red;
+.scroller * {
+    overflow-anchor: none;
 }
-#error{
-    color: red;
+
+#anchor {
+    overflow-anchor: auto;
+    height: 1px;
 }
-#warning{
-    color: yellow;
+
+.log * {
+    margin: 0px;
+    display: inline;
 }
-#info{
+
+.critical{
+    color: #c0392b;
+}
+.error{
+    color: #f39c12;
+}
+.warning{
+    color: #f1c40f;
+}
+.info{
+    color: #145a32;
+}
+.debug{
+    color: #2471a3;
     font-style: italic;
-}
-#debug{
-    color: grey;
 }
 </style>
 
 
 Package name: <select id="package_name_input"></select>
 
-<div id="log_display"></div>
+<div id="log_display" class="scroller">
+    <div id="anchor"></div>
+</div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
@@ -50,14 +65,11 @@ function getNewLogs(){
         success: function(raw_json) {
             json = JSON.parse(raw_json);
             $.each(json.logs, function(idx, log){
-                var html_content = log.timestamp + " : " + json.package_name + " : <br><t> <pre id='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</pre><br>";
-                console.log(html_content);
-                $("#log_display").append(html_content);
+                //var html_content =
+                $("<div class='log'><p>" + log.timestamp + " :</p><p class='"+ log.level +"'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor"));
             });
         }
     });
-    var objDiv = document.getElementById("log_display");
-    objDiv.scrollTop = objDiv.scrollHeight;
 }
 
 function initLogPage() {
@@ -77,12 +89,16 @@ function initLogPage() {
 
     // setInterval
     setInterval("getNewLogs();",500);
+    scrollToBottom();
 }
 
 function clearLogDisplay() {
-    $("#log_display").empty();
+    $('#log_display').contents(':not(#anchor)').remove();
+    scrollToBottom();
 }
+
 $("#package_name_input").change(clearLogDisplay);
 window.onload = initLogPage;
+
 </script>
 {% endblock body %}
