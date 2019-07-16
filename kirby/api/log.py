@@ -17,7 +17,7 @@ CORRESPONDENCES_VALUES_LEVELS = {
 
 
 class Logger:
-    # Logger is an adapter to a Queue
+    # Logger is an adapter to a Topic
     # It is intended to imitate the behaviour of logger in the standard
     # library. There is 6 levels in the standard library:
     # CRITICAL  >   ERROR   >  WARNING  >   INFO    >   DEBUG   >   NOTSET

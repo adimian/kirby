@@ -66,10 +66,12 @@ Package name: <select id="package_name_input"></select> Filter: <select id="filt
 <script>
 function filterLogs(logs){
     var log_level = $("#filter_log_level").val();
+    var package_name = $("#package_name_input").val();
     for (var i = 0; i < logs.length; i++) {
         var log = logs[i];
         var log_value = log.getAttribute('value');
-        if (log_value < log_level) {
+        var log_package_name = log.getAttribute('package_name');
+        if ((log_value < log_level) || (package_name != log_package_name)) {
             log.style.display = "none";
         } else {
             log.style.display = "block";
@@ -85,12 +87,12 @@ function getNewLogs(){
     $.ajax({
         url: "/admin/log/new_logs",
         type: "get",
-        data: {package_name: $("#package_name_input").val()},
+        data: {},
         success: function(raw_json) {
             json = JSON.parse(raw_json);
             var new_logs = [];
             $.each(json.logs, function(idx, log){
-                var new_log = $("<div class='log' value= " + log.value + "><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor"));
+                var new_log = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor"));
                 new_logs.push(new_log[0]);
             });
             if (new_logs.length > 0){
@@ -123,7 +125,7 @@ function clearLogDisplay() {
     $('#log_display').contents(':not(#anchor)').remove();
 }
 
-$("#package_name_input").change(clearLogDisplay);
+$("#package_name_input").change(filterExistingLogs);
 $("#filter_log_level").change(filterExistingLogs);
 window.onload = initLogPage;
 

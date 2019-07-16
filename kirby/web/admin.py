@@ -1,5 +1,7 @@
 import datetime
 import json
+from smart_getenv import getenv
+
 from flask import redirect, url_for, request, abort
 from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
@@ -142,7 +144,9 @@ admin.add_view(ScriptView(Script, db.session, category="Jobs"))
 
 class LogView(BaseView):
     def __init__(self, *args, **kargs):
-        self.log_reader = LogReader()
+        self.log_reader = LogReader(
+            use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True)
+        )
         super().__init__(*args, **kargs)
 
     @expose("/")
@@ -151,14 +155,15 @@ class LogView(BaseView):
             return redirect(url_for("security.login", next=request.url))
         return self.render("logs/index.html")
 
-    def get_logs(self, package_name):
-        raw_logs = self.log_reader.nexts(package_name=package_name)
+    def get_logs(self):
+        raw_logs = self.log_reader.nexts()
         return [
             {
                 "message": log.value,
                 "timestamp": datetime.datetime.fromtimestamp(
                     log.timestamp / 1000
                 ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+                "package_name": log.headers["package_name"],
                 "level": log.headers["level"],
                 "value": CORRESPONDENCES_VALUES_LEVELS[log.headers["level"]],
             }
@@ -170,16 +175,7 @@ class LogView(BaseView):
         if not is_authenticated(current_user):
             return redirect(url_for("security.login", next=request.url))
         else:
-            package_name = request.args.get("package_name")
-            if package_name:
-                return json.dumps(
-                    {
-                        "package_name": package_name,
-                        "logs": self.get_logs(package_name),
-                    }
-                )
-            else:
-                abort(400, "Please give a package_name.")
+            return json.dumps({"logs": self.get_logs()})
 
     @expose("/old_logs")
     def old_logs(self):
