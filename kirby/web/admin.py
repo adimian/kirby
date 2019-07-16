@@ -7,7 +7,7 @@ from flask_admin.model import InlineFormAdmin
 from flask_login import current_user
 
 from kirby.models import ConfigKey, NotificationEmail
-from kirby.api.log import LogReader
+from kirby.api.log import LogReader, CORRESPONDENCES_VALUES_LEVELS
 from kirby.api.context import EnvironmentVariableAbsence
 
 import logging
@@ -160,6 +160,7 @@ class LogView(BaseView):
                     log.timestamp / 1000
                 ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
                 "level": log.headers["level"],
+                "value": CORRESPONDENCES_VALUES_LEVELS[log.headers["level"]],
             }
             for log in raw_logs
         ]

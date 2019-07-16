@@ -48,7 +48,14 @@
 </style>
 
 
-Package name: <select id="package_name_input"></select>
+Package name: <select id="package_name_input"></select> Filter: <select id="filter_log_level">
+    <option selected value=0>All</option>
+    <option value=50>CRITICAL</option>
+    <option value=40>ERROR</option>
+    <option value=30>WARNING</option>
+    <option value=20>INFO</option>
+    <option value=10>DEBUG</option>
+</select>
 
 <div id="log_display" class="scroller">
     <div id="anchor"></div>
@@ -57,6 +64,23 @@ Package name: <select id="package_name_input"></select>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
 <script>
+function filterLogs(logs){
+    var log_level = $("#filter_log_level").val();
+    for (var i = 0; i < logs.length; i++) {
+        var log = logs[i];
+        var log_value = log.getAttribute('value');
+        if (log_value < log_level) {
+            log.style.display = "none";
+        } else {
+            log.style.display = "block";
+        }
+    }
+}
+
+function filterExistingLogs(){
+    filterLogs(document.getElementsByClassName("log"));
+}
+
 function getNewLogs(){
     $.ajax({
         url: "/admin/log/new_logs",
@@ -64,13 +88,17 @@ function getNewLogs(){
         data: {package_name: $("#package_name_input").val()},
         success: function(raw_json) {
             json = JSON.parse(raw_json);
+            var new_logs = [];
             $.each(json.logs, function(idx, log){
-                //var html_content =
-                $("<div class='log'><p>" + log.timestamp + " :</p><p class='"+ log.level +"'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor"));
+                var new_log = $("<div class='log' value= " + log.value + "><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor"));
+                new_logs.push(new_log[0]);
             });
+            if (new_logs.length > 0){
+                filterLogs(new_logs);
+            }
         }
     });
-}
+    }
 
 function initLogPage() {
     // Init package_name_input
@@ -79,25 +107,24 @@ function initLogPage() {
         type: "get",
         data: {},
         success: function(json) {
-            script_list = JSON.parse(json);
+            var script_list = JSON.parse(json);
             $("#package_name_input").append("<option>--Select package--</option>");
             $.each(script_list, function(idx, script){
-            $("#package_name_input").append("<option>" + script +"</option>");
+                $("#package_name_input").append("<option>" + script +"</option>");
             });
         }
     });
 
     // setInterval
-    setInterval("getNewLogs();",500);
-    scrollToBottom();
+    setInterval(getNewLogs,500);
 }
 
 function clearLogDisplay() {
     $('#log_display').contents(':not(#anchor)').remove();
-    scrollToBottom();
 }
 
 $("#package_name_input").change(clearLogDisplay);
+$("#filter_log_level").change(filterExistingLogs);
 window.onload = initLogPage;
 
 </script>

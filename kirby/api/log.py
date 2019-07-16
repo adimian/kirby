@@ -6,6 +6,14 @@ from .ext import Topic
 LOGGER_TOPIC_NAME = "_logs"
 
 LEVELS = ["critical", "error", "warning", "info", "debug", "noset"]
+CORRESPONDENCES_VALUES_LEVELS = {
+    "critical": 50,
+    "error": 40,
+    "warning": 30,
+    "info": 20,
+    "debug": 10,
+    "noset": 0,
+}
 
 
 class Logger:
