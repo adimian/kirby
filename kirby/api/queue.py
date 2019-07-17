@@ -1,7 +1,7 @@
 import logging
 
-from .ext import Topic
 from .context import ctx
+from .ext.topic import Topic
 
 logger = logging.getLogger(__name__)
 

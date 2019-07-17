@@ -252,7 +252,7 @@ def kafka_topic_factory():
     from kafka.admin import NewTopic
     from kafka.errors import UnknownTopicOrPartitionError
 
-    from kirby.api.ext import topic_retry_decorator
+    from kirby.api.ext.topic import topic_retry_decorator
 
     logger = logging.getLogger(__name__)
 

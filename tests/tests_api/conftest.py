@@ -5,7 +5,7 @@ from pytest import fixture
 from freezegun import freeze_time
 
 from kirby.api import Kirby
-from kirby.api.ext import Topic
+from kirby.api.ext.topic import Topic
 
 from tests.conftest import API_ROOT
 

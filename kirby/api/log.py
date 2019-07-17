@@ -1,7 +1,7 @@
 import os
 
 import __main__
-from .ext import Topic
+from .ext.topic import Topic
 
 LOGGER_TOPIC_NAME = "_logs"
 

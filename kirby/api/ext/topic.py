@@ -1,18 +1,16 @@
 import datetime
 import logging
 import msgpack
-import requests
 import tenacity
 from collections import namedtuple
 from functools import partial
 from smart_getenv import getenv
-from urllib.parse import urljoin
 
 from kafka import KafkaConsumer, KafkaProducer
-from kafka.errors import NoBrokersAvailable, NodeNotReadyError
 from kafka.consumer.fetcher import ConsumerRecord
+from kafka.errors import NoBrokersAvailable, NodeNotReadyError
 
-from .context import ctx
+from ..context import ctx
 
 logger = logging.getLogger(__name__)
 
@@ -35,18 +33,6 @@ TopicConfig = namedtuple(
 )
 TopicTestModeConfig = namedtuple(
     "TopicConfig", ["name", "cursor_position", "raw_records", "messages"]
-)
-
-
-class WebClientError(Exception):
-    pass
-
-
-webserver_retry_decorator = tenacity.retry(
-    retry=tenacity.retry_if_exception_type(WebClientError),
-    wait=tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
-    stop=tenacity.stop_after_attempt(RETRIES),
-    reraise=True,
 )
 
 
@@ -356,41 +342,3 @@ class Topic:
                 object.__getattribute__(self, "_hidden_consumer").close()
             except AttributeError:
                 pass
-
-
-class WebClient:
-    def __init__(self, name, web_endpoint_base, session=None):
-        self.name = name
-        self.web_endpoint_base = web_endpoint_base
-        self._session = session or requests.session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._session.close()
-
-    def _request_decorator(self, method):
-        def request(endpoint, **kwargs):
-            result = method(
-                urljoin(self.web_endpoint_base, endpoint), **kwargs
-            )
-
-            if result.status_code == 200:
-                return result.json()
-            raise WebClientError(
-                f"{method} error on {result.url}. "
-                f"Status code : {result.status_code}. "
-                f"Response : {result.text}"
-            )
-
-        return webserver_retry_decorator(request)
-
-    def __getattr__(self, item):
-        method = getattr(self._session, item)
-        if callable(method):
-            return self._request_decorator(method)
-        else:
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{item}'"
-            )

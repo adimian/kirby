@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from smart_getenv import getenv
 
-from kirby.api.ext import topic_retry_decorator, TopicConfig, Producer
+from .ext.topic import topic_retry_decorator, TopicConfig, Producer
 
 
 @contextmanager
