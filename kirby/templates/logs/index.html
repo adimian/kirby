@@ -19,9 +19,19 @@
     overflow-anchor: none;
 }
 
-#anchor {
+#anchor_bottom {
     overflow-anchor: auto;
     height: 1px;
+}
+
+#updater {
+    height: 30px;
+    color:  #bb8fce;
+    text-align: center;
+}
+
+#space_before_update {
+    height: 40vh;
 }
 
 .log * {
@@ -48,22 +58,32 @@
 </style>
 
 
-Package name: <select id="package_name_input"></select> Filter: <select id="filter_log_level">
-    <option selected value=0>All</option>
+Package name: <select id="package_name_input"></select> Log level: <select id="filter_log_level">
     <option value=50>CRITICAL</option>
     <option value=40>ERROR</option>
     <option value=30>WARNING</option>
     <option value=20>INFO</option>
-    <option value=10>DEBUG</option>
+    <option selected value=10>All (DEBUG)</option>
 </select>
 
 <div id="log_display" class="scroller">
-    <div id="anchor"></div>
+    <div id="updater">Scroll to load previous logs...</div>
+    <div id="space_before_update"></div>
+    <div id="anchor_bottom"></div>
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
 <script>
+
+function getNextElementSiblingVisible(element){
+    var nextElement = element.nextElementSibling;
+    while (nextElement.style.display == "none"){
+        nextElement = nextElement.nextElementSibling;
+    }
+    return nextElement;
+}
+
 function filterLogs(logs){
     var log_level = $("#filter_log_level").val();
     var package_name = $("#package_name_input").val();
@@ -92,7 +112,7 @@ function getNewLogs(){
             json = JSON.parse(raw_json);
             var new_logs = [];
             $.each(json.logs, function(idx, log){
-                var new_log = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor"));
+                var new_log = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor_bottom"));
                 new_logs.push(new_log[0]);
             });
             if (new_logs.length > 0){
@@ -100,7 +120,64 @@ function getNewLogs(){
             }
         }
     });
+}
+
+function insertAfter(newNode, referenceNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+}
+
+function getOldLogs(){
+    $.ajax({
+        url: "/admin/log/old_logs",
+        type: "get",
+        data: {},
+        success: function(raw_json) {
+            json = JSON.parse(raw_json);
+            var new_logs = [];
+            $.each(json.logs, function(idx, log){
+                var new_log = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>");
+                insertAfter(new_log[0], space_before_update);
+                new_logs.push(new_log[0]);
+            });
+            if (new_logs.length > 0){
+                filterLogs(new_logs);
+            }
+        }
+    });
+    var first_log = getNextElementSiblingVisible(space_before_update);
+    first_log.scrollIntoView();
+}
+
+function getDisplayedLogs(){
+	var all_displayed_logs = [...document.getElementsByClassName('log')];
+    for (var i=0; i < all_displayed_logs.length; i++){
+    	if (all_displayed_logs[i].style.display == "none"){
+        	all_displayed_logs.splice(i, 1);
+            i --;
+        }
     }
+    return all_displayed_logs;
+}
+
+function updateSpaceBeforeUpdate() {
+    var all_displayed_logs = getDisplayedLogs();
+    var total_height = scroller.clientHeight;
+    var old_size = space_before_update.clientHeight;
+
+    if (all_displayed_logs.length > 0) {
+        var height_of_one_log = all_displayed_logs[0].clientHeight;
+        var height_of_all_logs = height_of_one_log * all_displayed_logs.length;
+        var new_size = Math.max(total_height - height_of_all_logs, 0);
+    }
+    else {
+        var new_size = total_height + 30;
+    }
+
+    space_before_update.style.height = (new_size + "px");
+    if (new_size > old_size){
+        anchor_bottom.scrollIntoView();
+    }
+}
 
 function initLogPage() {
     // Init package_name_input
@@ -119,14 +196,21 @@ function initLogPage() {
 
     // setInterval
     setInterval(getNewLogs,500);
+    setInterval(updateSpaceBeforeUpdate,500);
 }
 
-function clearLogDisplay() {
-    $('#log_display').contents(':not(#anchor)').remove();
-}
+scroller = document.querySelector('#log_display');
+updater = document.querySelector('#updater');
+anchor_bottom = document.querySelector('#anchor_bottom');
+space_before_update = document.querySelector('#space_before_update');
 
 $("#package_name_input").change(filterExistingLogs);
 $("#filter_log_level").change(filterExistingLogs);
+scroller.onscroll = function() {
+    if(scroller.scrollTop == 0) {
+           getOldLogs();
+    }
+};
 window.onload = initLogPage;
 
 </script>
