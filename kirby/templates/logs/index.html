@@ -74,6 +74,8 @@ Package name: <select id="package_name_input"></select> Log level: <select id="f
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
+<script src="https://momentjs.com/downloads/moment.min.js"></script>
+
 <script>
 
 function getNextElementSiblingVisible(element){
@@ -130,12 +132,16 @@ function getOldLogs(){
     $.ajax({
         url: "/admin/log/old_logs",
         type: "get",
-        data: {},
+        data: {
+            start: earliest_timestamp_log.clone().subtract(1, 'minute').format('YYYY-MM-DDTHH:mm:ss.SSS'),
+            end: earliest_timestamp_log.format('YYYY-MM-DDTHH:mm:ss.SSS')
+        },
         success: function(raw_json) {
             json = JSON.parse(raw_json);
             var new_logs = [];
             $.each(json.logs, function(idx, log){
                 var new_log = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>");
+                console.log(new_log);
                 insertAfter(new_log[0], space_before_update);
                 new_logs.push(new_log[0]);
             });
@@ -146,6 +152,7 @@ function getOldLogs(){
     });
     var first_log = getNextElementSiblingVisible(space_before_update);
     first_log.scrollIntoView();
+    earliest_timestamp_log = earliest_timestamp_log.clone().subtract(1, 'minute');
 }
 
 function getDisplayedLogs(){
@@ -195,10 +202,13 @@ function initLogPage() {
     });
 
     // setInterval
-    setInterval(getNewLogs,500);
-    setInterval(updateSpaceBeforeUpdate,500);
+    setInterval(getNewLogs,1500);
+    setInterval(updateSpaceBeforeUpdate,1500);
 }
 
+earliest_timestamp_log = moment().utc();
+console.log("earliest_timestamp_log");
+console.log(earliest_timestamp_log);
 scroller = document.querySelector('#log_display');
 updater = document.querySelector('#updater');
 anchor_bottom = document.querySelector('#anchor_bottom');

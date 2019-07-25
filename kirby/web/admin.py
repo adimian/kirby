@@ -1,8 +1,9 @@
 import datetime
+import dateutil.parser
 import json
 from smart_getenv import getenv
 
-from flask import redirect, url_for, request
+from flask import redirect, url_for, request, abort
 from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import InlineFormAdmin
@@ -153,24 +154,27 @@ class LogView(BaseView):
 
     @staticmethod
     def parse_raw_logs(raw_logs):
-        return json.dumps(
-            {
-                "logs": [
-                    {
-                        "message": log.value,
-                        "timestamp": datetime.datetime.fromtimestamp(
-                            log.timestamp / 1000
-                        ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-                        "package_name": log.headers["package_name"],
-                        "level": log.headers["level"],
-                        "value": CORRESPONDENCES_VALUES_LEVELS[
-                            log.headers["level"]
-                        ],
-                    }
-                    for log in raw_logs
-                ]
-            }
-        )
+        if raw_logs:
+            return json.dumps(
+                {
+                    "logs": [
+                        {
+                            "message": log.value,
+                            "timestamp": datetime.datetime.fromtimestamp(
+                                log.timestamp / 1000
+                            ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+                            "package_name": log.headers["package_name"],
+                            "level": log.headers["level"],
+                            "value": CORRESPONDENCES_VALUES_LEVELS[
+                                log.headers["level"]
+                            ],
+                        }
+                        for log in raw_logs
+                    ]
+                }
+            )
+        else:
+            return json.dumps({"logs": []})
 
     @expose("/")
     def index(self):
@@ -187,14 +191,17 @@ class LogView(BaseView):
 
     @expose("/old_logs")
     def old_logs(self):
-        earlier = self.rollback_earlier_timestamp
-        earliest = self.rollback_earlier_timestamp - self.delta_datetime
-        raw_old_logs = self.log_reader.between(
-            earliest, earlier, timeout_ms=3000
-        )
-        parsed_old_logs = self.parse_raw_logs(raw_old_logs)
-        self.rollback_earlier_timestamp = earliest
-        return parsed_old_logs
+        try:
+            start_datetime = dateutil.parser.parse(request.args.get("start"))
+            end_datetime = dateutil.parser.parse(request.args.get("end"))
+        except (ValueError, TypeError) as e:
+            abort(400, f"The format of the given date is not correct : {e}")
+        else:
+            raw_old_logs = self.log_reader.between(
+                start_datetime, end_datetime, timeout_ms=3000
+            )
+            parsed_old_logs = self.parse_raw_logs(raw_old_logs)
+            return parsed_old_logs
 
     @expose("/script_list")
     def topic_list(self):
