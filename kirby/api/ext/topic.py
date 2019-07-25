@@ -355,12 +355,12 @@ class Topic:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
         if not self.testing:
             try:
                 object.__getattribute__(self, "_hidden_producer").close()
             except AttributeError:
                 pass
-            try:
-                object.__getattribute__(self, "_hidden_consumer").close()
-            except AttributeError:
-                pass
+            self._consumer.close()
