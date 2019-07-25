@@ -10,6 +10,7 @@ from smart_getenv import getenv
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.consumer.fetcher import ConsumerRecord
 from kafka.errors import NoBrokersAvailable, NodeNotReadyError
+from kafka.structs import OffsetAndTimestamp
 
 from ..context import ctx
 
@@ -88,13 +89,22 @@ def get_kafka_args(topic_config):
 
 @contextmanager
 def temporary_rollback(consumer, start):
+    start_ts = start.timestamp() * 1000
     partitions = consumer.assignment()
     old_offsets = {
         partition: consumer.committed(partition) for partition in partitions
     }
-    new_offsets = consumer.offsets_for_times(
-        {p: start.timestamp() * 1000 for p in partitions}
+    offsets_for_start = consumer.offsets_for_times(
+        {p: start_ts for p in partitions}
     )
+    new_offsets = {
+        p: offset
+        if offset
+        else OffsetAndTimestamp(
+            offset=consumer.highwater(p), timestamp=start_ts
+        )
+        for p, offset in offsets_for_start.items()
+    }
 
     # Set offsets to start
     for partition, offsets in new_offsets.items():
@@ -206,7 +216,6 @@ class Consumer:
                         if not record:
                             break
 
-            messages.sort(key=lambda x: x[0])
             if self.topic_config.raw_records:
                 return [v for t, v in messages]
             else:
