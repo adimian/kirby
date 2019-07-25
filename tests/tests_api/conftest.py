@@ -54,12 +54,12 @@ def kirby_topic_factory(kafka_topic_factory):
     )
 
     @contextmanager
-    def create_kirby_topic(topic_name, *args, **kargs):
+    def create_kirby_topic(topic_name, *args, timeout_ms=1500, **kargs):
         if bootstrap_servers:
             kargs.update(
                 use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True)
             )
-            with kafka_topic_factory(topic_name):
+            with kafka_topic_factory(topic_name, timeout_ms=timeout_ms):
                 with Topic(topic_name, *args, **kargs) as kirby_topic:
                     yield kirby_topic
         else:

@@ -2,7 +2,7 @@ import datetime
 import json
 from smart_getenv import getenv
 
-from flask import redirect, url_for, request, abort
+from flask import redirect, url_for, request
 from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import InlineFormAdmin
@@ -147,7 +147,30 @@ class LogView(BaseView):
         self.log_reader = LogReader(
             use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True)
         )
+        self.rollback_earlier_timestamp = datetime.datetime.utcnow()
+        self.delta_datetime = datetime.timedelta(minutes=1)
         super().__init__(*args, **kargs)
+
+    @staticmethod
+    def parse_raw_logs(raw_logs):
+        return json.dumps(
+            {
+                "logs": [
+                    {
+                        "message": log.value,
+                        "timestamp": datetime.datetime.fromtimestamp(
+                            log.timestamp / 1000
+                        ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+                        "package_name": log.headers["package_name"],
+                        "level": log.headers["level"],
+                        "value": CORRESPONDENCES_VALUES_LEVELS[
+                            log.headers["level"]
+                        ],
+                    }
+                    for log in raw_logs
+                ]
+            }
+        )
 
     @expose("/")
     def index(self):
@@ -155,31 +178,23 @@ class LogView(BaseView):
             return redirect(url_for("security.login", next=request.url))
         return self.render("logs/index.html")
 
-    def get_logs(self):
-        raw_logs = self.log_reader.nexts()
-        return [
-            {
-                "message": log.value,
-                "timestamp": datetime.datetime.fromtimestamp(
-                    log.timestamp / 1000
-                ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-                "package_name": log.headers["package_name"],
-                "level": log.headers["level"],
-                "value": CORRESPONDENCES_VALUES_LEVELS[log.headers["level"]],
-            }
-            for log in raw_logs
-        ]
-
     @expose("/new_logs")
     def new_logs(self):
         if not is_authenticated(current_user):
             return redirect(url_for("security.login", next=request.url))
         else:
-            return json.dumps({"logs": self.get_logs()})
+            return self.parse_raw_logs(self.log_reader.nexts())
 
     @expose("/old_logs")
     def old_logs(self):
-        abort(501, "This is not implemented yet.")
+        earlier = self.rollback_earlier_timestamp
+        earliest = self.rollback_earlier_timestamp - self.delta_datetime
+        raw_old_logs = self.log_reader.between(
+            earliest, earlier, timeout_ms=3000
+        )
+        parsed_old_logs = self.parse_raw_logs(raw_old_logs)
+        self.rollback_earlier_timestamp = earliest
+        return parsed_old_logs
 
     @expose("/script_list")
     def topic_list(self):

@@ -1,14 +1,11 @@
 import pytest
+from datetime import datetime, timedelta
 from hypothesis import given, strategies
 
 from kafka.structs import TopicPartition
 from kafka.consumer.fetcher import ConsumerRecord
 
-from kirby.api.ext.topic import (
-    Producer,
-    kirby_value_serializer,
-    parse_records,
-)
+from kirby.api.ext.topic import Producer, kirby_value_serializer, parse_records
 
 
 def test_creation_of_a_kirby_topic(kirby_topic_factory):
@@ -18,6 +15,18 @@ def test_creation_of_a_kirby_topic(kirby_topic_factory):
         kirby_topic.send("Hello world")
 
         assert kirby_topic.next(timeout_ms=500) == "Hello world"
+
+
+@pytest.mark.parametrize(
+    "headers_to_format,expected_result",
+    [
+        ({}, []),
+        ({"hello": "world"}, [("hello", b"\xa5world")]),
+        ({"test": ["why", "not"]}, [("test", b"\x92\xa3why\xa3not")]),
+    ],
+)
+def test_it_format_headers_correctly(headers_to_format, expected_result):
+    assert Producer.format_headers(headers_to_format) == expected_result
 
 
 @strategies.composite
@@ -33,18 +42,6 @@ def wrong_headers(draw):
             ),
         )
     )
-
-
-@pytest.mark.parametrize(
-    "headers_to_format,expected_result",
-    [
-        ({}, []),
-        ({"hello": "world"}, [("hello", b"\xa5world")]),
-        ({"test": ["why", "not"]}, [("test", b"\x92\xa3why\xa3not")]),
-    ],
-)
-def test_it_format_headers_correctly(headers_to_format, expected_result):
-    assert Producer.format_headers(headers_to_format) == expected_result
 
 
 @given(wrong_headers())
@@ -99,11 +96,11 @@ def test_topic_can_parse_any_records(records_by_partition):
     parse_records(records_by_partition)
 
 
-def test_topic_parse_corectly_records(kirby_topic_factory):
+def test_topic_parse_correctly_records():
     headers = [
-        ("header_1", u"välûe%_1ù"),
-        ("header_2", u"välûe%_°2ù"),
-        ("header_3", u"välûe%_$*3ù"),
+        ("header_1", "välûe%_1ù"),
+        ("header_2", "välûe%_°2ù"),
+        ("header_3", "välûe%_$*3ù"),
     ]
 
     records_by_partition = {
@@ -132,3 +129,38 @@ def test_topic_parse_corectly_records(kirby_topic_factory):
     assert parsed_records[0].headers == {
         header[0]: header[1] for header in headers
     }
+
+
+def test_topic_can_rollback(kirby_topic_factory):
+    now = datetime(year=2019, month=7, day=18, hour=15, minute=39)
+    delta = timedelta(hours=1)
+
+    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
+        assert not kirby_topic.next()
+
+        for i in range(10):
+            kirby_topic.send(i, submitted=now + i * delta)
+
+        assert kirby_topic.between(now + 4 * delta, now + 8 * delta) == [
+            4,
+            5,
+            6,
+            7,
+        ]
+
+
+def test_topic_rollback_is_temporary(kirby_topic_factory):
+    now = datetime(year=2019, month=7, day=24, hour=10, minute=45)
+    delta = timedelta(hours=1)
+
+    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
+        assert not kirby_topic.next()
+
+        for i in range(10):
+            kirby_topic.send(i, submitted=now + i * delta)
+
+        assert kirby_topic.next() == 0
+
+        kirby_topic.between(now + 4 * delta, now + 8 * delta)
+
+        assert kirby_topic.next() == 1

@@ -3,6 +3,7 @@ import logging
 import msgpack
 import tenacity
 from collections import namedtuple
+from contextlib import contextmanager
 from functools import partial
 from smart_getenv import getenv
 
@@ -85,6 +86,27 @@ def get_kafka_args(topic_config):
         return {}
 
 
+@contextmanager
+def temporary_rollback(consumer, start):
+    partitions = consumer.assignment()
+    old_offsets = {
+        partition: consumer.committed(partition) for partition in partitions
+    }
+    new_offsets = consumer.offsets_for_times(
+        {p: start.timestamp() * 1000 for p in partitions}
+    )
+
+    # Set offsets to start
+    for partition, offsets in new_offsets.items():
+        consumer.seek(partition=partition, offset=offsets.offset)
+
+    yield
+
+    # Rollback to the old offsets
+    for partition, offsets in old_offsets.items():
+        consumer.seek(partition=partition, offset=offsets)
+
+
 class Consumer:
     def __init__(self, topic_config):
         self.topic_config = topic_config
@@ -95,7 +117,8 @@ class Consumer:
                 value_deserializer=kirby_value_deserializer,
                 **get_kafka_args(topic_config),
             )
-            self._consumer.poll()
+            # Update metadata inside self._consumer
+            self._consumer.partitions_for_topic(self.topic_config.name)
 
     @topic_retry_decorator
     def _get_nexts_kafka_records(self, timeout_ms, max_records):
@@ -141,49 +164,53 @@ class Consumer:
                         ]
                     ]
             else:
-                return None
+                return []
 
     @topic_retry_decorator
-    def between(self, start, end):
+    def between(self, start, end, timeout_ms=1500):
+        def poll_next_record():
+            raw_records = self._consumer.poll(
+                timeout_ms=timeout_ms, max_records=1
+            )
+            record_in_list = [
+                record
+                for records in raw_records.values()
+                for record in records
+            ]
+            if record_in_list:
+                return record_in_list[0]
+            else:
+                return None
+
         if is_in_test_mode(self.topic_config):
             messages = [
                 msg
                 for t, msg in self.topic_config.messages
                 if start <= t < end
             ]
-            if messages:
-                self.topic_config = self.topic_config._replace(
-                    cursor_position=[
-                        msg for t, msg in self.topic_config.messages
-                    ].index(messages[-1])
-                )
             if not self.topic_config.raw_records:
                 return [message.value for message in messages]
             else:
                 return messages
         else:
-            partitions = self._consumer.assignment()
+            with temporary_rollback(self._consumer, start):
+                start_timestamp = start.timestamp() * 1000
+                end_timestamp = end.timestamp() * 1000
 
-            start_mapping = {p: start.timestamp() for p in partitions}
-            start_offsets = self._consumer.offsets_for_times(start_mapping)
-
-            start_timestamp = start.timestamp() * 1000
-            end_timestamp = end.timestamp() * 1000
-
-            # with modify_temporarily_offsets(self._consumer, partitions):
-            messages = []
-            for partition, offsets in start_offsets.items():
-                self._consumer.seek(partition=partition, offset=offsets.offset)
-
-            records_by_partition = self._consumer.poll(timeout_ms=5000)
-
-            for partition, records in records_by_partition.items():
-                for record in records:
-                    if start_timestamp <= record.timestamp < end_timestamp:
-                        messages.append((record.timestamp, record.value))
+                messages = []
+                record = poll_next_record()
+                if record:
+                    while start_timestamp <= record.timestamp < end_timestamp:
+                        messages.append((record.timestamp, record))
+                        record = poll_next_record()
+                        if not record:
+                            break
 
             messages.sort(key=lambda x: x[0])
-            return [v for t, v in messages]
+            if self.topic_config.raw_records:
+                return [v for t, v in messages]
+            else:
+                return [v.value for t, v in messages]
 
     def close(self):
         if not is_in_test_mode(self.topic_config):
@@ -286,6 +313,8 @@ class Topic:
                 raw_records=raw_records,
             )
 
+        self._consumer = Consumer(self.topic_config)
+
         mode = "testing" if self.testing else "live"
         logger.debug(f"starting topic {topic_name} in {mode} mode")
 
@@ -303,13 +332,6 @@ class Topic:
             "_hidden_producer", Producer, self.topic_config
         )
         return self._hidden_producer
-
-    @property
-    def _consumer(self):
-        self.safely_set_attribute_if_does_not_exist(
-            "_hidden_consumer", Consumer, self.topic_config
-        )
-        return self._hidden_consumer
 
     def __getattr__(self, item):
         consumer_methods = [

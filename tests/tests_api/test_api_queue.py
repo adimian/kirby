@@ -26,12 +26,16 @@ def test_it_can_create_a_queue_integration(kafka_topic_factory):
             use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True),
         )
 
-        start = datetime.datetime.now()
+        assert not q.next()
 
-        q.append("too early", submitted=start - offset)
-        q.append("hello world", submitted=start + offset)
-        q.append("too late", submitted=start + offset + offset)
+        start = datetime.datetime(
+            year=2019, month=7, day=18, hour=15, minute=39
+        )
 
-        messages = q.between(start, start + (3 / 2) * offset)
+        q.append("too early", submitted=start - 2 * offset)
+        q.append("hello world", submitted=start)
+        q.append("too late", submitted=start + 2 * offset)
+
+        messages = q.between(start, start + offset, timeout_ms=5000)
 
         assert messages == ["hello world"]

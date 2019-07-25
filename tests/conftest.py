@@ -2,7 +2,6 @@ import os
 from pytest import fixture
 from requests_flask_adapter import Session
 
-
 from kirby.web import app_maker
 from kirby.models import (
     db,
@@ -245,7 +244,7 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 @fixture
 def kafka_topic_factory():
     import logging
-    from contextlib import contextmanager
+    from contextlib import contextmanager, suppress
     from smart_getenv import getenv
 
     from kafka import KafkaAdminClient
@@ -273,26 +272,17 @@ def kafka_topic_factory():
 
         admin = KafkaAdminClient(**args)
 
-        def delete_topic(topic_name, timeout_ms):
-            try:
-                topic_retry_decorator(admin.delete_topics)(
-                    [topic_name], timeout_ms=timeout_ms
-                )
-            except UnknownTopicOrPartitionError as e:
-                logger.debug(
-                    "Got a UnknownTopicOrPartitionError but handle it.", e
-                )
-                pass
-
+        @topic_retry_decorator
         @contextmanager
         def create_kafka_topic(topic_name, timeout_ms=1500):
-            delete_topic(topic_name, timeout_ms)
+            with suppress(UnknownTopicOrPartitionError):
+                admin.delete_topics([topic_name], timeout_ms=10000)
 
-            topic_retry_decorator(admin.create_topics)(
+            admin.create_topics(
                 [NewTopic(topic_name, 1, 1)], timeout_ms=timeout_ms
             )
             yield
-            delete_topic(topic_name, timeout_ms=timeout_ms)
+            admin.delete_topics([topic_name], timeout_ms=10000)
 
         yield create_kafka_topic
 
