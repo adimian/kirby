@@ -80,7 +80,7 @@ Package name: <select id="package_name_input"></select> Log level: <select id="f
 var ajax_promises = []
 
 function queueAjaxCall(callback){
-    ajax_calls.push($.when(...ajax_calls).then(callback()));
+    ajax_promises.push($.when(...ajax_promises).then(callback()));
 }
 
 function getNextElementSiblingVisible(element){
