@@ -77,6 +77,11 @@ Package name: <select id="package_name_input"></select> Log level: <select id="f
 <script src="https://momentjs.com/downloads/moment.min.js"></script>
 
 <script>
+var ajax_promises = []
+
+function queueAjaxCall(callback){
+    ajax_calls.push($.when(...ajax_calls).then(callback()));
+}
 
 function getNextElementSiblingVisible(element){
     var nextElement = element.nextElementSibling;
@@ -106,7 +111,7 @@ function filterExistingLogs(){
 }
 
 function getNewLogs(){
-    $.ajax({
+    queueAjaxCall($.ajax({
         url: "/admin/log/new_logs",
         type: "get",
         data: {},
@@ -121,7 +126,7 @@ function getNewLogs(){
                 filterLogs(new_logs);
             }
         }
-    });
+    }));
 }
 
 function insertAfter(newNode, referenceNode) {
@@ -129,30 +134,31 @@ function insertAfter(newNode, referenceNode) {
 }
 
 function getOldLogs(){
-    $.ajax({
+    earliest_timestamp_log = earliest_timestamp_log.clone().subtract(1, 'minute');
+    var first_log = getNextElementSiblingVisible(space_before_update);
+    first_log.scrollIntoView();
+
+    queueAjaxCall($.ajax({
         url: "/admin/log/old_logs",
         type: "get",
         data: {
-            start: earliest_timestamp_log.clone().subtract(1, 'minute').format('YYYY-MM-DDTHH:mm:ss.SSS'),
-            end: earliest_timestamp_log.format('YYYY-MM-DDTHH:mm:ss.SSS')
+            start: earliest_timestamp_log.format('YYYY-MM-DDTHH:mm:ss.SSS'),
+            end: earliest_timestamp_log.clone().add(1, 'minute').format('YYYY-MM-DDTHH:mm:ss.SSS')
         },
         success: function(raw_json) {
             json = JSON.parse(raw_json);
-            var new_logs = [];
-            $.each(json.logs, function(idx, log){
-                var new_log = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>");
-                console.log(new_log);
-                insertAfter(new_log[0], space_before_update);
-                new_logs.push(new_log[0]);
+            var new_logs_in_document = [];
+            var old_logs = json.logs.reverse();
+            $.each(old_logs, function(idx, log){
+                var log_in_document = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>");
+                insertAfter(log_in_document[0], space_before_update);
+                new_logs_in_document.push(log_in_document[0]);
             });
             if (new_logs.length > 0){
                 filterLogs(new_logs);
             }
         }
-    });
-    var first_log = getNextElementSiblingVisible(space_before_update);
-    first_log.scrollIntoView();
-    earliest_timestamp_log = earliest_timestamp_log.clone().subtract(1, 'minute');
+    }));
 }
 
 function getDisplayedLogs(){
@@ -206,14 +212,16 @@ function initLogPage() {
     setInterval(updateSpaceBeforeUpdate,1500);
 }
 
+// Initialize earliest_timestamp for logs
 earliest_timestamp_log = moment().utc();
-console.log("earliest_timestamp_log");
-console.log(earliest_timestamp_log);
+
+// Select document's important items
 scroller = document.querySelector('#log_display');
 updater = document.querySelector('#updater');
 anchor_bottom = document.querySelector('#anchor_bottom');
 space_before_update = document.querySelector('#space_before_update');
 
+// Initialize components beahaviour
 $("#package_name_input").change(filterExistingLogs);
 $("#filter_log_level").change(filterExistingLogs);
 scroller.onscroll = function() {
@@ -221,6 +229,8 @@ scroller.onscroll = function() {
            getOldLogs();
     }
 };
+
+// Initialize page
 window.onload = initLogPage;
 
 </script>
