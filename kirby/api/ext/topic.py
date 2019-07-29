@@ -179,16 +179,12 @@ class Consumer:
     @topic_retry_decorator
     def between(self, start, end, timeout_ms=1500):
         def poll_next_record():
-            raw_records = self._consumer.poll(
-                timeout_ms=timeout_ms, max_records=1
+            records = parse_records(
+                self._consumer.poll(timeout_ms=timeout_ms, max_records=1),
+                raw_records=self.topic_config.raw_records,
             )
-            record_in_list = [
-                record
-                for records in raw_records.values()
-                for record in records
-            ]
-            if record_in_list:
-                return record_in_list[0]
+            if records:
+                return records[0]
             else:
                 return None
 
