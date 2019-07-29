@@ -181,7 +181,7 @@ class Consumer:
         def poll_next_record():
             records = parse_records(
                 self._consumer.poll(timeout_ms=timeout_ms, max_records=1),
-                raw_records=self.topic_config.raw_records,
+                raw_records=True,
             )
             if records:
                 return records[0]
@@ -265,7 +265,7 @@ class Producer:
                 timestamp_ms=timestamp_ms,
                 headers=self.format_headers(headers),
             )
-            self._producer.flush()
+            topic_retry_decorator(self._producer.flush)()
         else:
             self.topic_config.messages.append(
                 (
@@ -318,8 +318,6 @@ class Topic:
                 raw_records=raw_records,
             )
 
-        self._consumer = Consumer(self.topic_config)
-
         mode = "testing" if self.testing else "live"
         logger.debug(f"starting topic {topic_name} in {mode} mode")
 
@@ -337,6 +335,13 @@ class Topic:
             "_hidden_producer", Producer, self.topic_config
         )
         return self._hidden_producer
+
+    @property
+    def _consumer(self):
+        self.safely_set_attribute_if_does_not_exist(
+            "_hidden_consumer", Consumer, self.topic_config
+        )
+        return self._hidden_consumer
 
     def __getattr__(self, item):
         consumer_methods = [
@@ -368,4 +373,7 @@ class Topic:
                 object.__getattribute__(self, "_hidden_producer").close()
             except AttributeError:
                 pass
-            self._consumer.close()
+            try:
+                object.__getattribute__(self, "_hidden_consumer").close()
+            except AttributeError:
+                pass
