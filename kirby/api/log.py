@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import __main__
 from .ext.topic import Topic
@@ -28,6 +29,9 @@ class Logger:
                 f"The default_level given is not acceptable. "
                 f"It must be one of {LEVELS}"
             )
+        # Automatically assign a new group_id
+        if not kargs.get("group_id"):
+            kargs.update(group_id=str(uuid.uuid4()))
         self.logs_topic = Topic(LOGGER_TOPIC_NAME, **kargs)
         self.name = os.path.splitext(os.path.basename(__main__.__file__))[0]
         self.default_level = default_level
@@ -57,6 +61,9 @@ class Logger:
 class LogReader(Topic):
     def __init__(self, **kargs):
         topic_name = LOGGER_TOPIC_NAME
+        # Automatically assign a new group_id
+        if not kargs.get("group_id"):
+            kargs.update(group_id=str(uuid.uuid4()))
         kargs.update(raw_records=True)
         super().__init__(topic_name, **kargs)
 

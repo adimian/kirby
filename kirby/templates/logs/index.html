@@ -55,6 +55,14 @@
     color: #2471a3;
     font-style: italic;
 }
+
+#group_id {
+    color: #d5d8dc;
+    font-style: italic;
+    font-size: 11px;
+    padding-right: 20px;
+    text-align: right;
+}
 </style>
 
 
@@ -71,16 +79,19 @@ Package name: <select id="package_name_input"></select> Log level: <select id="f
     <div id="space_before_update"></div>
     <div id="anchor_bottom"></div>
 </div>
+<p id="group_id">Loading session id...</p>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 
 <script src="https://momentjs.com/downloads/moment.min.js"></script>
 
+<script src="//cdn.rawgit.com/lil-js/uuid/0.1.0/uuid.js"></script>
+
 <script>
 var ajax_promises = []
 
 function queueAjaxCall(callback){
-    ajax_promises.push($.when(...ajax_promises).then(callback()));
+    ajax_promises.push($.when(...ajax_promises).then(callback));
 }
 
 function getNextElementSiblingVisible(element){
@@ -125,6 +136,9 @@ function getNewLogs(){
             if (new_logs.length > 0){
                 filterLogs(new_logs);
             }
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+            console.log("The new logs haven't been retried : Status: " + textStatus + ". Error: " + errorThrown);
         }
     }));
 }
@@ -154,8 +168,8 @@ function getOldLogs(){
                 insertAfter(log_in_document[0], space_before_update);
                 new_logs_in_document.push(log_in_document[0]);
             });
-            if (new_logs.length > 0){
-                filterLogs(new_logs);
+            if (new_logs_in_document.length > 0){
+                filterLogs(new_logs_in_document);
             }
         }
     }));
@@ -193,6 +207,20 @@ function updateSpaceBeforeUpdate() {
 }
 
 function initLogPage() {
+    // Create session
+    $.ajax({
+        url: "/admin/log/start_session",
+        type: "post",
+        data: {},
+        dataType: "text",
+        success: function(){},
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+            alert("The log session can not be started. Status: " + textStatus + ". Error: " + errorThrown);
+        }
+    });
+
+    document.querySelector('#group_id').innerHTML = log_session;
+
     // Init package_name_input
     $.ajax({
         url: "/admin/log/script_list",
@@ -212,14 +240,18 @@ function initLogPage() {
     setInterval(updateSpaceBeforeUpdate,1500);
 }
 
+// Initialize log_session cookie
+log_session = lil.uuid();
+document.cookie = "log_session=" + log_session;
+
 // Initialize earliest_timestamp for logs
-earliest_timestamp_log = moment().utc();
+var earliest_timestamp_log = moment().utc();
 
 // Select document's important items
-scroller = document.querySelector('#log_display');
-updater = document.querySelector('#updater');
-anchor_bottom = document.querySelector('#anchor_bottom');
-space_before_update = document.querySelector('#space_before_update');
+var scroller = document.querySelector('#log_display');
+var updater = document.querySelector('#updater');
+var anchor_bottom = document.querySelector('#anchor_bottom');
+var space_before_update = document.querySelector('#space_before_update');
 
 // Initialize components behaviour
 $("#package_name_input").change(filterExistingLogs);

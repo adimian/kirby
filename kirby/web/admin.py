@@ -2,6 +2,7 @@ import datetime
 import dateutil.parser
 import json
 from smart_getenv import getenv
+from timeloop import Timeloop
 
 from flask import redirect, url_for, request, abort
 from flask_admin import Admin, AdminIndexView, expose, BaseView
@@ -144,13 +145,43 @@ admin.add_view(ScriptView(Script, db.session, category="Jobs"))
 
 
 class LogView(BaseView):
+
+    session_id_cookie_name = "log_session"
+    session_expiration = datetime.timedelta(seconds=10)
+    tl = Timeloop()
+
     def __init__(self, *args, **kargs):
-        self.log_reader = LogReader(
-            use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True)
-        )
+        self.sessions = {}
         self.rollback_earlier_timestamp = datetime.datetime.utcnow()
         self.delta_datetime = datetime.timedelta(minutes=1)
         super().__init__(*args, **kargs)
+        LogView.tl._add_job(self.clean_sessions, LogView.session_expiration)
+        LogView.tl.start()
+
+    def clean_sessions(self):
+        session_names = list(self.sessions.keys())
+        for session_name in session_names:
+            session = self.sessions[session_name]
+            if (
+                session["last_seen"] + self.session_expiration
+                < datetime.datetime.utcnow()
+            ):
+                admin_logger.info(
+                    f"Cleaning session='{session_name}' after "
+                    f"{self.session_expiration.total_seconds()} seconds "
+                    "of inactivity"
+                )
+                session["log_reader"].close()
+                self.sessions.pop(session_name)
+
+    def get_session_id(self):
+        session_id = request.cookies[self.session_id_cookie_name]
+        return session_id
+
+    def get_log_reader(self):
+        session = self.sessions[self.get_session_id()]
+        session["last_seen"] = datetime.datetime.utcnow()
+        return session["log_reader"]
 
     @staticmethod
     def parse_raw_logs(raw_logs):
@@ -182,12 +213,33 @@ class LogView(BaseView):
             return redirect(url_for("security.login", next=request.url))
         return self.render("logs/index.html")
 
+    @expose("/start_session", methods=("POST",))
+    def start_session(self):
+        if not is_authenticated(current_user):
+            return redirect(url_for("security.login", next=request.url))
+        else:
+            session_id = self.get_session_id()
+            self.sessions[session_id] = {
+                "log_reader": LogReader(
+                    use_tls=getenv(
+                        "KAFKA_USE_TLS",
+                        type=bool,
+                        default=True,
+                        group_id=session_id,
+                    )
+                ),
+                "last_seen": datetime.datetime.utcnow(),
+            }
+        return json.dumps(
+            {"status_code": 200, "message": "The session has been started."}
+        )
+
     @expose("/new_logs")
     def new_logs(self):
         if not is_authenticated(current_user):
             return redirect(url_for("security.login", next=request.url))
         else:
-            return self.parse_raw_logs(self.log_reader.nexts())
+            return self.parse_raw_logs(self.get_log_reader().nexts())
 
     @expose("/old_logs")
     def old_logs(self):
@@ -197,7 +249,7 @@ class LogView(BaseView):
         except (ValueError, TypeError) as e:
             abort(400, f"The format of the given date is not correct : {e}")
         else:
-            raw_old_logs = self.log_reader.between(
+            raw_old_logs = self.get_log_reader().between(
                 start_datetime, end_datetime, timeout_ms=3000
             )
             parsed_old_logs = self.parse_raw_logs(raw_old_logs)
