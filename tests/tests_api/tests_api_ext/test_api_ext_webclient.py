@@ -4,15 +4,6 @@ import pytest
 from kirby.api.ext.webclient import WebClient
 
 
-def test_creation_of_a_kirby_topic(kirby_topic_factory):
-    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
-        assert not kirby_topic.next(timeout_ms=100)
-
-        kirby_topic.send("Hello world")
-
-        assert kirby_topic.next(timeout_ms=500) == "Hello world"
-
-
 @pytest.mark.parametrize(
     "method", ["get", "post", "put", "delete", "head", "options"]
 )
