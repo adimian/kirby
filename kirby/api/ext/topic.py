@@ -42,6 +42,10 @@ kirby_value_deserializer = partial(msgpack.loads, raw=False)
 kirby_value_serializer = msgpack.dumps
 
 
+def datetime_to_kafka_ts(time):
+    return int(time.timestamp() * 1000)
+
+
 def parse_records(records_by_partition, raw_records=False):
     if records_by_partition:
         if raw_records:
@@ -87,38 +91,11 @@ def get_kafka_args(topic_config):
         return {}
 
 
-@contextmanager
-def temporary_rollback(consumer, start):
-    start_ts = start.timestamp() * 1000
-    partitions = consumer.assignment()
-    old_offsets = {
-        partition: consumer.committed(partition) for partition in partitions
-    }
-    offsets_for_start = consumer.offsets_for_times(
-        {p: start_ts for p in partitions}
-    )
-    new_offsets = {
-        p: offset
-        if offset
-        else OffsetAndTimestamp(
-            offset=consumer.highwater(p), timestamp=start_ts
-        )
-        for p, offset in offsets_for_start.items()
-    }
-
-    # Set offsets to start
-    for partition, offsets in new_offsets.items():
-        consumer.seek(partition=partition, offset=offsets.offset)
-
-    yield
-
-    # Rollback to the old offsets
-    for partition, offsets in old_offsets.items():
-        consumer.seek(partition=partition, offset=offsets)
-
-
 class Consumer:
-    def __init__(self, topic_config):
+    def __init__(self, topic_config, init_time=None):
+        if not init_time:
+            init_time = datetime.datetime.utcnow()
+
         self.topic_config = topic_config
         if not is_in_test_mode(topic_config):
             self._consumer = KafkaConsumer(
@@ -128,7 +105,8 @@ class Consumer:
                 **get_kafka_args(topic_config),
             )
             # Update metadata inside self._consumer
-            self._consumer.partitions_for_topic(self.topic_config.name)
+            self._consumer._coordinator.poll()
+            self.seek_at_timestamp(init_time)
 
     @topic_retry_decorator
     def _get_nexts_kafka_records(self, timeout_ms, max_records):
@@ -176,6 +154,39 @@ class Consumer:
             else:
                 return []
 
+    def seek_at_timestamp(self, datetime_timestamp):
+        kafka_timestamp = datetime_to_kafka_ts(datetime_timestamp)
+        partitions = self._consumer.assignment()
+        offsets_for_start = self._consumer.offsets_for_times(
+            {p: kafka_timestamp for p in partitions}
+        )
+
+        for topic_partition, offset_and_ts in offsets_for_start.items():
+            if not offset_and_ts:
+                offset_and_ts = OffsetAndTimestamp(offset=0, timestamp=None)
+            self._consumer.seek(
+                partition=topic_partition, offset=offset_and_ts.offset
+            )
+
+    @contextmanager
+    def temporary_rollback(self, datetime_timestamp):
+        # Init old_offsets
+        partitions = self._consumer.assignment()
+        old_offsets = {
+            partition: self._consumer.committed(partition)
+            for partition in partitions
+        }
+
+        self.seek_at_timestamp(datetime_timestamp)
+
+        yield
+
+        # Rollback to the old offsets
+        for partition, offset in old_offsets.items():
+            if not offset:
+                offset = 0
+            self._consumer.seek(partition=partition, offset=offset)
+
     @topic_retry_decorator
     def between(self, start, end, timeout_ms=1500):
         def poll_next_record():
@@ -199,9 +210,9 @@ class Consumer:
             else:
                 return messages
         else:
-            with temporary_rollback(self._consumer, start):
-                start_timestamp = start.timestamp() * 1000
-                end_timestamp = end.timestamp() * 1000
+            with self.temporary_rollback(start):
+                start_timestamp = datetime_to_kafka_ts(start)
+                end_timestamp = datetime_to_kafka_ts(end)
 
                 messages = []
                 record = poll_next_record()
@@ -258,7 +269,7 @@ class Producer:
             headers = {}
 
         if not is_in_test_mode(self.topic_config):
-            timestamp_ms = int(submitted.timestamp() * 1000)
+            timestamp_ms = datetime_to_kafka_ts(submitted)
             topic_retry_decorator(self._producer.send)(
                 self.topic_config.name,
                 value=message,
@@ -300,9 +311,13 @@ class Topic:
         use_tls=True,
         testing=False,
         raw_records=False,
+        init_time=None,
     ):
         self.name = topic_name
         self.testing = testing
+        self.init_time = (
+            datetime.datetime.utcnow() if not init_time else init_time
+        )
         if testing:
             self.topic_config = TopicTestModeConfig(
                 name=topic_name,
@@ -339,7 +354,10 @@ class Topic:
     @property
     def _consumer(self):
         self.safely_set_attribute_if_does_not_exist(
-            "_hidden_consumer", Consumer, self.topic_config
+            "_hidden_consumer",
+            Consumer,
+            self.topic_config,
+            init_time=self.init_time,
         )
         return self._hidden_consumer
 

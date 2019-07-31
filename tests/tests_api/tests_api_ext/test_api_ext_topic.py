@@ -10,11 +10,11 @@ from kirby.api.ext.topic import Producer, kirby_value_serializer, parse_records
 
 def test_creation_of_a_kirby_topic(kirby_topic_factory):
     with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
-        assert not kirby_topic.next(timeout_ms=100)
+        assert not kirby_topic.next()
 
         kirby_topic.send("Hello world")
 
-        assert kirby_topic.next(timeout_ms=500) == "Hello world"
+        assert kirby_topic.next() == "Hello world"
 
 
 @pytest.mark.parametrize(
@@ -135,9 +135,7 @@ def test_topic_can_rollback(kirby_topic_factory):
     now = datetime(year=2019, month=7, day=18, hour=15, minute=39)
     delta = timedelta(hours=1)
 
-    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
-        assert not kirby_topic.next()
-
+    with kirby_topic_factory("TOPIC_NAME", init_time=now) as kirby_topic:
         for i in range(10):
             kirby_topic.send(i, submitted=now + i * delta)
 
@@ -153,9 +151,7 @@ def test_topic_rollback_is_temporary(kirby_topic_factory):
     now = datetime(year=2019, month=7, day=24, hour=10, minute=45)
     delta = timedelta(hours=1)
 
-    with kirby_topic_factory("TOPIC_NAME") as kirby_topic:
-        assert not kirby_topic.next()
-
+    with kirby_topic_factory("TOPIC_NAME", init_time=now) as kirby_topic:
         for i in range(10):
             kirby_topic.send(i, submitted=now + i * delta)
 
