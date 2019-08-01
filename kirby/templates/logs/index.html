@@ -88,10 +88,10 @@ Package name: <select id="package_name_input"></select> Log level: <select id="f
 <script src="//cdn.rawgit.com/lil-js/uuid/0.1.0/uuid.js"></script>
 
 <script>
-var ajax_promises = []
+var old_ajax_promise;
 
-function queueAjaxCall(callback){
-    ajax_promises.push($.when(...ajax_promises).then(callback));
+function queueAjaxCall(get_ajax_promise){
+  old_ajax_promise = $.when(old_ajax_promise).then(get_ajax_promise);
 }
 
 function getNextElementSiblingVisible(element){
@@ -122,7 +122,7 @@ function filterExistingLogs(){
 }
 
 function getNewLogs(){
-    queueAjaxCall($.ajax({
+    return $.ajax({
         url: "/admin/log/new_logs",
         type: "get",
         data: {},
@@ -140,7 +140,7 @@ function getNewLogs(){
         error: function(XMLHttpRequest, textStatus, errorThrown) {
             console.log("The new logs haven't been retried : Status: " + textStatus + ". Error: " + errorThrown);
         }
-    }));
+    });
 }
 
 function insertAfter(newNode, referenceNode) {
@@ -152,7 +152,7 @@ function getOldLogs(){
     var first_log = getNextElementSiblingVisible(space_before_update);
     first_log.scrollIntoView();
 
-    queueAjaxCall($.ajax({
+    return $.ajax({
         url: "/admin/log/old_logs",
         type: "get",
         data: {
@@ -172,7 +172,7 @@ function getOldLogs(){
                 filterLogs(new_logs_in_document);
             }
         }
-    }));
+    });
 }
 
 function getDisplayedLogs(){
@@ -236,7 +236,7 @@ function initLogPage() {
     });
 
     // setInterval
-    setInterval(getNewLogs,1500);
+    setInterval(function(){queueAjaxCall(getNewLogs);}, 1500);
     setInterval(updateSpaceBeforeUpdate,1500);
 }
 
@@ -258,7 +258,7 @@ $("#package_name_input").change(filterExistingLogs);
 $("#filter_log_level").change(filterExistingLogs);
 scroller.onscroll = function() {
     if(scroller.scrollTop == 0) {
-           getOldLogs();
+           queueAjaxCall(getOldLogs);
     }
 };
 
