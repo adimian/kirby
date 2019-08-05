@@ -146,7 +146,7 @@ admin.add_view(ScriptView(Script, db.session, category="Jobs"))
 
 class LogView(BaseView):
 
-    session_id_cookie_name = "log_session"
+    cookie_name_session_id = "log_session"
     session_expiration = datetime.timedelta(seconds=10)
     tl = Timeloop()
 
@@ -155,7 +155,9 @@ class LogView(BaseView):
         self.rollback_earlier_timestamp = datetime.datetime.utcnow()
         self.delta_datetime = datetime.timedelta(minutes=1)
         super().__init__(*args, **kargs)
-        LogView.tl._add_job(self.clean_sessions, LogView.session_expiration)
+        LogView.tl._add_job(
+            func=self.clean_sessions, interval=LogView.session_expiration
+        )
         LogView.tl.start()
 
     def clean_sessions(self):
@@ -175,13 +177,21 @@ class LogView(BaseView):
                 self.sessions.pop(session_name)
 
     def get_session_id(self):
-        session_id = request.cookies[self.session_id_cookie_name]
+        session_id = request.cookies[self.cookie_name_session_id]
         return session_id
 
     def get_log_reader(self):
-        session = self.sessions[self.get_session_id()]
-        session["last_seen"] = datetime.datetime.utcnow()
-        return session["log_reader"]
+        session_id = self.get_session_id()
+        if session_id in self.sessions.keys():
+            session = self.sessions[session_id]
+            session["last_seen"] = datetime.datetime.utcnow()
+            return session["log_reader"]
+        else:
+            abort(
+                401,
+                f"You haven't started your session. "
+                "Please use the endpoint /admin/log/start_session",
+            )
 
     @staticmethod
     def parse_raw_logs(raw_logs):
@@ -243,17 +253,24 @@ class LogView(BaseView):
 
     @expose("/old_logs")
     def old_logs(self):
-        try:
-            start_datetime = dateutil.parser.parse(request.args.get("start"))
-            end_datetime = dateutil.parser.parse(request.args.get("end"))
-        except (ValueError, TypeError) as e:
-            abort(400, f"The format of the given date is not correct : {e}")
+        if not is_authenticated(current_user):
+            return redirect(url_for("security.login", next=request.url))
         else:
-            raw_old_logs = self.get_log_reader().between(
-                start_datetime, end_datetime, timeout_ms=3000
-            )
-            parsed_old_logs = self.parse_raw_logs(raw_old_logs)
-            return parsed_old_logs
+            try:
+                start_datetime = dateutil.parser.parse(
+                    request.args.get("start")
+                )
+                end_datetime = dateutil.parser.parse(request.args.get("end"))
+            except (ValueError, TypeError) as e:
+                abort(
+                    400, f"The format of the given date is not correct : {e}"
+                )
+            else:
+                raw_old_logs = self.get_log_reader().between(
+                    start_datetime, end_datetime, timeout_ms=3000
+                )
+                parsed_old_logs = self.parse_raw_logs(raw_old_logs)
+                return parsed_old_logs
 
     @expose("/script_list")
     def topic_list(self):

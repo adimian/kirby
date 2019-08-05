@@ -10,7 +10,6 @@ from smart_getenv import getenv
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.consumer.fetcher import ConsumerRecord
 from kafka.errors import NoBrokersAvailable, NodeNotReadyError
-from kafka.structs import OffsetAndTimestamp
 
 from ..context import ctx
 
@@ -93,9 +92,6 @@ def get_kafka_args(topic_config):
 
 class Consumer:
     def __init__(self, topic_config, init_time=None):
-        if not init_time:
-            init_time = datetime.datetime.utcnow()
-
         self.topic_config = topic_config
         if not is_in_test_mode(topic_config):
             self._consumer = KafkaConsumer(
@@ -106,7 +102,8 @@ class Consumer:
             )
             # Update metadata inside self._consumer
             self._consumer._coordinator.poll()
-            self.seek_at_timestamp(init_time)
+            if init_time:
+                self.seek_at_timestamp(init_time)
 
     @topic_retry_decorator
     def _get_nexts_kafka_records(self, timeout_ms, max_records):
@@ -157,16 +154,15 @@ class Consumer:
     def seek_at_timestamp(self, datetime_timestamp):
         kafka_timestamp = datetime_to_kafka_ts(datetime_timestamp)
         partitions = self._consumer.assignment()
-        offsets_for_start = self._consumer.offsets_for_times(
+        offsets = self._consumer.offsets_for_times(
             {p: kafka_timestamp for p in partitions}
         )
 
-        for topic_partition, offset_and_ts in offsets_for_start.items():
-            if not offset_and_ts:
-                offset_and_ts = OffsetAndTimestamp(offset=0, timestamp=None)
-            self._consumer.seek(
-                partition=topic_partition, offset=offset_and_ts.offset
-            )
+        for topic_partition, offset_and_ts in offsets.items():
+            if offset_and_ts:
+                self._consumer.seek(
+                    partition=topic_partition, offset=offset_and_ts.offset
+                )
 
     @contextmanager
     def temporary_rollback(self, datetime_timestamp):
@@ -183,9 +179,13 @@ class Consumer:
 
         # Rollback to the old offsets
         for partition, offset in old_offsets.items():
-            if not offset:
-                offset = 0
-            self._consumer.seek(partition=partition, offset=offset)
+            if offset:
+                self._consumer.seek(partition=partition, offset=offset)
+            else:
+                logger.warning(
+                    f"There where no offset for the partition {partition}"
+                )
+                logger.warning(f"old_offsets= {old_offsets}")
 
     @topic_retry_decorator
     def between(self, start, end, timeout_ms=1500):
