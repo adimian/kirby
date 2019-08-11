@@ -10,7 +10,6 @@ def topic_sender():
     topic_config = TopicConfig(
         name=None, group_id=None, use_tls=use_tls, raw_records=True
     )
-    producer = Producer(topic_config)
 
     @topic_retry_decorator
     def send(topic_name, data, **kargs):
