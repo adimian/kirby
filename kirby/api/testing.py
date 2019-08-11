@@ -13,9 +13,9 @@ def topic_sender():
     producer = Producer(topic_config)
 
     @topic_retry_decorator
-    def send(topic_name, data, submitted=None):
+    def send(topic_name, data, **kargs):
         Producer(topic_config._replace(name=topic_name)).send(
-            data, submitted=submitted
+            data, **kargs
         )
 
     yield send
