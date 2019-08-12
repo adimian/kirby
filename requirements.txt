@@ -16,3 +16,4 @@ requests_flask_adapter==0.0.1
 smart-getenv==1.1.0
 SQLAlchemy==1.3.3
 tenacity==5.0.4
+virtualenv-api==2.1.17
