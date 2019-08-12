@@ -46,8 +46,10 @@ def test_watcher_can_ensure_virtualenv_creation():
     env_root = mkdtemp()
     context = watcher.ensure_environment(env_root)
 
-    for dirs in (context.env_dir, context.python_dir):
-        assert os.path.isdir(dirs)
+    assert (
+        os.getenv("DUMMY_PACKAGE_INSTALL"),
+        os.getenv("DUMMY_PACKAGE_VERSION"),
+    ) in context.installed_packages
 
 
 #

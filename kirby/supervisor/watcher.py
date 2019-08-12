@@ -6,7 +6,7 @@ from os.path import expanduser
 import attr
 from smart_getenv import getenv
 
-from .envbuilder import configure_env_builder, install_package
+from virtualenvapi.manage import VirtualEnvironment
 
 logger = logging.getLogger(__name__)
 
@@ -33,30 +33,17 @@ class Watcher:
     def venv_name(self):
         return f"kirby-{self.package}-{self.version}"
 
-    def ensure_environment(self, kirby_venv_directory):
-
+    def ensure_environment(self, kirby_venv_directory, pip_cache=None):
         process_venv = os.path.join(kirby_venv_directory, self.venv_name())
 
-        builder = configure_env_builder(process_venv)
+        logging.info(f"creating venv for {self.venv_name()} at {process_venv}")
+        env = VirtualEnvironment(process_venv, cache=pip_cache)
 
-        if not os.path.exists(process_venv):
-            context = builder.ensure_directories(process_venv)
-            logging.info(
-                f"creating venv for {self.venv_name()} at {process_venv}"
-            )
-            builder.create(process_venv)
+        package_name = f"{self.package}=={self.version}"
 
-            package_name = f"{self.package}=={self.version}"
+        env.install(package_name)
 
-            install_package(
-                executable=context.env_exe,
-                env_dir=process_venv,
-                name=package_name,
-            )
-        else:
-            context = builder.ensure_directories(process_venv)
-
-        return context
+        return env
 
     def run(self):
         kirby_venv_directory = getenv(
