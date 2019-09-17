@@ -41,7 +41,7 @@ class Timer(Thread):
 
 
 def make_me_leader(identity, server, check_ttl):
-    expiry = int(check_ttl * 1000)
+    expiry = int(check_ttl * 1500)
     current_leader = server.get(LEADER_KEY)
 
     if current_leader and current_leader.decode("utf-8") == identity:

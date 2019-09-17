@@ -18,7 +18,7 @@ class Environment(db.Model):
 
 class JobType(Enum):
     SCHEDULED = "scheduled"
-    TRIGGERED = "triggered"
+    DAEMON = "daemon"
 
 
 class Job(db.Model):
@@ -285,6 +285,12 @@ class Script(db.Model):
 
     first_seen = db.Column(db.DateTime)
     last_seen = db.Column(db.DateTime)
+
+    @validates("package_version")
+    def semver_package_version(self, key, version):
+        if "=" in version or "<" in version or ">" in version:
+            raise ValueError("version must be semantic version")
+        return version
 
     def add_source(self, source):
         self.sources.append(source)
