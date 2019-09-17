@@ -236,7 +236,8 @@ class Consumer:
         return self
 
     def __next__(self):
-        return self.next(timeout_ms=float("inf"))
+        while True:
+            return self.next(timeout_ms=float("inf"))
 
 
 class Producer:
@@ -395,3 +396,6 @@ class Topic:
                 object.__getattribute__(self, "_hidden_consumer").close()
             except AttributeError:
                 pass
+
+    def __iter__(self):
+        return self._consumer
