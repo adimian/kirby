@@ -1,9 +1,6 @@
 import requests
-import logging
 
 from .context import ContextManager, ctx
-
-logger = logging.getLogger(__name__)
 
 
 class ServerError(BaseException):

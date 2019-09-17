@@ -80,12 +80,13 @@ class Arbiter:
         self._thread = threading.Thread(target=self.raise_process)
         self._thread.start()
         if block:
-            self._thread.join()
+            self.join()
 
     def get_return_values(self):
         return self._process_return_value
 
     def join(self):
+        # TODO : Catch thread's errors
         if self.status == ProcessState.RUNNING:
             self._thread.join()
 
