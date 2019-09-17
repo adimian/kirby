@@ -1,18 +1,20 @@
 language: python
 python:
-  - "3.6"
-
+- '3.6'
 cache: pip
-
 install:
-  - pip install -r requirements-dev.txt
-  - pip install -e .
-
+- pip install -r requirements-dev.txt
+- pip install -e .
 script:
-  - pytest --cov=kirby --cov-report term-missing
-
+- pytest --cov=kirby --cov-report term-missing
 after_success:
-  - coveralls
-
+- coveralls
 services:
-  - redis-server
+- redis-server
+deploy:
+  user: adimian
+  provider: pypi
+  password:
+    secure: gxHCMHUWqPG7BDsRnPhg2lYadpV7C8loScw3tWDtjSE7ZD7ZnqUy8+QQoMo1AAvo9ZOxYlyY7lHj0dNQLGOyJm2KlWlSpBjks06zQ5Xw+zQvKVf2Z3YY4UhjXjFujjsSQijToo1QTfZd97oqlZHdXqJ+toDhrbWQ2gTPw3JScMNPNgNm30ZrUuds+Z4V9FyiN7bXDefIUyJ4wnKR7ErKEF26yWS+lXNo48TZLArQIGXWp+ZqeUU/8VbnZ1f1gKqsbRNzFZihDlcf3SmpGo/ZzEN5vMT7l2Ip4Cx1L32hOSBCFUZfMlaegjERj9ugN2U3PdER1SM+F/vOA7Qc9QWmaNJOkDx+zwE9y8XpK4Hjr7YRGpQi4Qw4moqcSegEhDwPJ8l26spu0ik+OxJdqrRTunl7jyZcvp5Z/ENRN0s4UWwenmKHZc3nqsT8gqvZdpZBI8OexSTkq0kwiTvGEspM+kW3dP+SoRn5ruuLJR6gXK+cPminePxR9Hkqv3ajNRG/RZRsFl/9Qhp7INKdCMW6GBdLhiiWZmbdzh2q8mxcXZhTzrneeVC4FvgjTdGCxVz9ZZuXGCSJ1KT+n9KmSrHsTm+dLpVrQCLu+fYMkWIBIn77UuLKqE4XALONSFvqPvmr1qybmI6vTwZOXqwhSf1gmWyAzJUGqsT+sTTno5Kkg1U=
+  on:
+    branch: master

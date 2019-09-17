@@ -22,7 +22,7 @@ def get_signature():
 
 class Context:
     def __getattr__(self, item):
-        signature = get_signature().get(item, {"type": str})
+        signature = get_signature().get(item, {})
         return getenv(item, **signature)
 
     def __repr__(self):

@@ -1,19 +1,25 @@
 import logging
 import datetime
+from urllib.parse import urljoin
 import requests
 import msgpack
 from smart_getenv import getenv
 import tenacity
 
 from kafka import KafkaConsumer, KafkaProducer
-from kafka.errors import NoBrokersAvailable
+from kafka.errors import NoBrokersAvailable, NodeNotReadyError
 
 logger = logging.getLogger(__name__)
 
-RETRIES = getenv("EXT_RETRIES", type=int)
-WAIT_BETWEEN_RETRIES = getenv("EXT_WAIT_BETWEEN_RETRIES", type=float)
+RETRIES = getenv("EXT_RETRIES", type=int, default=3)
+WAIT_BETWEEN_RETRIES = getenv(
+    "EXT_WAIT_BETWEEN_RETRIES", type=float, default=0.4
+)
 kafka_retry_args = {
-    "retry": tenacity.retry_if_exception_type(NoBrokersAvailable),
+    "retry": (
+        tenacity.retry_if_exception_type(NoBrokersAvailable)
+        | tenacity.retry_if_exception_type(NodeNotReadyError)
+    ),
     "wait": tenacity.wait_fixed(WAIT_BETWEEN_RETRIES),
     "stop": tenacity.stop_after_attempt(RETRIES),
     "reraise": True,
@@ -33,16 +39,10 @@ webserver_retry_args = {
 
 
 class Topic:
-    def __init__(
-        self,
-        kirby_app,
-        topic_name_variable_name,
-        ssl_security_protocol=True,
-        testing=False,
-    ):
-        self.name = kirby_app.ctx[topic_name_variable_name]
+    def __init__(self, kirby_app, topic_name, use_tls=True, testing=False):
+        self.name = topic_name
         self.testing = testing
-        self.ssl_security_protocol = ssl_security_protocol
+        self.use_tls = use_tls
         self.kirby_app = kirby_app
         self.init_kafka()
         mode = "testing" if self.testing else "live"
@@ -54,7 +54,7 @@ class Topic:
             "bootstrap_servers": self.kirby_app.ctx.KAFKA_BOOTSTRAP_SERVERS
         }
 
-        if self.ssl_security_protocol:
+        if self.use_tls:
             kafka_args.update(
                 {
                     "ssl_cafile": self.kirby_app.ctx.KAFKA_SSL_CAFILE,
@@ -154,6 +154,12 @@ class Topic:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next(timeout_ms=float("inf"))
+
 
 class WebClient:
     def __init__(self, name, web_endpoint_base, session=None):
@@ -165,36 +171,29 @@ class WebClient:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        self._session.close()
 
-    @tenacity.retry(**webserver_retry_args)
-    def post(self, endpoint, data, params=None):
-        if not params:
-            params = {}
-        result = self._session.post(
-            "/".join([self.web_endpoint_base, endpoint]),
-            data=data,
-            params=params,
-        )
-        if result.status_code == 200:
-            return result.json()
-        raise WebClientError(
-            f"POST error on {result.url}. "
-            f"Status code : {result.status_code}. "
-            f"Response : {result.text}"
-        )
+    def _request_decorator(self, method):
+        def request(endpoint, **kwargs):
+            result = method(
+                urljoin(self.web_endpoint_base, endpoint), **kwargs
+            )
 
-    @tenacity.retry(**webserver_retry_args)
-    def get(self, endpoint, params=None):
-        result = self._session.get(
-            "/".join([self.web_endpoint_base, endpoint]), params=params
-        )
-        if result.status_code == 200:
-            json = result.json()
-            if json:
-                return json
-        raise WebClientError(
-            f"GET error on {result.url}. "
-            f"Status code : {result.status_code}. "
-            f"Response : {result.text}"
-        )
+            if result.status_code == 200:
+                return result.json()
+            raise WebClientError(
+                f"{method} error on {result.url}. "
+                f"Status code : {result.status_code}. "
+                f"Response : {result.text}"
+            )
+
+        return tenacity.retry(**webserver_retry_args)(request)
+
+    def __getattr__(self, item):
+        method = getattr(self._session, item)
+        if callable(method):
+            return self._request_decorator(method)
+        else:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{item}'"
+            )

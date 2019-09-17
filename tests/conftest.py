@@ -1,6 +1,8 @@
 from pytest import fixture
 import os
 from requests_flask_adapter import Session
+import tenacity
+from kirby.api.ext import kafka_retry_args
 
 
 from kirby.web import app_maker
@@ -21,7 +23,7 @@ from kirby.models import (
 API_ROOT = "http://some-test-server.somewhere"
 
 
-@fixture(scope="function")
+@fixture
 def webapp():
     app = app_maker(
         config={
@@ -252,7 +254,7 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
     db.session.commit()
 
 
-@fixture(scope="function")
+@fixture
 def kafka_topic_factory():
     from smart_getenv import getenv
     from contextlib import contextmanager
@@ -267,36 +269,41 @@ def kafka_topic_factory():
         "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
     )
     if bootstrap_servers:
-        security_protocol = getenv("KAFKA_SECURITY_PROTOCOL")
-        if security_protocol == "SSL":
-            args = {
-                "security_protocol": security_protocol,
-                "ssl_cafile": getenv("KAFKA_SSL_CAFILE"),
-                "ssl_certfile": getenv("KAFKA_SSL_CERTFILE"),
-                "ssl_keyfile": getenv("KAFKA_SSL_KEYFILE"),
-            }
-        else:
-            args = {}
+        args = {"bootstrap_servers": bootstrap_servers}
+        if getenv("KAFKA_USE_TLS", type=bool):
+            args.update(
+                {
+                    "security_protocol": "SSL",
+                    "ssl_cafile": getenv("KAFKA_SSL_CAFILE"),
+                    "ssl_certfile": getenv("KAFKA_SSL_CERTFILE"),
+                    "ssl_keyfile": getenv("KAFKA_SSL_KEYFILE"),
+                }
+            )
 
-        admin = KafkaAdminClient(bootstrap_servers=bootstrap_servers, **args)
+        admin = tenacity.retry(**kafka_retry_args)(KafkaAdminClient)(**args)
 
+        @tenacity.retry(**kafka_retry_args)
         @contextmanager
-        def create_kafka_topic(topic_name):
+        def create_kafka_topic(topic_name, timeout_ms=1500):
             try:
                 admin.delete_topics([topic_name])
             except UnknownTopicOrPartitionError:
                 pass
 
-            admin.create_topics([NewTopic(topic_name, 1, 1)], timeout_ms=1500)
+            admin.create_topics(
+                [NewTopic(topic_name, 1, 1)], timeout_ms=timeout_ms
+            )
             yield
 
             admin.delete_topics([topic_name])
-            admin.close()
 
-        return create_kafka_topic
+        yield create_kafka_topic
+
+        admin.close()
 
     else:
         logger.warning(
             f"There is no KAFKA_BOOTSTRAP_SERVERS. "
-            f"Creation of kafka_topic skipped."
+            "Creation of kafka_topic skipped."
         )
+        yield
