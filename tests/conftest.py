@@ -1,9 +1,6 @@
-from pytest import fixture
 import os
+from pytest import fixture
 from requests_flask_adapter import Session
-import tenacity
-from kirby.api.ext import kafka_retry_args
-
 
 from kirby.web import app_maker
 from kirby.models import (
@@ -256,12 +253,15 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 
 @fixture
 def kafka_topic_factory():
+    import logging
+    from contextlib import contextmanager, suppress
     from smart_getenv import getenv
-    from contextlib import contextmanager
+
     from kafka import KafkaAdminClient
     from kafka.admin import NewTopic
     from kafka.errors import UnknownTopicOrPartitionError
-    import logging
+
+    from kirby.api.ext.topic import topic_retry_decorator
 
     logger = logging.getLogger(__name__)
 
@@ -280,22 +280,19 @@ def kafka_topic_factory():
                 }
             )
 
-        admin = tenacity.retry(**kafka_retry_args)(KafkaAdminClient)(**args)
+        admin = KafkaAdminClient(**args)
 
-        @tenacity.retry(**kafka_retry_args)
+        @topic_retry_decorator
         @contextmanager
         def create_kafka_topic(topic_name, timeout_ms=1500):
-            try:
-                admin.delete_topics([topic_name])
-            except UnknownTopicOrPartitionError:
-                pass
+            with suppress(UnknownTopicOrPartitionError):
+                admin.delete_topics([topic_name], timeout_ms=10000)
 
             admin.create_topics(
                 [NewTopic(topic_name, 1, 1)], timeout_ms=timeout_ms
             )
             yield
-
-            admin.delete_topics([topic_name])
+            admin.delete_topics([topic_name], timeout_ms=10000)
 
         yield create_kafka_topic
 

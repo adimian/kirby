@@ -1,15 +1,7 @@
 from unittest.mock import patch, MagicMock
 import pytest
 
-from kirby.api.ext import WebClient
-
-
-def test_creation_of_a_kirby_topic(kirby_topic):
-    assert not kirby_topic.next()
-
-    kirby_topic.send("Hello world")
-
-    assert kirby_topic.next() == "Hello world"
+from kirby.api.ext.webclient import WebClient
 
 
 @pytest.mark.parametrize(

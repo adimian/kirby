@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+{% extends 'admin/master.html' %}
+{% block body %}
+
+<style>
+#log_display {
+    height: 60vh;
+    overflow-y: scroll;
+    padding: 0 10px;
+    padding-top: 0px;
+    padding-right: 10px;
+    padding-bottom: 0px;
+    padding-left: 10px;
+    margin-top: 20px;
+    border: 1px solid #ececec;
+}
+
+.scroller * {
+    overflow-anchor: none;
+}
+
+#anchor_bottom {
+    overflow-anchor: auto;
+    height: 1px;
+}
+
+#updater {
+    height: 30px;
+    color:  #bb8fce;
+    text-align: center;
+}
+
+#space_before_update {
+    height: 40vh;
+}
+
+.log * {
+    margin: 0px;
+    display: inline;
+}
+
+.critical{
+    color: #c0392b;
+}
+.error{
+    color: #f39c12;
+}
+.warning{
+    color: #f1c40f;
+}
+.info{
+    color: #145a32;
+}
+.debug{
+    color: #2471a3;
+    font-style: italic;
+}
+
+#group_id {
+    color: #d5d8dc;
+    font-style: italic;
+    font-size: 11px;
+    padding-right: 20px;
+    text-align: right;
+}
+</style>
+
+
+Package name: <select id="package_name_input"></select> Log level: <select id="filter_log_level">
+    <option value=50>CRITICAL</option>
+    <option value=40>ERROR</option>
+    <option value=30>WARNING</option>
+    <option value=20>INFO</option>
+    <option selected value=10>All (DEBUG)</option>
+</select>
+
+<div id="log_display" class="scroller">
+    <div id="updater">Scroll to load previous logs...</div>
+    <div id="space_before_update"></div>
+    <div id="anchor_bottom"></div>
+</div>
+<p id="group_id">Loading session id...</p>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<script src="https://momentjs.com/downloads/moment.min.js"></script>
+
+<script src="//cdn.rawgit.com/lil-js/uuid/0.1.0/uuid.js"></script>
+
+<script>
+var old_ajax_promise;
+
+function queueAjaxCall(get_ajax_promise){
+  old_ajax_promise = $.when(old_ajax_promise).then(get_ajax_promise);
+}
+
+function getNextElementSiblingVisible(element){
+    var nextElement = element.nextElementSibling;
+    while (nextElement.style.display == "none"){
+        nextElement = nextElement.nextElementSibling;
+    }
+    return nextElement;
+}
+
+function filterLogs(logs){
+    var log_level = $("#filter_log_level").val();
+    var package_name = $("#package_name_input").val();
+    for (var i = 0; i < logs.length; i++) {
+        var log = logs[i];
+        var log_value = log.getAttribute('value');
+        var log_package_name = log.getAttribute('package_name');
+        if ((log_value < log_level) || (package_name != log_package_name)) {
+            log.style.display = "none";
+        } else {
+            log.style.display = "block";
+        }
+    }
+}
+
+function filterExistingLogs(){
+    filterLogs(document.getElementsByClassName("log"));
+}
+
+function getNewLogs(){
+    return $.ajax({
+        url: "/admin/log/new_logs",
+        type: "get",
+        data: {},
+        success: function(raw_json) {
+            json = JSON.parse(raw_json);
+            var new_logs = [];
+            $.each(json.logs, function(idx, log){
+                var new_log = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>").insertBefore($("#anchor_bottom"));
+                new_logs.push(new_log[0]);
+            });
+            if (new_logs.length > 0){
+                filterLogs(new_logs);
+            }
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+            console.log("The new logs haven't been retried : Status: " + textStatus + ". Error: " + errorThrown);
+        }
+    });
+}
+
+function insertAfter(newNode, referenceNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+}
+
+function getOldLogs(){
+    earliest_timestamp_log = earliest_timestamp_log.clone().subtract(1, 'minute');
+    var first_log = getNextElementSiblingVisible(space_before_update);
+    first_log.scrollIntoView();
+
+    return $.ajax({
+        url: "/admin/log/old_logs",
+        type: "get",
+        data: {
+            start: earliest_timestamp_log.format('YYYY-MM-DDTHH:mm:ss.SSS'),
+            end: earliest_timestamp_log.clone().add(1, 'minute').format('YYYY-MM-DDTHH:mm:ss.SSS')
+        },
+        success: function(raw_json) {
+            json = JSON.parse(raw_json);
+            var new_logs_in_document = [];
+            var old_logs = json.logs.reverse();
+            $.each(old_logs, function(idx, log){
+                var log_in_document = $("<div class='log' value= " + log.value + " package_name='" + log.package_name + "'><p>" + log.timestamp + " :</p><p class='" + log.level + "'> \[" + log.level.toUpperCase() + "\] " + log.message + "</p></div>");
+                insertAfter(log_in_document[0], space_before_update);
+                new_logs_in_document.push(log_in_document[0]);
+            });
+            if (new_logs_in_document.length > 0){
+                filterLogs(new_logs_in_document);
+            }
+        }
+    });
+}
+
+function getDisplayedLogs(){
+	var all_displayed_logs = [...document.getElementsByClassName('log')];
+    for (var i=0; i < all_displayed_logs.length; i++){
+    	if (all_displayed_logs[i].style.display == "none"){
+        	all_displayed_logs.splice(i, 1);
+            i --;
+        }
+    }
+    return all_displayed_logs;
+}
+
+function updateSpaceBeforeUpdate() {
+    var all_displayed_logs = getDisplayedLogs();
+    var total_height = scroller.clientHeight;
+    var old_size = space_before_update.clientHeight;
+
+    if (all_displayed_logs.length > 0) {
+        var height_of_one_log = all_displayed_logs[0].clientHeight;
+        var height_of_all_logs = height_of_one_log * all_displayed_logs.length;
+        var new_size = Math.max(total_height - height_of_all_logs, 0);
+    }
+    else {
+        var new_size = total_height + 30;
+    }
+
+    space_before_update.style.height = (new_size + "px");
+    if (new_size > old_size){
+        anchor_bottom.scrollIntoView();
+    }
+}
+
+function initLogPage() {
+    // Create session
+    $.ajax({
+        url: "/admin/log/start_session",
+        type: "post",
+        data: {},
+        dataType: "text",
+        success: function(){},
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+            alert("The log session can not be started. Status: " + textStatus + ". Error: " + errorThrown);
+        }
+    });
+
+    document.querySelector('#group_id').innerHTML = log_session;
+
+    // Init package_name_input
+    $.ajax({
+        url: "/admin/log/script_list",
+        type: "get",
+        data: {},
+        success: function(json) {
+            var script_list = JSON.parse(json);
+            $("#package_name_input").append("<option>--Select package--</option>");
+            $.each(script_list, function(idx, script){
+                $("#package_name_input").append("<option>" + script +"</option>");
+            });
+        }
+    });
+
+    // setInterval
+    setInterval(function(){queueAjaxCall(getNewLogs);}, 1500);
+    setInterval(updateSpaceBeforeUpdate,1500);
+}
+
+// Initialize log_session cookie
+log_session = lil.uuid();
+document.cookie = "log_session=" + log_session;
+
+// Initialize earliest_timestamp for logs
+var earliest_timestamp_log = moment().utc();
+
+// Select document's important items
+var scroller = document.querySelector('#log_display');
+var updater = document.querySelector('#updater');
+var anchor_bottom = document.querySelector('#anchor_bottom');
+var space_before_update = document.querySelector('#space_before_update');
+
+// Initialize components behaviour
+$("#package_name_input").change(filterExistingLogs);
+$("#filter_log_level").change(filterExistingLogs);
+scroller.onscroll = function() {
+    if(scroller.scrollTop == 0) {
+           queueAjaxCall(getOldLogs);
+    }
+};
+
+// Initialize page
+window.onload = initLogPage;
+
+</script>
+{% endblock body %}
