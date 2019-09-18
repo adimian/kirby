@@ -15,9 +15,9 @@ from ..context import ctx
 
 logger = logging.getLogger(__name__)
 
-RETRIES = getenv("EXT_RETRIES", type=int, default=3)
+RETRIES = getenv("KIRBY_NB_RETRIES_EXT_CO", type=int, default=3)
 WAIT_BETWEEN_RETRIES = getenv(
-    "EXT_WAIT_BETWEEN_RETRIES", type=float, default=0.4
+    "KIRBY_WAIT_BETWEEN_RETRIES_EXT_CO", type=float, default=0.4
 )
 topic_retry_decorator = tenacity.retry(
     retry=(
