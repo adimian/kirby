@@ -2,6 +2,7 @@ from pytest import raises
 from datetime import datetime
 
 from dateutil.parser import parse
+from kirby.exc import ConfigException
 from kirby.models import (
     db,
     Job,
@@ -16,6 +17,15 @@ from kirby.models import (
     ConfigKey,
     ConfigScope,
 )
+from kirby.web import app_maker
+
+
+def test_exception_is_raised_when_db_config_is_missing():
+    with raises(ConfigException):
+        app_maker(config={
+            "TESTING": True,
+            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+        })
 
 
 def test_it_creates_a_job(webapp):

@@ -4,3 +4,7 @@ class CoolDownException(Exception):
     """
 
     pass
+
+
+class ConfigException(Exception):
+    pass

@@ -1,6 +1,6 @@
+import logging
 import requests
 from urllib.parse import urljoin
-import logging
 
 from .context import ContextManager, ctx
 
