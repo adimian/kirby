@@ -6,7 +6,7 @@ import codecs
 KIRBY_ENV_SIGNATURE = "__KIRBY_ENV_SIGNATURE"
 
 
-class EnvironmentVariableAbsence(Exception):
+class MissingEnvironmentVariable(Exception):
     pass
 
 
@@ -35,7 +35,7 @@ class Context:
         if attr:
             return attr
         else:
-            raise EnvironmentVariableAbsence(
+            raise MissingEnvironmentVariable(
                 f"The environment variable {item} hasn't been initialized."
             )
 

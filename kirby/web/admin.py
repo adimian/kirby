@@ -12,7 +12,7 @@ from flask_login import current_user
 
 from kirby.models import ConfigKey, NotificationEmail
 from kirby.api.log import LogReader, CORRESPONDENCES_VALUES_LEVELS
-from kirby.api.context import EnvironmentVariableAbsence
+from kirby.api.context import MissingEnvironmentVariable
 
 import logging
 
@@ -284,7 +284,7 @@ class LogView(BaseView):
 
 try:
     admin.add_view(LogView(name="Logs", url="/admin/log"))
-except EnvironmentVariableAbsence as e:
+except MissingEnvironmentVariable as e:
     admin_logger.error(
         "The Log view isn't initialized because of the following error:"
     )
