@@ -10,12 +10,17 @@ def topic_sender():
     topic_config = TopicConfig(
         name=None, group_id=None, use_tls=use_tls, raw_records=True
     )
+    producers = {}
 
     @topic_retry_decorator
     def send(topic_name, data, **kargs):
-        Producer(topic_config._replace(name=topic_name)).send(
-            data, **kargs
-        )
+        if topic_name not in producers.keys():
+            producers[topic_name] = Producer(
+                topic_config._replace(name=topic_name)
+            )
+        producers[topic_name].send(data, **kargs)
 
     yield send
-    producer.close()
+
+    for p in producers.values():
+        p.close()
