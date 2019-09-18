@@ -10,18 +10,17 @@ ENVS = {
     "Test": ("test", "0.0.5"),
     "Production": ("prod", "2.0.5"),
 }
+TOPICS = {"bakery", "cashregister", "orders", "timeseries", "factory"}
 JOBS = {
     "sensor_cashregister": {
-        "topics_related": ["bakery", "cashregister"],
         "description": "Fetch bakery realtime sales",
-        "type": models.JobType.TRIGGERED,
+        "type": models.JobType.DAEMON,
         "config": {
             "BAKERY_API_BASE": BAKERY_API,
             "CASHREGISTER_TOPIC_NAME": "cashregister",
         },
     },
     "sensor_orders": {
-        "topics_related": ["bakery", "orders"],
         "description": "Fetch bakery forecast sales",
         "type": models.JobType.SCHEDULED,
         "scheduled_param": {
@@ -35,25 +34,22 @@ JOBS = {
         },
     },
     "insert_forecast": {
-        "topics_related": ["cashregister", "timeseries"],
         "description": "From forecast, push points on the timeseries tables",
-        "type": models.JobType.TRIGGERED,
+        "type": models.JobType.DAEMON,
         "config": {
             "BAKERY_API_BASE": BAKERY_API,
             "CASHREGISTER_TOPIC_NAME": "cashregister",
         },
     },
     "insert_realtime": {
-        "topics_related": ["orders", "timeseries"],
         "description": "From realtime, push points on the timeseries tables",
-        "type": models.JobType.TRIGGERED,
+        "type": models.JobType.DAEMON,
         "config": {
             "BAKERY_API_BASE": BAKERY_API,
             "ORDERS_TOPIC_NAME": "orders",
         },
     },
     "booking_process": {
-        "topics_related": ["orders", "factory"],
         "description": "From forecast send orders to the factory",
         "type": models.JobType.SCHEDULED,
         "scheduled_param": {"name": "every day at 6am", "hour": "6"},
@@ -132,14 +128,7 @@ def create_topics(s):
         s.add(topic)
         return topic
 
-    topic_names = set(
-        [
-            name
-            for job_info in JOBS.values()
-            for name in job_info["topics_related"]
-        ]
-    )
-    return {name: create_topic(name) for name in topic_names}
+    return {topic_name: create_topic(topic_name) for topic_name in TOPICS}
 
 
 def create_scripts(s, contexts, jobs, envs):
