@@ -25,11 +25,13 @@ class Registration(Resource):
     def patch(self):
         args = registration_parser.parse_args()
 
-        # Update last_seen
+        # Update first_seen and last_seen
         try:
             script = (
                 db.session.query(Script).filter_by(id=args["script_id"]).one()
             )
+            if script.first_seen is None:
+                script.first_seen = datetime.utcnow()
             script.last_seen = datetime.utcnow()
         except NoResultFound:
             abort(
