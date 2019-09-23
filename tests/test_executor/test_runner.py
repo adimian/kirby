@@ -2,7 +2,7 @@ import os
 import pytest
 from tempfile import mkdtemp
 
-from kirby.supervisor.arbiter import Arbiter, ProcessState
+from kirby.supervisor.executor import Runner, ProcessState
 from kirby.models import JobType
 
 
@@ -14,7 +14,7 @@ def venv_directory():
 
 
 def test_it_generates_venv_name():
-    arbiter = Arbiter(
+    runner = Runner(
         script_type=JobType.SCHEDULED,
         package_name="dummy",
         version="0.0.0.dev",
@@ -22,7 +22,7 @@ def test_it_generates_venv_name():
         notify_retry=True,
         env={"KIRBY_TEST_MARKER": "hello, world!"},
     )
-    assert arbiter.venv_name == "kirby-dummy-0.0.0.dev"
+    assert runner.venv_name == "kirby-dummy-0.0.0.dev"
 
 
 @pytest.mark.skipif(
@@ -39,14 +39,14 @@ def test_it_generates_venv_name():
         "to install with DUMMY_PACKAGE_VERSION"
     ),
 )
-def test_arbiter_can_ensure_virtualenv_creation(venv_directory):
+def test_runner_can_ensure_virtualenv_creation(venv_directory):
     if not os.getenv("PIP_INDEX_URL"):
         print(
             f"You haven't set any extra index for pip. "
             "Make sure the package exists"
         )
 
-    arbiter = Arbiter(
+    runner = Runner(
         script_type=JobType.SCHEDULED,
         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
         version=os.getenv("DUMMY_PACKAGE_VERSION"),
@@ -55,7 +55,7 @@ def test_arbiter_can_ensure_virtualenv_creation(venv_directory):
         env={"KIRBY_TEST_MARKER": "hello, world!"},
     )
 
-    context = arbiter.ensure_environment(venv_directory)
+    context = runner.ensure_environment(venv_directory)
 
     assert context.is_installed(os.getenv("DUMMY_PACKAGE_INSTALL"))
 
@@ -74,14 +74,14 @@ def test_arbiter_can_ensure_virtualenv_creation(venv_directory):
         "to install with DUMMY_PACKAGE_VERSION"
     ),
 )
-def test_arbiter_can_start_scheduled_process():
+def test_runner_can_start_scheduled_process(venv_directory):
     if not os.getenv("PIP_INDEX_URL"):
         print(
             f"You haven't set any extra index for pip. "
             "Make sure the package exists"
         )
 
-    arbiter = Arbiter(
+    runner = Runner(
         script_type=JobType.SCHEDULED,
         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
         version=os.getenv("DUMMY_PACKAGE_VERSION"),
@@ -90,11 +90,8 @@ def test_arbiter_can_start_scheduled_process():
         env={"KIRBY_TEST_MARKER": "hello, world!"},
     )
 
-    arbiter.run()
-    assert arbiter.status == ProcessState.RUNNING
-
-    arbiter.join()
-    assert arbiter.status == ProcessState.STOPPED
+    runner.run()
+    assert runner.status == ProcessState.RUNNING
 
 
 @pytest.mark.skipif(
@@ -111,8 +108,8 @@ def test_arbiter_can_start_scheduled_process():
         "to install with DUMMY_PACKAGE_VERSION"
     ),
 )
-def test_arbiter_can_start_daemon_process():
-    arbiter = Arbiter(
+def test_runner_can_start_daemon_process(venv_directory):
+    runner = Runner(
         script_type=JobType.DAEMON,
         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
         version=os.getenv("DUMMY_PACKAGE_VERSION"),
@@ -120,15 +117,12 @@ def test_arbiter_can_start_daemon_process():
         notify_retry=True,
         env={"KIRBY_TEST_MARKER": "hello, world!"},
     )
-    arbiter.run()
-    assert arbiter.status == ProcessState.RUNNING
-
-    arbiter.join()
-    assert arbiter.status == ProcessState.STOPPED
+    runner.run()
+    assert runner.status == ProcessState.RUNNING
 
 
-# def test_arbiter_can_restart_daemon_process():
-#     arbiter = Arbiter(
+# def test_runner_can_restart_daemon_process():
+#     runner = Runner(
 #         script_type=JobType.DAEMON,
 #         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
 #         version=os.getenv("DUMMY_PACKAGE_VERSION"),
@@ -136,12 +130,12 @@ def test_arbiter_can_start_daemon_process():
 #         notify_retry=True,
 #         env={"KIRBY_TEST_MARKER": "hello, world!"},
 #     )
-#     arbiter.run()
-#     assert arbiter.status() == ProcessState.RUNNING
+#     runner.run()
+#     assert runner.status() == ProcessState.RUNNING
 #
 #
-# def test_arbiter_reports_process_failure():
-#     arbiter = Arbiter(
+# def test_runner_reports_process_failure():
+#     runner = Runner(
 #         script_type=JobType.SCHEDULED,
 #         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
 #         version=os.getenv("DUMMY_PACKAGE_VERSION"),
@@ -149,12 +143,12 @@ def test_arbiter_can_start_daemon_process():
 #         notify_retry=True,
 #         env={"KIRBY_TEST_MARKER": "hello, world!"},
 #     )
-#     arbiter.run()
-#     assert arbiter.status() == ProcessState.FAILED
+#     runner.run()
+#     assert runner.status() == ProcessState.FAILED
 #
 #
-# def test_arbiter_is_asynchronous():
-#     arbiter = Arbiter(
+# def test_runner_is_asynchronous():
+#     runner = Runner(
 #         script_type=JobType.SCHEDULED,
 #         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
 #         version=os.getenv("DUMMY_PACKAGE_VERSION"),
@@ -162,8 +156,8 @@ def test_arbiter_can_start_daemon_process():
 #         notify_retry=True,
 #         env={"KIRBY_TEST_MARKER": "hello, world!"},
 #     )
-#     arbiter.run()
-#     assert arbiter.status() == ProcessState.RUNNING
+#     runner.run()
+#     assert runner.status() == ProcessState.RUNNING
 #
-#     arbiter.join()
-#     assert arbiter.get_return_values()
+#     runner.join()
+#     assert runner.get_return_values()

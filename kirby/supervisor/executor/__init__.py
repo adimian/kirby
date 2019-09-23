@@ -1,8 +1,5 @@
-import json
-import subprocess
-
 import attr
-from psutil import Popen
+import json
 
 
 def convert_variables(data):
@@ -25,15 +22,4 @@ class JobDescription:
 def parse_job_description(job_description):
     kwargs = json.loads(job_description)
     job = JobDescription(**kwargs)
-
     return job
-
-
-def execute_module(executable, package_name, env):
-    args = [executable, "-m", package_name]
-    with Popen(args, env=env, stdout=subprocess.PIPE) as process:
-        process.wait()
-        retcode = process.returncode
-        output = process.stdout.read().decode("utf-8")
-
-    return retcode, output

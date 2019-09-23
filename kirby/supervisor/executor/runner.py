@@ -20,7 +20,7 @@ class ProcessState(Enum):
     STOPPED = "stopped"
 
 
-class Arbiter:
+class Runner:
     def __init__(
         self,
         script_type,
