@@ -31,6 +31,9 @@ class AuthenticatedModelView(ModelView):
         return redirect(url_for("security.login", next=request.url))
 
 
+class TopicView(AuthenticatedModelView):
+    pass
+
 class UserView(AuthenticatedModelView):
     form_excluded_columns = ("password", "provider")
     column_exclude_list = ("password",)
@@ -119,7 +122,6 @@ models = {
     "Scheduling": [Schedule, Suspension],
     "Notifications": [Notification],
     "Jobs": [Environment],
-    "Documentation": [Topic],
 }
 
 
@@ -130,6 +132,7 @@ for category, models in models.items():
         )
 
 
+admin.add_view(TopicView(Topic, db.session))
 admin.add_view(UserView(User, db.session, category="Users"))
 admin.add_view(
     ConfigKeyView(ConfigKey, db.session, category="Jobs", name="Configuration")
