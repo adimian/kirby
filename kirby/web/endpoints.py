@@ -142,8 +142,8 @@ class Schedule(Resource):
     @api.marshal_with(schedule_model)
     def get(self):
         date = datetime.utcnow()
-        jobs = []
-        schedule = {"date": date, "jobs": jobs}
+        scripts_to_run = []
+        schedule = {"date": date, "scripts": scripts_to_run}
 
         for job in db.session.query(Job).all():
             job_name = job.name
@@ -185,8 +185,9 @@ class Schedule(Resource):
                     )
                 ):
                     for script in context.scripts:
-                        jobs.append(
+                        scripts_to_run.append(
                             {
+                                "id": script.id,
                                 "name": job_name,
                                 "type": job.type,
                                 "environment": context.environment.name,

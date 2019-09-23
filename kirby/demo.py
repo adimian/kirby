@@ -94,8 +94,6 @@ def create_contexts(s, jobs, envs):
     def create_context(job, env_name, env):
         ctx = models.Context(job=job, environment=env)
         ctx.set_config(
-            ID=job.id,
-            ENV=env_name,
             KIRBY_WEB_SERVER=KIRBY_WEB_SERVER,
             KAFKA_BOOTSTRAP_SERVERS=KAFKA_BOOTSTRAP_SERVERS,
         )
