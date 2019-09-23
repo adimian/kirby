@@ -27,7 +27,7 @@ class Scheduler:
     def parse_jobs(self, content):
         jobs = []
         descriptions = json.loads(content)
-        for description in descriptions["jobs"]:
+        for description in descriptions["scripts"]:
             jobs.append(json.dumps(description))
 
         return jobs
