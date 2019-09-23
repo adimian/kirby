@@ -102,6 +102,7 @@ config_model = api.model(
 job_model = api.model(
     "Job",
     {
+        "id": fields.Integer,
         "name": fields.String,
         "type": fields.String,
         "environment": fields.String,
