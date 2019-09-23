@@ -2,6 +2,8 @@ import logging
 import os
 import subprocess
 import threading
+
+from collections import namedtuple
 from enum import Enum
 from os.path import expanduser
 from psutil import Popen
@@ -18,6 +20,15 @@ class ProcessState(Enum):
     RUNNING = "running"
     FAILED = "failed"
     STOPPED = "stopped"
+
+
+ProcessReturnValues = namedtuple(
+    "ProcessReturnValues", ["return_code", "stdout", "stderr"]
+)
+
+
+class ProcessExecutionError(Exception):
+    pass
 
 
 class Runner:
@@ -68,13 +79,18 @@ class Runner:
             "-m",
             self.package_name,
         ]
-        process = Popen(args, env=self.env, stdout=subprocess.PIPE)
+        process = Popen(
+            args, env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         process.wait()
 
         retcode = process.returncode
-        output = process.stdout.read().decode("utf-8")
+        stdout = process.stdout.read().decode("utf-8")
+        stderr = process.stderr.read().decode("utf-8")
 
-        self._process_return_value = retcode, output
+        self._process_return_value = ProcessReturnValues(
+            retcode, stdout, stderr
+        )
 
     def run(self, block=False):
         self._thread = threading.Thread(target=self.raise_process)
@@ -86,13 +102,25 @@ class Runner:
         return self._process_return_value
 
     def join(self):
-        # TODO : Catch thread's errors
         if self.status == ProcessState.RUNNING:
             self._thread.join()
+            if self.get_return_values().return_code != 0:
+                raise ProcessExecutionError(
+                    "self._process_return_value.stderr"
+                )
 
     @property
     def status(self):
         if self._thread:
             if self._thread.is_alive():
                 return ProcessState.RUNNING
+            elif self.get_return_values().return_code != 0:
+                return ProcessState.FAILED
+
         return ProcessState.STOPPED
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.join()

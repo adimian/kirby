@@ -1,12 +1,12 @@
 import attr
 import json
 
+from .runner import Runner, ProcessState, ProcessExecutionError
+from .arbiter import Arbiter
+
 
 def convert_variables(data):
-    export = {}
-    for variable in data:
-        export[variable["key"]] = variable["value"]
-    return export
+    return {variable["key"]: variable["value"] for variable in data}
 
 
 @attr.s(hash=True)

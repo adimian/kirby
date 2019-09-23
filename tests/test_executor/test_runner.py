@@ -1,16 +1,12 @@
 import os
 import pytest
-from tempfile import mkdtemp
 
-from kirby.supervisor.executor import Runner, ProcessState
+from kirby.supervisor.executor import (
+    Runner,
+    ProcessState,
+    ProcessExecutionError,
+)
 from kirby.models import JobType
-
-
-@pytest.fixture()
-def venv_directory():
-    temp_dir = mkdtemp()
-    os.environ["KIRBY_VENV_DIRECTORY"] = temp_dir
-    return temp_dir
 
 
 def test_it_generates_venv_name():
@@ -26,10 +22,10 @@ def test_it_generates_venv_name():
 
 
 @pytest.mark.skipif(
-    not os.getenv("DUMMY_PACKAGE_INSTALL"),
+    not os.getenv("DUMMY_PACKAGE_NAME"),
     reason=(
         "You must pass the name of a PyPi package "
-        "to install with DUMMY_PACKAGE_INSTALL"
+        "to install with DUMMY_PACKAGE_NAME"
     ),
 )
 @pytest.mark.skipif(
@@ -48,7 +44,7 @@ def test_runner_can_ensure_virtualenv_creation(venv_directory):
 
     runner = Runner(
         script_type=JobType.SCHEDULED,
-        package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
+        package_name=os.getenv("DUMMY_PACKAGE_NAME"),
         version=os.getenv("DUMMY_PACKAGE_VERSION"),
         notify_failure=True,
         notify_retry=True,
@@ -57,14 +53,14 @@ def test_runner_can_ensure_virtualenv_creation(venv_directory):
 
     context = runner.ensure_environment(venv_directory)
 
-    assert context.is_installed(os.getenv("DUMMY_PACKAGE_INSTALL"))
+    assert context.is_installed(os.getenv("DUMMY_PACKAGE_NAME"))
 
 
 @pytest.mark.skipif(
-    not os.getenv("DUMMY_PACKAGE_INSTALL"),
+    not os.getenv("DUMMY_PACKAGE_NAME"),
     reason=(
         "You must pass the name of a PyPi package "
-        "to install with DUMMY_PACKAGE_INSTALL"
+        "to install with DUMMY_PACKAGE_NAME"
     ),
 )
 @pytest.mark.skipif(
@@ -83,7 +79,7 @@ def test_runner_can_start_scheduled_process(venv_directory):
 
     runner = Runner(
         script_type=JobType.SCHEDULED,
-        package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
+        package_name=os.getenv("DUMMY_PACKAGE_NAME"),
         version=os.getenv("DUMMY_PACKAGE_VERSION"),
         notify_failure=True,
         notify_retry=True,
@@ -95,10 +91,10 @@ def test_runner_can_start_scheduled_process(venv_directory):
 
 
 @pytest.mark.skipif(
-    not os.getenv("DUMMY_PACKAGE_INSTALL"),
+    not os.getenv("DUMMY_PACKAGE_NAME"),
     reason=(
         "You must pass the name of a PyPi package "
-        "to install with DUMMY_PACKAGE_INSTALL"
+        "to install with DUMMY_PACKAGE_NAME"
     ),
 )
 @pytest.mark.skipif(
@@ -111,7 +107,7 @@ def test_runner_can_start_scheduled_process(venv_directory):
 def test_runner_can_start_daemon_process(venv_directory):
     runner = Runner(
         script_type=JobType.DAEMON,
-        package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
+        package_name=os.getenv("DUMMY_PACKAGE_NAME"),
         version=os.getenv("DUMMY_PACKAGE_VERSION"),
         notify_failure=True,
         notify_retry=True,
@@ -121,10 +117,37 @@ def test_runner_can_start_daemon_process(venv_directory):
     assert runner.status == ProcessState.RUNNING
 
 
+@pytest.mark.skipif(
+    not os.getenv("DUMMY_PACKAGE_NAME"),
+    reason=(
+        "You must pass the name of a PyPi package "
+        "to install with DUMMY_PACKAGE_INSTALL"
+    ),
+)
+@pytest.mark.skipif(
+    not os.getenv("DUMMY_PACKAGE_VERSION"),
+    reason=(
+        "You must pass the *exact* version of a PyPi package "
+        "to install with DUMMY_PACKAGE_VERSION"
+    ),
+)
+def test_arbiter_raise_error_if_process_fails(venv_directory):
+    with pytest.raises(ProcessExecutionError):
+        with Runner(
+            script_type=JobType.DAEMON,
+            package_name=os.getenv("DUMMY_FAILING_PACKAGE_NAME"),
+            version=os.getenv("DUMMY_FAILING_PACKAGE_VERSION"),
+            notify_failure=True,
+            notify_retry=True,
+            env={"KIRBY_TEST_MARKER": "hello, world!"},
+        ) as runner:
+            runner.run()
+
+
 # def test_runner_can_restart_daemon_process():
 #     runner = Runner(
 #         script_type=JobType.DAEMON,
-#         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
+#         package_name=os.getenv("DUMMY_PACKAGE_NAME"),
 #         version=os.getenv("DUMMY_PACKAGE_VERSION"),
 #         notify_failure=True,
 #         notify_retry=True,
@@ -137,7 +160,7 @@ def test_runner_can_start_daemon_process(venv_directory):
 # def test_runner_reports_process_failure():
 #     runner = Runner(
 #         script_type=JobType.SCHEDULED,
-#         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
+#         package_name=os.getenv("DUMMY_PACKAGE_NAME"),
 #         version=os.getenv("DUMMY_PACKAGE_VERSION"),
 #         notify_failure=True,
 #         notify_retry=True,
@@ -150,7 +173,7 @@ def test_runner_can_start_daemon_process(venv_directory):
 # def test_runner_is_asynchronous():
 #     runner = Runner(
 #         script_type=JobType.SCHEDULED,
-#         package_name=os.getenv("DUMMY_PACKAGE_INSTALL"),
+#         package_name=os.getenv("DUMMY_PACKAGE_NAME"),
 #         version=os.getenv("DUMMY_PACKAGE_VERSION"),
 #         notify_failure=True,
 #         notify_retry=True,
