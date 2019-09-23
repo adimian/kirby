@@ -1,5 +1,2 @@
-from .runner import Runner
-
-
-class Arbiter(Runner):
+class Arbiter:
     pass
