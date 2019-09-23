@@ -102,6 +102,7 @@ config_model = api.model(
 job_model = api.model(
     "Job",
     {
+        "id": fields.Integer,
         "name": fields.String,
         "type": fields.String,
         "environment": fields.String,
@@ -116,7 +117,7 @@ schedule_model = api.model(
     "Schedule",
     {
         "date": fields.String(default=str(datetime.utcnow())),
-        "jobs": fields.List(fields.Nested(job_model)),
+        "scripts": fields.List(fields.Nested(job_model)),
     },
 )
 
@@ -142,8 +143,8 @@ class Schedule(Resource):
     @api.marshal_with(schedule_model)
     def get(self):
         date = datetime.utcnow()
-        jobs = []
-        schedule = {"date": date, "jobs": jobs}
+        scripts_to_run = []
+        schedule = {"date": date, "scripts": scripts_to_run}
 
         for job in db.session.query(Job).all():
             job_name = job.name
@@ -185,8 +186,9 @@ class Schedule(Resource):
                     )
                 ):
                     for script in context.scripts:
-                        jobs.append(
+                        scripts_to_run.append(
                             {
+                                "id": script.id,
                                 "name": job_name,
                                 "type": job.type,
                                 "environment": context.environment.name,

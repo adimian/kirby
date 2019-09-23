@@ -1,4 +1,5 @@
-from pytest import raises
+import os
+from pytest import raises, fixture
 from datetime import datetime
 
 from dateutil.parser import parse
@@ -20,12 +21,18 @@ from kirby.models import (
 from kirby.web import app_maker
 
 
-def test_exception_is_raised_when_db_config_is_missing():
+@fixture
+def no_sqlalchemy_database_uri():
+    os.environ["SQLALCHEMY_DATABASE_URI"] = ""
+
+
+def test_exception_is_raised_when_db_config_is_missing(
+    no_sqlalchemy_database_uri
+):
     with raises(ConfigException):
-        app_maker(config={
-            "TESTING": True,
-            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-        })
+        app_maker(
+            config={"TESTING": True, "SQLALCHEMY_TRACK_MODIFICATIONS": False}
+        )
 
 
 def test_it_creates_a_job(webapp):
