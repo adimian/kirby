@@ -1,61 +1,82 @@
 from kirby.models.security import user_datastore
 from kirby import models
 
-BAKERY_API = "http://some.server.somewhere"
-KAFKA_BOOTSTRAP_SERVERS = "some.kafka.server:9999"
-KIRBY_WEB_SERVER = "some.kirby.server:9090"
+dev_env = "dev"
+test_env = "test"
+prod_env = "prod"
 
-ENVS = {
-    "Development": ("dev", "1.0.5"),
-    "Test": ("test", "0.0.5"),
-    "Production": ("prod", "2.0.5"),
+package_version = {dev_env: "1.0.5", test_env: "0.0.5", prod_env: "2.0.5"}
+config_context = {
+    dev_env: {"BAKERY_API_BASE": "http://some.server.somewhere:8000"},
+    test_env: {"BAKERY_API_BASE": "localhost:8000"},
+    prod_env: {"BAKERY_API_BASE": "http://some.server.elsewhere:8000"},
 }
+
+ENVS = {dev_env: "Development", test_env: "Test", prod_env: "Production"}
+
+ENV_VARS = {
+    models.ConfigScope.GLOBAL: {
+        "KAFKA_BOOTSTRAP_SERVERS": "localhost:9092",
+        "KIRBY_WEB_SERVER": "localhost:8080",
+    }
+}
+
 TOPICS = {"bakery", "cashregister", "orders", "timeseries", "factory"}
+
 JOBS = {
     "sensor_cashregister": {
         "description": "Fetch bakery realtime sales",
         "type": models.JobType.DAEMON,
+        "package_version": package_version,
         "config": {
-            "BAKERY_API_BASE": BAKERY_API,
-            "CASHREGISTER_TOPIC_NAME": "cashregister",
+            models.ConfigScope.JOB: {
+                "CASHREGISTER_TOPIC_NAME": "cashregister"
+            },
+            models.ConfigScope.CONTEXT: config_context,
         },
     },
     "sensor_orders": {
         "description": "Fetch bakery forecast sales",
         "type": models.JobType.SCHEDULED,
+        "package_version": package_version,
         "scheduled_param": {
             "name": "every two minutes",
             "hour": "*",
             "minute": "*/2",
         },
         "config": {
-            "BAKERY_API_BASE": BAKERY_API,
-            "ORDERS_TOPIC_NAME": "orders",
+            models.ConfigScope.JOB: {"ORDERS_TOPIC_NAME": "orders"},
+            models.ConfigScope.CONTEXT: config_context,
         },
     },
     "insert_forecast": {
         "description": "From forecast, push points on the timeseries tables",
         "type": models.JobType.DAEMON,
+        "package_version": package_version,
         "config": {
-            "BAKERY_API_BASE": BAKERY_API,
-            "CASHREGISTER_TOPIC_NAME": "cashregister",
+            models.ConfigScope.JOB: {
+                "CASHREGISTER_TOPIC_NAME": "cashregister"
+            },
+            models.ConfigScope.CONTEXT: config_context,
         },
     },
     "insert_realtime": {
         "description": "From realtime, push points on the timeseries tables",
         "type": models.JobType.DAEMON,
+        "package_version": package_version,
         "config": {
-            "BAKERY_API_BASE": BAKERY_API,
-            "ORDERS_TOPIC_NAME": "orders",
+            models.ConfigScope.JOB: {"ORDERS_TOPIC_NAME": "orders"},
+            models.ConfigScope.CONTEXT: config_context,
         },
     },
     "booking_process": {
         "description": "From forecast send orders to the factory",
         "type": models.JobType.SCHEDULED,
+        "package_version": package_version,
         "scheduled_param": {"name": "every day at 6am", "hour": "6"},
         "config": {
-            "BAKERY_API_BASE": BAKERY_API,
-            "ORDERS_TOPIC_NAME": "orders",
+            models.ConfigScope.JOB: {"ORDERS_TOPIC_NAME": "orders"},
+            models.ConfigScope.CONTEXT: config_context,
         },
     },
 }
@@ -67,9 +88,7 @@ def create_envs(s):
         s.add(env)
         return env
 
-    return {
-        short_name: create_env(name) for short_name, (name, _) in ENVS.items()
-    }
+    return {short_name: create_env(name) for short_name, name in ENVS.items()}
 
 
 def create_jobs(s, sysadmins):
@@ -84,26 +103,25 @@ def create_jobs(s, sysadmins):
         name: create_job(
             description=info["description"],
             type=info["type"],
-            config=info["config"],
+            config=info["config"][models.ConfigScope.JOB],
         )
         for name, info in JOBS.items()
     }
 
 
 def create_contexts(s, jobs, envs):
-    def create_context(job, env_name, env):
+    def create_context(job_name, job, env_name, env):
         ctx = models.Context(job=job, environment=env)
         ctx.set_config(
-            KIRBY_WEB_SERVER=KIRBY_WEB_SERVER,
-            KAFKA_BOOTSTRAP_SERVERS=KAFKA_BOOTSTRAP_SERVERS,
+            **JOBS[job_name]["config"][models.ConfigScope.CONTEXT][env_name]
         )
         s.add(ctx)
         return ctx
 
     return {
-        (env, job): create_context(job, env_name, env)
+        (env, job): create_context(job_name, job, env_name, env)
         for env_name, env in envs.items()
-        for job in jobs.values()
+        for job_name, job in jobs.items()
     }
 
 
@@ -146,6 +164,13 @@ def create_scripts(s, contexts, jobs, envs):
         create_script(job_name)
 
 
+def create_config_keys(s):
+    # Global vars
+    scope = models.ConfigScope.GLOBAL
+    for k, v in ENV_VARS[scope].items():
+        s.add(models.ConfigKey(name=k, value=v, scope=scope))
+
+
 def create_demo_db(s):
 
     # create demo user
@@ -174,5 +199,7 @@ def create_demo_db(s):
     create_topics(s)
 
     create_scripts(s, contexts, jobs, envs)
+
+    create_config_keys(s)
 
     s.commit()
