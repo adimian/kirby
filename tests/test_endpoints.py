@@ -26,7 +26,7 @@ def test_it_get_the_current_schedule(session, db_scripts_registered):
     result_json = result.json()
 
     assert result.status_code == 200
-    assert result_json["jobs"][0]["environment"] == "test_env"
+    assert result_json["scripts"][0]["environment"] == "test_env"
 
 
 def get_topic_id(session, name):
@@ -80,7 +80,7 @@ def test_schedule_contains_configuration(session, db_scripts_registered):
     result_json = result.json()
 
     assert result.status_code == 200
-    assert result_json["jobs"][0]["variables"] == [
+    assert result_json["scripts"][0]["variables"] == [
         {"key": "API_USERNAME", "value": "test-user"},
         {"key": "API_PORT", "value": "2000"},
     ]

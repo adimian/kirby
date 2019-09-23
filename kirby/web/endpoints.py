@@ -116,7 +116,7 @@ schedule_model = api.model(
     "Schedule",
     {
         "date": fields.String(default=str(datetime.utcnow())),
-        "jobs": fields.List(fields.Nested(job_model)),
+        "scripts": fields.List(fields.Nested(job_model)),
     },
 )
 

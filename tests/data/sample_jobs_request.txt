@@ -1,6 +1,6 @@
 {
   "date": "2019-05-22 09:32:16.264486",
-  "jobs": [
+  "scripts": [
     {
       "name": "Fetch bakery realtime sales",
       "environment": "Development",
