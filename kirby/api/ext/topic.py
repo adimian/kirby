@@ -2,7 +2,6 @@ import datetime
 import logging
 import msgpack
 import tenacity
-import time
 
 from collections import namedtuple
 from contextlib import contextmanager
