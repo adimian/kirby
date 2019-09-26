@@ -2,6 +2,8 @@ import datetime
 import logging
 import msgpack
 import tenacity
+import time
+
 from collections import namedtuple
 from contextlib import contextmanager
 from functools import partial
@@ -90,6 +92,10 @@ def get_kafka_args(topic_config):
         return {}
 
 
+class NoMoreMessagesException(Exception):
+    pass
+
+
 class Consumer:
     def __init__(self, topic_config, init_time=None):
         self.topic_config = topic_config
@@ -117,8 +123,11 @@ class Consumer:
         messages = self.nexts(timeout_ms=timeout_ms, max_records=1)
         if messages:
             return messages[0]
-        else:
-            return None
+        elif is_in_test_mode(self.topic_config):
+            raise NoMoreMessagesException(
+                f"No more message in the topic "
+                f"'{self.topic_config.name}' (set in test mode)"
+            )
 
     def nexts(self, timeout_ms=500, max_records=None):
         if not is_in_test_mode(self.topic_config):
