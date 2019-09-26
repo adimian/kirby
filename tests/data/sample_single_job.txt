@@ -1,31 +1,28 @@
 {
       "id": 1,
-      "name": "Fetch bakery realtime sales",
+      "name": "Test package",
       "type": "daemon",
       "environment": "Development",
-      "package_name": "test_package_for_dev",
-      "package_version": "2.0.1",
-      "notifications": [],
+      "package_name": "dummykirby",
+      "package_version": "0.0.0.dev",
+      "notifications": [
+            {
+                  "on_retry": false,
+                  "on_failure": true,
+                  "groups": [
+                        {
+                              "name": "Sysadmin",
+                              "emails": [
+                                    "someone@somewhere.here"
+                              ]
+                        }
+                  ]
+            }
+      ],
       "variables": [
-        {
-          "key": "SENTRY_DSN",
-          "value": "http://sentry.dsn.somewhere"
-        },
-        {
-          "key": "SSH_USERNAME",
-          "value": "demo"
-        },
-        {
-          "key": "ENV",
-          "value": "dev"
-        },
-        {
-          "key": "SSH_SERVER",
-          "value": "dev.server.somewhere:22"
-        },
-        {
-          "key": "KAFKA_URL",
-          "value": "some.kafka.server:9999"
-        }
+            {
+                  "key": "KIRBY_TEST_MARKER",
+                  "value": "Hello, world!"
+            }
       ]
 }
