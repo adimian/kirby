@@ -1,9 +1,9 @@
 {
-      "id": 1,
-      "name": "Test package",
+      "id": 2,
+      "name": "Test package which will fail",
       "type": "daemon",
       "environment": "Development",
-      "package_name": "dummykirby",
+      "package_name": "dummyfailingkirby",
       "package_version": "0.0.0.dev",
       "notifications": [
             {
@@ -19,10 +19,5 @@
                   ]
             }
       ],
-      "variables": [
-            {
-                  "key": "KIRBY_TEST_MARKER",
-                  "value": "Hello, world!"
-            }
-      ]
+      "variables": []
 }

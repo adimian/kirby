@@ -12,9 +12,6 @@ from psutil import Popen
 from smart_getenv import getenv
 from virtualenvapi.manage import VirtualEnvironment
 
-from .runner import Runner
-from .arbiter import Arbiter
-
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +30,7 @@ class JobDescription:
     environment = attr.ib(type=str)
     package_name = attr.ib(type=str)
     package_version = attr.ib(type=str)
-    notifications = attr.ib(type=tuple)
+    notifications = attr.ib(type=dict)
     variables = attr.ib(type=dict, converter=convert_variables)
 
 
@@ -59,69 +56,71 @@ class ProcessExecutionError(Exception):
 
 
 class Executor:
-    def __init__(
-        self,
-        script_type,
-        package_name,
-        version,
-        notify_failure,
-        notify_retry,
-        env,
-        _venv=None,
-    ):
-        self.type = script_type
+    def __init__(self, job, _virtualenv=None):
+        self.type = job.type
 
-        self.package_name = package_name
-        self.version = version
+        self.package_name = job.package_name
+        self.version = job.package_version
         self.package = f"{self.package_name}=={self.version}"
 
-        self.notify_failure = notify_failure
-        self.notify_retry = notify_retry
+        self.notifications = job.notifications
 
-        self._venv = _venv
+        if _virtualenv:
+            self.__virtualenv = _virtualenv
         self.venv_name = f"kirby-{self.package_name}-{self.version}"
         self.venv_created = False
-        self.env = env
+        self.env = job.variables
 
         self._process_return_value = None
         self._thread = None
 
-    def ensure_environment(self, venvs_directory=None):
-        if self._venv:
-            return self._venv
-        else:
-            if not venvs_directory:
-                venvs_directory = getenv(
+    @property
+    def virtualenv(self):
+        if not hasattr(self, "_Executor__virtualenv"):
+            logging.debug("Creating the venv")
+            venv_path = os.path.join(
+                getenv(
                     "KIRBY_VENV_DIRECTORY",
                     default=expanduser("~/.kirby/virtualenvs"),
-                )
-            venv_path = os.path.join(venvs_directory, self.venv_name)
+                ),
+                self.venv_name,
+            )
 
             logging.info(f"creating venv for {self.venv_name} at {venv_path}")
             env = VirtualEnvironment(venv_path)
 
+            logging.debug("Installing package")
             env.install(self.package_name)
-            return env
+            logging.debug("Package installed")
+            self.__virtualenv = env
+        return self.__virtualenv
 
     def raise_process(self):
-        venv = self.ensure_environment()
-
         args = [
-            os.path.join(venv.path, "bin", "python"),
+            os.path.join(self.virtualenv.path, "bin", "python"),
             "-m",
             self.package_name,
         ]
+        logging.debug("Raising process")
         process = Popen(
-            args, env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            args,
+            cwd=self.virtualenv.path,
+            env=self.env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         process.wait()
+        logging.debug("Process ended")
 
         retcode = process.returncode
-        stdout = process.stdout.read().decode("utf-8")
-        stderr = process.stderr.read().decode("utf-8")
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+
+        logging.debug(stdout)
+        logging.debug(stderr)
 
         self._process_return_value = ProcessReturnValues(
-            retcode, stdout, stderr
+            retcode, stdout.decode("utf-8"), stderr.decode("utf-8")
         )
 
     def run(self, block=False):
