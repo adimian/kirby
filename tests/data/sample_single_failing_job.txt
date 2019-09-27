@@ -1,0 +1,23 @@
+{
+      "id": 2,
+      "name": "Test package which will fail",
+      "type": "daemon",
+      "environment": "Development",
+      "package_name": "dummyfailingkirby",
+      "package_version": "0.0.0.dev",
+      "notifications": [
+            {
+                  "on_retry": false,
+                  "on_failure": true,
+                  "groups": [
+                        {
+                              "name": "Sysadmin",
+                              "emails": [
+                                    "someone@somewhere.here"
+                              ]
+                        }
+                  ]
+            }
+      ],
+      "variables": []
+}
