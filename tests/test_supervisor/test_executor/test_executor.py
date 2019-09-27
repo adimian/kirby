@@ -62,6 +62,8 @@ def test_executor_can_start_process_with_pip_installation(
 ):
     with Executor(job_description) as executor:
         executor.run()
+        while executor.status == ProcessState.SETTINGUP:
+            pass
         assert executor.status == ProcessState.RUNNING
 
 
@@ -78,6 +80,8 @@ def test_executor_raise_error_if_process_fails(
     with pytest.raises(ProcessExecutionError):
         with Executor(failing_job_description) as executor:
             executor.run()
+            while executor.status == ProcessState.SETTINGUP:
+                pass
             assert executor.status == ProcessState.RUNNING
 
 
@@ -91,7 +95,9 @@ def test_executor_raise_error_if_process_fails(
 def test_executor_is_asynchronous(venv_directory, job_description):
     with Executor(job_description) as executor:
         executor.run()
+        while executor.status == ProcessState.SETTINGUP:
+            pass
         assert executor.status == ProcessState.RUNNING
 
         executor.join()
-        assert executor.get_return_values()
+        assert executor.return_values
