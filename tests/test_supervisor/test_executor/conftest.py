@@ -10,6 +10,8 @@ KIRBY_JOB_OFFERS_TOPIC_NAME = getenv(
     "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
 )
 
+TESTING = getenv("TESTING", type=bool, default=True)
+
 
 @pytest.fixture()
 def venv_directory():
@@ -20,13 +22,13 @@ def venv_directory():
 
 @pytest.fixture
 def queue_for_runner(single_job_description):
-    queue = Queue(KIRBY_JOB_OFFERS_TOPIC_NAME, testing=True)
+    queue = Queue(KIRBY_JOB_OFFERS_TOPIC_NAME, testing=TESTING)
     queue.send(single_job_description)
     return queue
 
 
 @pytest.fixture
 def queue_for_arbiter(single_failing_job_description):
-    queue = Queue(KIRBY_JOB_OFFERS_TOPIC_NAME, testing=True)
+    queue = Queue(KIRBY_JOB_OFFERS_TOPIC_NAME, testing=TESTING)
     queue.send(single_failing_job_description)
     return queue
