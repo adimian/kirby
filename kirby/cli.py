@@ -106,19 +106,13 @@ def adduser(username):
     help="Shortest time interval between two scheduler executions",
 )
 @click.option(
-    "--runner",
-    type=int,
-    default=3,
-    help="Number of runners need to start"
+    "--runner", type=int, default=3, help="Number of runners that will start"
 )
 @click.option(
-    "--arbiter",
-    type=int,
-    default=3,
-    help="Number of arbiters need to start"
+    "--arbiter", type=int, default=3, help="Number of arbiters that will start"
 )
-def supervisor(name, window, wakeup, runner, arbiter):
-    run_supervisor(name, window, wakeup, runner, arbiter)
+def supervisor(name, window, wakeup, nb_runner, nb_arbiter):
+    run_supervisor(name, window, wakeup, nb_runner, nb_arbiter)
 
 
 @click.command()
