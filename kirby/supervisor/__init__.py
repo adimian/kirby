@@ -13,7 +13,7 @@ from ..api.queue import Queue
 logger = logging.getLogger(__name__)
 
 
-def run_supervisor(name, window, wakeup):
+def run_supervisor(name, window, wakeup, runner, arbiter):
     server = Redis()
     queue = Queue(
         name=getenv(
@@ -32,9 +32,7 @@ def run_supervisor(name, window, wakeup):
                     for job in jobs:
                         scheduler.queue_job(job)
 
-                    nb_runners = getenv("KIRBY_NUMBER_OF_RUNNERS", type=int, default=3)
-                    nb_arbiters = getenv("KIRBY_NUMBER_OF_ARBITERS", type=int, default=3)
-                    for i in range(nb_runners):
+                    for i in range(runner):
                         Runner(queue=scheduler.queue)
             else:
                 logger.debug("not the leader, do nothing")
