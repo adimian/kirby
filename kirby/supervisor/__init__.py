@@ -6,6 +6,7 @@ from redis import Redis
 from smart_getenv import getenv
 
 from kirby.supervisor.executor.runner import Runner
+from kirby.supervisor.executor.arbiter import Arbiter
 from .election import Election
 from .scheduler import Scheduler
 from ..api.queue import Queue
@@ -18,12 +19,15 @@ def run_supervisor(name, window, wakeup, nb_runner, nb_arbiter):
     queue = Queue(
         name=getenv(
             "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
-        )
+        ),
+        use_tls=getenv("KAFKA_USE_SSL", type=bool, default=False)
     )
     scheduler = Scheduler(queue=queue, wakeup=wakeup)
 
     for i in range(nb_runner):
-        Runner(queue=scheduler.queue)
+        Runner(_queue=scheduler.queue)
+    for i in range(nb_arbiter):
+        Arbiter(_queue=scheduler.queue)
 
     with Election(identity=name, server=server, check_ttl=window) as me:
         while True:
