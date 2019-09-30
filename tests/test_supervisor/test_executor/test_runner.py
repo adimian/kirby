@@ -48,4 +48,6 @@ def test_runner_waits_for_jobs(
 )
 def test_runner_raise_job(venv_directory, queue_for_runner):
     runner = Runner(_queue=queue_for_runner)
-    assert runner.executor.status == ProcessState.RUNNING
+    while runner.status != ProcessState.RUNNING:
+        pass
+    assert runner.status == ProcessState.RUNNING

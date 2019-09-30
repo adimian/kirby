@@ -1,16 +1,9 @@
-import logging
 import os
 import pytest
 
 from tempfile import mkdtemp
 
 from kirby.supervisor.executor import parse_job_description
-
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
-
-DUMMY_PACKAGE_NAME = "dummykirby"
 
 
 @pytest.fixture()

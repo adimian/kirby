@@ -4,7 +4,11 @@ import threading
 from smart_getenv import getenv
 
 from kirby.api.queue import Queue
-from kirby.supervisor.executor import parse_job_description, Executor
+from kirby.supervisor.executor import (
+    parse_job_description,
+    Executor,
+    ProcessState,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +34,7 @@ class Runner:
 
         logger.debug("Starting Runner's thread")
         self._thread = threading.Thread(target=self.catch_and_raise_jobs)
-        self._thread.run()
+        self._thread.start()
 
     def catch_and_raise_jobs(self):
         from kirby.api.ext.topic import NoMoreMessagesException
@@ -42,9 +46,17 @@ class Runner:
 
                 with Executor(self.job) as executor:
                     self.executor = executor
-                    executor.raise_process()
-        except NoMoreMessagesException as e:
+                    executor.run(block=True)
+
+        except NoMoreMessagesException:
             logger.debug(
                 f"The jobs' queue (wich was run in test mode) "
                 "has no jobs anymore"
             )
+
+    @property
+    def status(self):
+        if self.executor:
+            return self.executor.status
+        else:
+            return ProcessState.STOPPED

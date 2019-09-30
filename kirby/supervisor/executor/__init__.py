@@ -41,6 +41,7 @@ def parse_job_description(job_description):
 
 
 class ProcessState(Enum):
+    SETTINGUP = "setting-up"
     RUNNING = "running"
     FAILED = "failed"
     STOPPED = "stopped"
@@ -71,8 +72,8 @@ class Executor:
         self.venv_created = False
         self.env = job.variables
 
-        self._process_return_value = None
         self._thread = None
+        self._process = None
 
     @property
     def virtualenv(self):
@@ -102,26 +103,18 @@ class Executor:
             self.package_name,
         ]
         logging.debug("Raising process")
-        process = Popen(
+        self._process = Popen(
             args,
             cwd=self.virtualenv.path,
             env=self.env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        process.wait()
+        self._process.wait()
         logging.debug("Process ended")
 
-        retcode = process.returncode
-        stdout = process.stdout.read()
-        stderr = process.stderr.read()
-
-        logging.debug(stdout)
-        logging.debug(stderr)
-
-        self._process_return_value = ProcessReturnValues(
-            retcode, stdout.decode("utf-8"), stderr.decode("utf-8")
-        )
+        logging.debug(f"Process stdout: {self._process.stdout.read()}")
+        logging.debug(f"Process stderr: {self._process.stderr.read()}")
 
     def run(self, block=False):
         self._thread = threading.Thread(target=self.raise_process)
@@ -129,27 +122,44 @@ class Executor:
         if block:
             self.join()
 
-    def get_return_values(self):
-        return self._process_return_value
-
-    def join(self):
+    def join(self, timeout_s=None):
+        # If timeout_ms == None : join will block until the process is joined
         if self.status == ProcessState.RUNNING:
-            self._thread.join()
-            if self.get_return_values().return_code != 0:
-                raise ProcessExecutionError(self._process_return_value.stderr)
+            self._thread.join(timeout_s)
+            if self.return_values.return_code != 0:
+                raise ProcessExecutionError(self.return_values.stderr)
 
     @property
     def status(self):
-        if self._thread:
-            if self._thread.is_alive():
+        if self._process:
+            if self._thread.is_alive() and not (self._process.poll() != None):
                 return ProcessState.RUNNING
-            elif self.get_return_values().return_code != 0:
+            elif self.return_values.return_code != 0:
                 return ProcessState.FAILED
-
-        return ProcessState.STOPPED
+            else:
+                return ProcessState.STOPPED
+        else:
+            return ProcessState.SETTINGUP
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.join()
+
+    @property
+    def return_values(self):
+        if not hasattr(self, "_return_values"):
+            if self._process:
+                # self._process.poll() will return the status code
+                # It can be 0
+                poll = self._process.poll()
+                if poll != None:
+                    self._return_values = ProcessReturnValues(
+                        self._process.returncode,
+                        self._process.stdout.read(),
+                        self._process.stderr.read(),
+                    )
+                    return self._return_values
+            return
+        return self._return_values
