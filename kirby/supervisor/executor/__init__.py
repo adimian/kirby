@@ -14,7 +14,6 @@ from virtualenvapi.manage import VirtualEnvironment
 
 
 logger = logging.getLogger(__name__)
-
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -74,6 +73,9 @@ class Executor:
 
         self._thread = None
         self._process = None
+        self.return_values = None
+
+        self.status = ProcessState.SETTINGUP
 
     @property
     def virtualenv(self):
@@ -110,11 +112,22 @@ class Executor:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        self._process.wait()
+        self.status = ProcessState.RUNNING
+        return_code = self._process.wait()
+        if return_code == 0:
+            self.status = ProcessState.STOPPED
+        else:
+            self.status = ProcessState.FAILED
         logging.debug("Process ended")
 
         logging.debug(f"Process stdout: {self._process.stdout.read()}")
         logging.debug(f"Process stderr: {self._process.stderr.read()}")
+
+        self.return_values = ProcessReturnValues(
+            self._process.returncode,
+            self._process.stdout.read(),
+            self._process.stderr.read(),
+        )
 
     def run(self, block=False):
         self._thread = threading.Thread(target=self.raise_process)
@@ -129,37 +142,8 @@ class Executor:
             if self.return_values.return_code != 0:
                 raise ProcessExecutionError(self.return_values.stderr)
 
-    @property
-    def status(self):
-        if self._process:
-            if self._thread.is_alive() and not (self._process.poll() != None):
-                return ProcessState.RUNNING
-            elif self.return_values.return_code != 0:
-                return ProcessState.FAILED
-            else:
-                return ProcessState.STOPPED
-        else:
-            return ProcessState.SETTINGUP
-
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.join()
-
-    @property
-    def return_values(self):
-        if not hasattr(self, "_return_values"):
-            if self._process:
-                # self._process.poll() will return the status code
-                # It can be 0
-                poll = self._process.poll()
-                if poll != None:
-                    self._return_values = ProcessReturnValues(
-                        self._process.returncode,
-                        self._process.stdout.read(),
-                        self._process.stderr.read(),
-                    )
-                    return self._return_values
-            return
-        return self._return_values
