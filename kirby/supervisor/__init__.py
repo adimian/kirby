@@ -5,6 +5,7 @@ from time import sleep
 from redis import Redis
 from smart_getenv import getenv
 
+from kirby.supervisor.executor.runner import Runner
 from .election import Election
 from .scheduler import Scheduler
 from ..api.queue import Queue
@@ -20,6 +21,7 @@ def run_supervisor(name, window, wakeup):
         )
     )
     scheduler = Scheduler(queue=queue, wakeup=wakeup)
+
     with Election(identity=name, server=server, check_ttl=window) as me:
         while True:
             checkpoint = perf_counter()
@@ -29,6 +31,11 @@ def run_supervisor(name, window, wakeup):
                     jobs = scheduler.parse_jobs(content)
                     for job in jobs:
                         scheduler.queue_job(job)
+
+                    nb_runners = getenv("KIRBY_NUMBER_OF_RUNNERS", type=int, default=3)
+                    nb_arbiters = getenv("KIRBY_NUMBER_OF_ARBITERS", type=int, default=3)
+                    for i in range(nb_runners):
+                        Runner(queue=scheduler.queue)
             else:
                 logger.debug("not the leader, do nothing")
 
