@@ -29,4 +29,4 @@ def test_arbiter_job_reraised_if_failed(venv_directory, queue_for_arbiter):
 
     assert arbiter.status == ProcessState.RUNNING
 
-    arbiter.kill()
+    arbiter.stop()

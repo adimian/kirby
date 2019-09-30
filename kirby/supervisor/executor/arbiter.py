@@ -50,5 +50,9 @@ class Arbiter(Runner):
                     executor.join()
                 time.sleep(WAIT_BETWEEN_RETRIES)
 
-    def kill(self):
+    def stop(self):
         self._stop_signal = True
+
+    def kill(self):
+        self.stop()
+        super(Arbiter, self).kill()

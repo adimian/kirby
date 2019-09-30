@@ -59,3 +59,7 @@ class Runner:
             return self.executor.status
         else:
             return ProcessState.STOPPED
+
+    def kill(self):
+        if self.executor._process:
+            self.executor._process.kill()
