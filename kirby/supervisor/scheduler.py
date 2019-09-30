@@ -38,7 +38,7 @@ class Scheduler:
 
         submitted_jobs = self.queue.between(start=now - self.cooldown, end=now)
 
-        if job in submitted_jobs:
-            raise CoolDownException()
+        if job in submitted_jobs and job:
+            raise CoolDownException(f"job already in kafka topic : {job}")
         else:
             self.queue.append(job, submitted=now)
