@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
 
-load_dotenv()
 
 from getpass import getpass
 
