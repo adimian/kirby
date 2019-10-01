@@ -1,8 +1,11 @@
 import logging
+from urllib.parse import urljoin
+
 import requests
 import tenacity
 from smart_getenv import getenv
-from urllib.parse import urljoin
+
+from .external import External
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +27,9 @@ webserver_retry_decorator = tenacity.retry(
 )
 
 
-class WebClient:
+class WebClient(External):
     def __init__(self, name, web_endpoint_base, session=None):
-        self.name = name
+        super().__init__(name)
         self.web_endpoint_base = web_endpoint_base
         self._session = session or requests.session()
 
