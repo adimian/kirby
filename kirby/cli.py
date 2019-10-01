@@ -5,8 +5,8 @@ load_dotenv()
 from getpass import getpass
 
 import click
-
 from kirby.demo import create_demo_db
+from kirby.short_demo import create_short_demo_db
 from kirby.models import db
 from kirby.models.security import user_datastore
 from kirby.supervisor import run_supervisor
@@ -126,6 +126,17 @@ def demo():
     click.echo("demo data inserted in the database")
 
 
+@click.command()
+def shortdemo():
+    app = app_maker()
+
+    with app.app_context():
+        app.try_trigger_before_first_request_functions()
+        create_short_demo_db(db.session)
+
+    click.echo("demo data inserted in the database")
+
+
 @click.group()
 def debug():
     pass
@@ -149,6 +160,7 @@ cli.add_command(web)
 cli.add_command(adduser)
 cli.add_command(supervisor)
 cli.add_command(demo)
+cli.add_command(shortdemo)
 cli.add_command(debug)
 
 
