@@ -71,7 +71,8 @@ class Executor:
         self.venv_name = f"kirby-{self.package_name}-{self.version}"
         self.venv_created = False
         self.env = job.variables
-
+        self.env["ID"] = str(job.id)
+        self.env["PACKAGE_NAME"] = job.package_name
         self._thread = None
         self._process = None
 
@@ -102,7 +103,7 @@ class Executor:
             "-m",
             self.package_name,
         ]
-        logging.debug("Raising process")
+        logging.debug(f"Raising process : {args}")
         self._process = Popen(
             args,
             cwd=self.virtualenv.path,
