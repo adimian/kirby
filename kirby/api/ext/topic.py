@@ -13,6 +13,7 @@ from kafka.consumer.fetcher import ConsumerRecord
 from kafka.errors import NoBrokersAvailable, NodeNotReadyError
 
 from ..context import ctx
+from .external import External
 
 logger = logging.getLogger(__name__)
 
@@ -312,7 +313,7 @@ class Producer:
             self._producer.close()
 
 
-class Topic:
+class Topic(External):
     def __init__(
         self,
         topic_name,
@@ -322,7 +323,7 @@ class Topic:
         raw_records=False,
         init_time=None,
     ):
-        self.name = topic_name
+        super().__init__(name=topic_name)
         self.testing = testing
         self.init_time = (
             datetime.datetime.utcnow() if not init_time else init_time
