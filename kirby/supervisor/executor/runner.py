@@ -11,7 +11,6 @@ from kirby.supervisor.executor import (
 )
 
 logger = logging.getLogger(__name__)
-
 logging.basicConfig(level=logging.DEBUG)
 
 KAFKA_GROUP_ID = ".kirby.runners"
@@ -46,7 +45,7 @@ class Runner:
 
                 with Executor(self.job) as executor:
                     self.executor = executor
-                    executor.run(block=True)
+                    executor.raise_process()
 
         except NoMoreMessagesException:
             logger.debug(
@@ -60,3 +59,7 @@ class Runner:
             return self.executor.status
         else:
             return ProcessState.STOPPED
+
+    def kill(self):
+        if self.executor._process:
+            self.executor._process.kill()
