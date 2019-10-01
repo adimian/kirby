@@ -1,14 +1,11 @@
-from kirby.models.security import user_datastore
 from kirby import models
+from kirby.models.security import user_datastore
 
 BAKERY_API = "http://127.0.0.1:8000"
 KAFKA_BOOTSTRAP_SERVERS = '127.0.0.1:9092'
 KIRBY_WEB_SERVER = "http://127.0.0.1:8080"
 
 dev_env = "dev"
-test_env = "test"
-prod_env = "prod"
-
 
 ENVS = {dev_env: "Development"}
 
@@ -20,12 +17,12 @@ JOBS = {
         "config": {
             "BAKERY_API_BASE": BAKERY_API,
             "CASHREGISTER_TOPIC_NAME": "cashregister",
-            "CASHREGISTER_ENDPOINT":"sales/cashregister"
+            "CASHREGISTER_ENDPOINT": "sales/cashregister"
         }
     },
 
     "realtime": {
-        "description": "create total files (from  cashregister topic to total files)",
+        "description": "create total files (from  cashregister topic to totalfiles)",
         "type": models.JobType.SCHEDULED,
         "package_version": {dev_env: "0.1"},
         "scheduled_param": {
@@ -36,11 +33,10 @@ JOBS = {
         "config": {
             "BAKERY_API_BASE": BAKERY_API,
             "CASHREGISTER_TOPIC_NAME": "cashregister",
-            "TOTAL_FILES_FOLDER_PATH":"/Users/nicksjl/realtime_totals/"
+            "TOTAL_FILES_FOLDER_PATH": "/Users/nicksjl/realtime_totals/"
         },
     }}
-EXT = ["bakery","cashregister","totalfiles"]
-
+EXT = ["bakery", "cashregister", "totalfiles"]
 
 
 def create_envs(s):
@@ -50,7 +46,6 @@ def create_envs(s):
         return env
 
     return {short_name: create_env(name) for short_name, name in ENVS.items()}
-
 
 
 def create_jobs(s, sysadmins):
@@ -78,7 +73,7 @@ def create_contexts(s, jobs, envs):
             KIRBY_WEB_SERVER=KIRBY_WEB_SERVER,
             KAFKA_BOOTSTRAP_SERVERS=KAFKA_BOOTSTRAP_SERVERS,
         )
-        #s.add(ctx)
+        s.add(ctx)
         return ctx
 
     return {
@@ -130,7 +125,6 @@ def create_scripts(s, contexts, jobs, envs):
 
 
 def create_short_demo_db(s):
-
     # create demo user
     user = user_datastore.create_user(username="demo", password="demo")
     role = user_datastore.find_role("admin")
@@ -153,10 +147,6 @@ def create_short_demo_db(s):
     contexts = create_contexts(s, jobs, envs)
 
     add_schedules(s, envs, jobs, contexts)
-    # for context in contexts.values():
-    #     s.add(context)
-    #     s.commit()
-
 
     create_topics(s)
 
