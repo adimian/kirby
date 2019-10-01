@@ -5,8 +5,8 @@ load_dotenv()
 from getpass import getpass
 
 import click
-
 from kirby.demo import create_demo_db
+from kirby.short_demo import create_short_demo_db
 from kirby.models import db
 from kirby.models.security import user_datastore
 from kirby.supervisor import run_supervisor
@@ -106,10 +106,10 @@ def adduser(username):
     help="Shortest time interval between two scheduler executions",
 )
 @click.option(
-    "--runner", type=int, default=3, help="Number of runners that will start"
+    "--nb_runner", type=int, default=3, help="Number of runners that will start"
 )
 @click.option(
-    "--arbiter", type=int, default=3, help="Number of arbiters that will start"
+    "--nb_arbiter", type=int, default=3, help="Number of arbiters that will start"
 )
 def supervisor(name, window, wakeup, nb_runner, nb_arbiter):
     run_supervisor(name, window, wakeup, nb_runner, nb_arbiter)
@@ -122,6 +122,16 @@ def demo():
     with app.app_context():
         app.try_trigger_before_first_request_functions()
         create_demo_db(db.session)
+
+    click.echo("demo data inserted in the database")
+
+@click.command()
+def shortdemo():
+    app = app_maker()
+
+    with app.app_context():
+        app.try_trigger_before_first_request_functions()
+        create_short_demo_db(db.session)
 
     click.echo("demo data inserted in the database")
 
@@ -149,6 +159,7 @@ cli.add_command(web)
 cli.add_command(adduser)
 cli.add_command(supervisor)
 cli.add_command(demo)
+cli.add_command(shortdemo)
 cli.add_command(debug)
 
 
