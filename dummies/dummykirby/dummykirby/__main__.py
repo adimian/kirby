@@ -1,8 +1,6 @@
 if __name__ == "__main__":
-    import kirby
+    import os
     import time
 
-    print("Started process")
-
     time.sleep(2)
-    print(kirby.api.ctx["KIRBY_TEST_MARKER"])
+    print(os.environ["KIRBY_TEST_MARKER"])

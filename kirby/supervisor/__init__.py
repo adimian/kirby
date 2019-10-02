@@ -5,11 +5,11 @@ from time import sleep
 from redis import Redis
 from smart_getenv import getenv
 
+from kirby.api.queue import Queue
+from kirby.supervisor.election import Election
+from kirby.supervisor.scheduler import Scheduler
 from kirby.supervisor.executor.runner import Runner
 from kirby.supervisor.executor.arbiter import Arbiter
-from .election import Election
-from .scheduler import Scheduler
-from ..api.queue import Queue
 
 logger = logging.getLogger(__name__)
 
