@@ -20,14 +20,14 @@ def run_supervisor(name, window, wakeup, nb_runner, nb_arbiter):
         name=getenv(
             "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
         ),
-        use_tls=getenv("KAFKA_USE_SSL", type=bool, default=False)
+        use_tls=getenv("KAFKA_USE_SSL", type=bool, default=False),
     )
     scheduler = Scheduler(queue=queue, wakeup=wakeup)
 
     for i in range(nb_runner):
-        Runner(_queue=scheduler.queue)
+        Runner(queue=scheduler.queue)
     for i in range(nb_arbiter):
-        Arbiter(_queue=scheduler.queue)
+        Arbiter(queue=scheduler.queue)
 
     with Election(identity=name, server=server, check_ttl=window) as me:
         while True:

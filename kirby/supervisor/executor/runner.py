@@ -17,8 +17,8 @@ KAFKA_GROUP_ID = ".kirby.runners"
 
 
 class Runner:
-    def __init__(self, *args, _queue=None, **kargs):
-        if not _queue:
+    def __init__(self, *args, queue=None, **kargs):
+        if not queue:
             self.queue = Queue(
                 name=getenv("KIRBY_TOPIC_JOB_OFFERS", type=str),
                 group_id=KAFKA_GROUP_ID,
@@ -26,7 +26,7 @@ class Runner:
                 **kargs,
             )
         else:
-            self.queue = _queue
+            self.queue = queue
 
         self.executor = None
         self.job = None
