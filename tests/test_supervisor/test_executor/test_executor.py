@@ -80,9 +80,6 @@ def test_executor_raise_error_if_process_fails(
     with pytest.raises(ProcessExecutionError):
         with Executor(failing_job_description) as executor:
             executor.run()
-            while executor.status == ProcessState.SETTINGUP:
-                pass
-            assert executor.status == ProcessState.RUNNING
 
 
 @pytest.mark.skipif(

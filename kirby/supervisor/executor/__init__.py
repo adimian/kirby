@@ -137,7 +137,7 @@ class Executor:
 
     def join(self, timeout_s=None):
         # If timeout_ms == None : join will block until the process is joined
-        if self.status == ProcessState.RUNNING:
+        if self._thread.is_alive():
             self._thread.join(timeout_s)
             if self.return_values.return_code != 0:
                 raise ProcessExecutionError(self.return_values.stderr)
