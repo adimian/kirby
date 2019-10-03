@@ -161,6 +161,11 @@ class Consumer:
                 return []
 
     def seek_at_timestamp(self, datetime_timestamp):
+        if is_in_test_mode(self.topic_config):
+            raise RuntimeError(
+                f"The 'temporary_rollback' function is not available "
+                "in test mode"
+            )
         kafka_timestamp = datetime_to_kafka_ts(datetime_timestamp)
         partitions = self._consumer.assignment()
         offsets = self._consumer.offsets_for_times(
@@ -175,7 +180,13 @@ class Consumer:
 
     @contextmanager
     def temporary_rollback(self, datetime_timestamp):
+        if is_in_test_mode(self.topic_config):
+            raise RuntimeError(
+                f"The 'temporary_rollback' function is not available "
+                "in test mode"
+            )
         # Init old_offsets
+        start_ts = datetime.datetime.utcnow()
         partitions = self._consumer.assignment()
         old_offsets = {
             partition: self._consumer.committed(partition)
@@ -188,13 +199,20 @@ class Consumer:
 
         # Rollback to the old offsets
         for partition, offset in old_offsets.items():
-            if offset:
-                self._consumer.seek(partition=partition, offset=offset)
-            else:
+            if not offset:
+                offsets_for_times = self._consumer.offsets_for_times(
+                    {partition: datetime_to_kafka_ts(start_ts)}
+                )[partition]
+                if offsets_for_times:
+                    offset = offsets_for_times.offset
+                else:
+                    offset = 0
                 logger.warning(
-                    f"There where no offset for the partition {partition}"
+                    f"There where no offset for the partition {partition} "
+                    f"before the rollback. The offset was therefore set as "
+                    "the last message at the beginning of the rollback."
                 )
-                logger.warning(f"old_offsets= {old_offsets}")
+            self._consumer.seek(partition=partition, offset=offset)
 
     @topic_retry_decorator
     def between(self, start, end, timeout_ms=1500):
@@ -226,7 +244,10 @@ class Consumer:
                 messages = []
                 record = poll_next_record()
                 if record:
-                    while start_timestamp <= record.timestamp < end_timestamp:
+                    while (
+                        start_timestamp <= record.timestamp < end_timestamp
+                        and record
+                    ):
                         messages.append((record.timestamp, record))
                         record = poll_next_record()
                         if not record:
@@ -240,6 +261,17 @@ class Consumer:
     def close(self):
         if not is_in_test_mode(self.topic_config):
             self._consumer.close(autocommit=False)
+
+    def rewind(self, earlier=None, latest=None):
+        if not earlier:
+            earlier = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
+        if not latest:
+            latest = datetime.datetime.utcnow()
+
+        messages = self.between(earlier, latest)
+        messages.reverse()
+        for message in messages:
+            yield message
 
     def __iter__(self):
         return self
