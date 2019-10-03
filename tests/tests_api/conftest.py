@@ -45,17 +45,19 @@ def kirby_app(session, kirby_hidden_env, kirby_expected_env):
 
 
 @fixture
-def kirby_topic_factory(kafka_topic_factory):
+def is_in_test_mode():
+    return getenv("TESTING", type=bool, default=True)
+
+
+@fixture
+def kirby_topic_factory(kafka_topic_factory, is_in_test_mode):
     import logging
 
     logger = logging.getLogger(__name__)
-    bootstrap_servers = getenv(
-        "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
-    )
 
     @contextmanager
     def create_kirby_topic(topic_name, *args, timeout_ms=1500, **kargs):
-        if bootstrap_servers:
+        if not is_in_test_mode:
             kargs.update(
                 use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True)
             )
@@ -64,8 +66,7 @@ def kirby_topic_factory(kafka_topic_factory):
                     yield kirby_topic
         else:
             logger.warning(
-                f"There is no KAFKA_BOOTSTRAP_SERVERS. "
-                "Topic will be created in testing mode"
+                f"The Topic '{topic_name}' is created in testing mode"
             )
             kargs.update(testing=True)
             with Topic(topic_name, *args, **kargs) as kirby_topic:

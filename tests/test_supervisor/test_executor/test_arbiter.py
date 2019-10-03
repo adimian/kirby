@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.DEBUG)
     ),
 )
 def test_arbiter_job_reraised_if_failed(venv_directory, queue_for_arbiter):
-    arbiter = Arbiter(_queue=queue_for_arbiter)
+    arbiter = Arbiter(queue=queue_for_arbiter)
 
     # Loop until the process fail
     while arbiter.status != ProcessState.FAILED:

@@ -3,7 +3,6 @@ import os
 import pytest
 
 from kirby.supervisor.executor import ProcessState
-from kirby.supervisor.executor.runner import Runner
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -17,9 +16,10 @@ logging.basicConfig(level=logging.DEBUG)
     ),
 )
 def test_runner_waits_for_jobs(
-    venv_directory, queue_for_runner, job_description
+    venv_directory, queue_for_runner, job_description, runner
 ):
-    runner = Runner(_queue=queue_for_runner)
+    while not runner.job:
+        pass
     assert runner.job == job_description
 
 
@@ -30,8 +30,7 @@ def test_runner_waits_for_jobs(
         "Make sure you host the package somewhere."
     ),
 )
-def test_runner_raise_job(venv_directory, queue_for_runner):
-    runner = Runner(_queue=queue_for_runner)
+def test_runner_raise_job(venv_directory, queue_for_runner, runner):
     while runner.status != ProcessState.RUNNING:
         pass
     assert runner.status == ProcessState.RUNNING
@@ -44,9 +43,7 @@ def test_runner_raise_job(venv_directory, queue_for_runner):
         "Make sure you host the package somewhere."
     ),
 )
-def test_runner_kill_job(venv_directory, queue_for_runner):
-    runner = Runner(_queue=queue_for_runner)
-
+def test_runner_kill_job(venv_directory, queue_for_runner, runner):
     # Wait until the process started
     while runner.status != ProcessState.RUNNING:
         pass
