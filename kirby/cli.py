@@ -1,22 +1,20 @@
-from dotenv import load_dotenv
-
-load_dotenv()
-
+import logging
+import os
 from getpass import getpass
 
 import click
-from kirby.demo import create_demo_db
-from kirby.short_demo import create_short_demo_db
+from dotenv import load_dotenv
+from smart_getenv import getenv
+
+import kirby
+from kirby.create_demo import create_demo_db
 from kirby.models import db
 from kirby.models.security import user_datastore
 from kirby.supervisor import run_supervisor
 from kirby.web import app_maker
-from smart_getenv import getenv
 
-import logging
-
+load_dotenv()
 DEFAULT_LOG_FORMAT = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
-
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -116,23 +114,18 @@ def supervisor(name, window, wakeup, nb_runner, nb_arbiter):
 
 
 @click.command()
-def demo():
+@click.option(
+    "--json_file_path",
+    type=str,
+    default=os.path.join(os.path.dirname(kirby.__file__), "demo.json"),
+    help="demo json path file",
+)
+def demo(json_file_path):
     app = app_maker()
 
     with app.app_context():
         app.try_trigger_before_first_request_functions()
-        create_demo_db(db.session)
-
-    click.echo("demo data inserted in the database")
-
-
-@click.command()
-def shortdemo():
-    app = app_maker()
-
-    with app.app_context():
-        app.try_trigger_before_first_request_functions()
-        create_short_demo_db(db.session)
+        create_demo_db(db.session, json_file_path)
 
     click.echo("demo data inserted in the database")
 
@@ -160,9 +153,7 @@ cli.add_command(web)
 cli.add_command(adduser)
 cli.add_command(supervisor)
 cli.add_command(demo)
-cli.add_command(shortdemo)
 cli.add_command(debug)
-
 
 if __name__ == "__main__":
     cli()
