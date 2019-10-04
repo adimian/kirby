@@ -70,8 +70,6 @@ class Executor:
         self.venv_name = f"kirby-{self.package_name}-{self.version}"
         self.venv_created = False
         self.env = job.variables
-        self.env["ID"] = str(job.id)
-        self.env["PACKAGE_NAME"] = job.package_name
         self._thread = None
         self._process = None
         self.return_values = None
