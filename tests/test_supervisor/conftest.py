@@ -81,21 +81,5 @@ def queue_job_offers(kafka_topic_factory, is_in_test_mode, kafka_use_tls):
 
 
 @pytest.fixture
-def queue_running_deamons(kafka_topic_factory, is_in_test_mode, kafka_use_tls):
-    topic_name = "list-deamons-running"
-    with kafka_topic_factory(topic_name):
-        yield Queue(
-            name=topic_name,
-            raw_records=True,
-            use_tls=kafka_use_tls,
-            testing=is_in_test_mode,
-        )
-
-
-@pytest.fixture
-def scheduler(queue_job_offers, queue_running_deamons):
-    return Scheduler(
-        queue_job_offers=queue_job_offers,
-        queue_running_deamons=queue_running_deamons,
-        wakeup=30,
-    )
+def scheduler(queue_job_offers):
+    return Scheduler(queue=queue_job_offers, wakeup=30)
