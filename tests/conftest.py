@@ -1,6 +1,8 @@
 import os
+
 from pytest import fixture
 from requests_flask_adapter import Session
+from smart_getenv import getenv
 
 from kirby.web import app_maker
 from kirby.models import (
@@ -18,6 +20,21 @@ from kirby.models import (
 )
 
 API_ROOT = "http://some-test-server.somewhere"
+
+
+@fixture
+def is_in_test_mode():
+    return getenv("TESTING", type=bool, default=True)
+
+
+@fixture
+def kafka_use_tls():
+    return getenv("KAFKA_USE_TLS", type=bool, default=False)
+
+
+@fixture
+def bootstrap_servers():
+    return getenv("KAFKA_BOOTSTRAP_SERVERS", type=list, separator=",")
 
 
 @fixture
@@ -252,7 +269,7 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 
 
 @fixture
-def kafka_topic_factory():
+def kafka_topic_factory(kafka_use_tls, bootstrap_servers):
     import logging
     from contextlib import contextmanager, suppress
     from smart_getenv import getenv
@@ -265,12 +282,9 @@ def kafka_topic_factory():
 
     logger = logging.getLogger(__name__)
 
-    bootstrap_servers = getenv(
-        "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
-    )
     if bootstrap_servers:
         args = {"bootstrap_servers": bootstrap_servers}
-        if getenv("KAFKA_USE_TLS", type=bool):
+        if kafka_use_tls:
             args.update(
                 {
                     "security_protocol": "SSL",
@@ -282,9 +296,10 @@ def kafka_topic_factory():
 
         admin = KafkaAdminClient(**args)
 
-        @topic_retry_decorator
-        @contextmanager
-        def create_kafka_topic(topic_name, timeout_ms=1500):
+    @topic_retry_decorator
+    @contextmanager
+    def create_kafka_topic(topic_name, timeout_ms=1500):
+        if bootstrap_servers:
             with suppress(UnknownTopicOrPartitionError):
                 admin.delete_topics([topic_name], timeout_ms=10000)
 
@@ -293,14 +308,14 @@ def kafka_topic_factory():
             )
             yield
             admin.delete_topics([topic_name], timeout_ms=10000)
+        else:
+            logger.warning(
+                f"There is no KAFKA_BOOTSTRAP_SERVERS. "
+                f"Creation of the kafka topic '{topic_name}' skipped."
+            )
+            yield
 
-        yield create_kafka_topic
+    yield create_kafka_topic
 
+    if bootstrap_servers:
         admin.close()
-
-    else:
-        logger.warning(
-            f"There is no KAFKA_BOOTSTRAP_SERVERS. "
-            "Creation of kafka_topic skipped."
-        )
-        yield
