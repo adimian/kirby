@@ -1,6 +1,7 @@
 import logging
 import threading
 
+from kirby.models import JobType
 from kirby.supervisor.executor import (
     parse_job_description,
     Executor,
@@ -26,8 +27,10 @@ class Runner:
         from kirby.api.ext.topic import NoMoreMessagesException
 
         try:
-            for job in self.queue:
-                self.job = parse_job_description(job)
+            for job_desc in self.queue:
+                if job_desc["type"] != JobType.SCHEDULED:
+                    continue
+                self.job = parse_job_description(job_desc)
                 logger.debug(f"A runner received the job : '{self.job.name}'")
 
                 with Executor(self.job) as executor:
@@ -36,7 +39,7 @@ class Runner:
 
         except NoMoreMessagesException:
             logger.debug(
-                f"The jobs' queue (wich was run in test mode) "
+                f"The jobs' queue (which was run in test mode) "
                 "has no jobs anymore"
             )
 

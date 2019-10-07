@@ -3,6 +3,7 @@ import time
 
 from smart_getenv import getenv
 
+from kirby.models import JobType
 from kirby.supervisor.executor import (
     parse_job_description,
     Executor,
@@ -25,8 +26,10 @@ class Arbiter(Runner):
         self._stop_signal = False
 
     def catch_and_raise_jobs(self):
-        job = self.queue.next(timeout_ms=float("inf"))
-        self.job = parse_job_description(job)
+        for job_desc in self.queue:
+            while job_desc["type"] == JobType.DAEMON:
+                break
+        self.job = parse_job_description(job_desc)
         logger.debug(f"An arbiter received the job : '{self.job.name}'")
 
         with Executor(self.job) as executor:
