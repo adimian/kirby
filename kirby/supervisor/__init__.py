@@ -8,7 +8,7 @@ from kirby.models import JobType
 from kirby.api.ext.topic import earliest_kafka_date
 from kirby.api.queue import Queue
 from kirby.supervisor.election import Election
-from kirby.supervisor.scheduler import Scheduler, MessageType
+from kirby.supervisor.scheduler import Scheduler
 from kirby.supervisor.executor.runner import Runner
 from kirby.supervisor.executor.arbiter import Arbiter
 

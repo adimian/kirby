@@ -11,12 +11,6 @@ from kirby.exc import CoolDownException
 logger = logging.getLogger(__name__)
 
 
-class MessageType(Enum):
-    UPDATE = "update"
-    JOB = "job"
-    DONE = "done"
-
-
 class Scheduler:
     def __init__(self, wakeup, queue):
         self.queue = queue
