@@ -43,6 +43,10 @@ kirby_value_deserializer = partial(msgpack.loads, raw=False)
 kirby_value_serializer = msgpack.dumps
 
 
+def earliest_kafka_date():
+    return datetime.datetime(year=1970, month=1, day=1, hour=1)
+
+
 def datetime_to_kafka_ts(time):
     return int(time.timestamp() * 1000)
 
@@ -227,15 +231,16 @@ class Consumer:
                 return None
 
         if is_in_test_mode(self.topic_config):
-            messages = [
-                msg
-                for t, msg in self.topic_config.messages
-                if start <= t < end
-            ]
-            if not self.topic_config.raw_records:
-                return [message.value for message in messages]
-            else:
-                return messages
+            return parse_records(
+                {
+                    "partition_0": [
+                        msg
+                        for t, msg in self.topic_config.messages
+                        if start <= t < end
+                    ]
+                },
+                self.topic_config.raw_records,
+            )
         else:
             with self.temporary_rollback(start):
                 start_timestamp = datetime_to_kafka_ts(start)
@@ -331,7 +336,7 @@ class Producer:
                         timestamp_type=0,
                         key=None,
                         value=message,
-                        headers=[(k, v) for k, v in headers.items()],
+                        headers=self.format_headers(headers),
                         checksum=None,
                         serialized_key_size=None,
                         serialized_value_size=None,
@@ -376,7 +381,7 @@ class Topic(External):
             )
 
         mode = "testing" if self.testing else "live"
-        logger.debug(f"starting topic {topic_name} in {mode} mode")
+        logger.debug(f"starting kirby topic {topic_name} in {mode} mode")
 
     def safely_set_attribute_if_does_not_exist(
         self, item, class_, *args, **kargs

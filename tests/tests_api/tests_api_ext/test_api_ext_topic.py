@@ -168,4 +168,5 @@ def test_topic_can_rewind(kirby_topic_factory, is_in_test_mode):
         for i in range(10):
             kirby_topic.send(i, submitted=now + i * delta)
 
-        assert list(kirby_topic.rewind(earlier=now)) == list(range(9, -1, -1))
+        for msg, i in zip(kirby_topic.rewind(earlier=now), range(9, -1, -1)):
+            assert msg == i
