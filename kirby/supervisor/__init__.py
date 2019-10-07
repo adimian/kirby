@@ -20,7 +20,7 @@ JOB_OFFERS_TOPIC_NAME = getenv(
     "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
 )
 RUNNING_DEAMONS_TOPIC_NAME = getenv(
-    "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
+    "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.running-deamons"
 )
 
 
