@@ -20,8 +20,8 @@ WAIT_BETWEEN_RETRIES = getenv(
 
 
 class Arbiter(Runner):
-    def __init__(self, *args, **kargs):
-        super().__init__(*args, **kargs)
+    def __init__(self, queue):
+        super().__init__(queue)
         self._stop_signal = False
 
     def catch_and_raise_jobs(self):
@@ -32,22 +32,19 @@ class Arbiter(Runner):
         with Executor(self.job) as executor:
             self.executor = executor
             while not self._stop_signal:
-                try:
-                    executor.raise_process()
-                finally:
-                    if executor.status == ProcessState.STOPPED:
-                        logger.warning(
-                            f"The {self.job.type} job : '{self.job.name}'"
-                            "terminated correctly but it was not supposed to."
-                        )
-                    elif executor.status == ProcessState.FAILED:
-                        logger.error(
-                            f"The {self.job.type} job : '{self.job.name}' failed."
-                        )
-                    logger.error(
-                        f"The arbiter is re-raising the process '{self.job.name}'."
+                executor.raise_process()
+                if executor.status == ProcessState.STOPPED:
+                    logger.warning(
+                        f"The {self.job.type} job : '{self.job.name}'"
+                        "terminated correctly but it was not supposed to."
                     )
-                    executor.join()
+                elif executor.status == ProcessState.FAILED:
+                    logger.error(
+                        f"The {self.job.type} job : '{self.job.name}' failed."
+                    )
+                logger.error(
+                    f"The arbiter is re-raising the process '{self.job.name}'."
+                )
                 time.sleep(WAIT_BETWEEN_RETRIES)
 
     def stop(self):

@@ -1,9 +1,6 @@
 import logging
 import threading
 
-from smart_getenv import getenv
-
-from kirby.api.queue import Queue
 from kirby.supervisor.executor import (
     parse_job_description,
     Executor,
@@ -13,20 +10,10 @@ from kirby.supervisor.executor import (
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-KAFKA_GROUP_ID = ".kirby.runners"
-
 
 class Runner:
-    def __init__(self, *args, queue=None, **kargs):
-        if not queue:
-            self.queue = Queue(
-                name=getenv("KIRBY_TOPIC_JOB_OFFERS", type=str),
-                group_id=KAFKA_GROUP_ID,
-                *args,
-                **kargs,
-            )
-        else:
-            self.queue = queue
+    def __init__(self, queue):
+        self.queue = queue
 
         self.executor = None
         self.job = None
