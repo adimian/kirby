@@ -32,8 +32,8 @@ def test_executor_can_parse_job(single_job_description):
 
 
 def test_it_generates_venv_name(venv_directory, job_description):
-    with Executor(job_description) as executor:
-        assert executor.venv_name == "kirby-dummykirby-0.0.0.dev"
+    executor = Executor(job_description)
+    assert executor.venv_name == "kirby-dummykirby-0.0.0.dev"
 
 
 @pytest.mark.skipif(
