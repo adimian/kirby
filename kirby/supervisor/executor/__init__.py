@@ -75,7 +75,7 @@ class Executor:
         self.venv_name = f"kirby-{self.package_name}-{self.version}"
         self.venv_created = False
         self.env = job.variables
-        self.env.update(PACKAGE_NAME=self.package_name, ID=job.id)
+        self.env.update(PACKAGE_NAME=self.package_name, ID=str(job.id))
 
         self._thread = None
         self._process = None
