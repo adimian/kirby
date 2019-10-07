@@ -1,7 +1,6 @@
 import logging
 import threading
 
-from kirby.models import JobType
 from kirby.supervisor.executor import (
     parse_job_description,
     Executor,
@@ -28,8 +27,6 @@ class Runner:
 
         try:
             for job_desc in self.queue:
-                if job_desc["type"] != JobType.SCHEDULED:
-                    continue
                 self.job = parse_job_description(job_desc)
                 logger.debug(f"A runner received the job : '{self.job.name}'")
 

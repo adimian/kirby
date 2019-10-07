@@ -1,9 +1,9 @@
 import logging
+import threading
 import time
 
 from smart_getenv import getenv
 
-from kirby.models import JobType
 from kirby.supervisor.executor import (
     parse_job_description,
     Executor,
@@ -20,18 +20,15 @@ WAIT_BETWEEN_RETRIES = getenv(
 )
 
 
-class Arbiter(Runner):
-    def __init__(self, queue):
-        super().__init__(queue)
-        self._stop_signal = False
+class Arbiter:
+    def __init__(self, job):
+        self.job = parse_job_description(job)
 
-    def catch_and_raise_jobs(self):
-        for job_desc in self.queue:
-            while job_desc["type"] == JobType.DAEMON:
-                break
-        self.job = parse_job_description(job_desc)
-        logger.debug(f"An arbiter received the job : '{self.job.name}'")
+        logger.debug("Starting Runner's thread")
+        self._thread = threading.Thread(target=self.raise_job)
+        self._thread.start()
 
+    def raise_job(self):
         with Executor(self.job) as executor:
             self.executor = executor
             while not self._stop_signal:
@@ -55,4 +52,5 @@ class Arbiter(Runner):
 
     def kill(self):
         self.stop()
-        super(Arbiter, self).kill()
+        if self.executor._process:
+            self.executor._process.kill()

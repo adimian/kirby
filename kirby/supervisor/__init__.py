@@ -5,7 +5,6 @@ from smart_getenv import getenv
 from time import perf_counter, sleep
 
 from kirby.models import JobType
-from kirby.api.ext.topic import earliest_kafka_date
 from kirby.api.queue import Queue
 from kirby.supervisor.election import Election
 from kirby.supervisor.scheduler import Scheduler
@@ -22,24 +21,16 @@ JOB_OFFERS_TOPIC_NAME = getenv(
 
 def run_supervisor(name, window, wakeup, nb_runner):
     server = Redis()
-
-    queue_arbiters = Queue(
-        name=JOB_OFFERS_TOPIC_NAME, use_tls=USE_TLS, group_id=".kirby.arbiters"
-    )
-    queue_runners = Queue(
-        name=JOB_OFFERS_TOPIC_NAME, use_tls=USE_TLS, group_id=".kirby.runners"
-    )
-    queue_supervisor = Queue(
+    queue = Queue(
         name=JOB_OFFERS_TOPIC_NAME,
         use_tls=USE_TLS,
-        group_id=f".kirby.supervisors.{name}",
-        init_time=earliest_kafka_date(),
+        group_id=JOB_OFFERS_TOPIC_NAME,
     )
 
-    scheduler = Scheduler(queue=queue_supervisor, wakeup=wakeup)
+    scheduler = Scheduler(queue=queue, wakeup=wakeup)
 
     for i in range(nb_runner):
-        Runner(queue_runners)
+        Runner(queue)
 
     running_deamons = []
     with Election(identity=name, server=server, check_ttl=window) as me:
@@ -53,17 +44,17 @@ def run_supervisor(name, window, wakeup, nb_runner):
                         if job["type"] == JobType.DAEMON:
                             if job not in running_deamons:
                                 running_deamons.append(job)
-                                Arbiter(queue_arbiters)
+                                Arbiter(job)
                             else:
                                 continue
                         scheduler.queue_job(job)
             else:
                 logger.debug("not the leader, raising needed arbiters")
-                for job_offers in queue_supervisor.nexts():
-                    if job_offers["type"] == JobType.DAEMON:
-                        if job_offers not in running_deamons:
-                            running_deamons.append(job_offers)
-                            Arbiter(queue_arbiters)
+                for job_offer in queue.nexts():
+                    if job_offer["type"] == JobType.DAEMON:
+                        if job_offer not in running_deamons:
+                            running_deamons.append(job_offer)
+                            Arbiter(job_offer)
 
             drift = perf_counter() - checkpoint
             next_wakeup = wakeup - drift
