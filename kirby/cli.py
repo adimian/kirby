@@ -108,11 +108,8 @@ def adduser(username):
 @click.option(
     "--runner", "nb_runner", type=int, default=3, help="Number of runners that will start"
 )
-@click.option(
-    "--arbiter", "nb_arbiter", type=int, default=3, help="Number of arbiters that will start"
-)
-def supervisor(name, window, wakeup, nb_runner, nb_arbiter):
-    run_supervisor(name, window, wakeup, nb_runner, nb_arbiter)
+def supervisor(name, window, wakeup, nb_runner):
+    run_supervisor(name, window, wakeup, nb_runner)
 
 
 @click.command()
