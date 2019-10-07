@@ -11,8 +11,8 @@ def test_scheduler_can_grab_jobs(data_dir, scheduler):
 
     jobs = scheduler.parse_jobs(content)
 
-    assert isinstance(jobs, list)
-    assert all(isinstance(job, str) for job in jobs)
+    [print(type(job)) for job in jobs]
+    assert all(isinstance(job, dict) for job in jobs)
 
 
 def test_scheduler_queue_jobs(scheduler):

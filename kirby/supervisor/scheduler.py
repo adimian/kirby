@@ -3,7 +3,6 @@ import json
 import logging
 import requests
 
-from enum import Enum
 from smart_getenv import getenv
 
 from kirby.exc import CoolDownException
@@ -25,12 +24,7 @@ class Scheduler:
             logger.exception("unable to fetch jobs: ")
 
     def parse_jobs(self, content):
-        jobs = []
-        descriptions = json.loads(content)
-        for description in descriptions["scripts"]:
-            jobs.append(json.dumps(description))
-
-        return jobs
+        return [description for description in json.loads(content)["scripts"]]
 
     def queue_job(self, job, now=None):
         if now is None:
