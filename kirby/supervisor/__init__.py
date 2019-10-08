@@ -1,10 +1,10 @@
 import logging
-from time import perf_counter
-from time import sleep
 
 from redis import Redis
 from smart_getenv import getenv
+from time import perf_counter, sleep
 
+from kirby.models import JobType
 from kirby.api.queue import Queue
 from kirby.supervisor.election import Election
 from kirby.supervisor.scheduler import Scheduler
@@ -13,22 +13,31 @@ from kirby.supervisor.executor.arbiter import Arbiter
 
 logger = logging.getLogger(__name__)
 
+USE_TLS = getenv("KAFKA_USE_TLS", type=bool, default=False)
+JOB_OFFERS_TOPIC_NAME = getenv(
+    "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
+)
 
-def run_supervisor(name, window, wakeup, nb_runner, nb_arbiter):
+
+def run_supervisor(name, window, wakeup, nb_runner):
     server = Redis()
     queue = Queue(
-        name=getenv(
-            "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
-        ),
-        use_tls=getenv("KAFKA_USE_SSL", type=bool, default=False),
+        name=JOB_OFFERS_TOPIC_NAME,
+        use_tls=USE_TLS,
+        group_id=JOB_OFFERS_TOPIC_NAME,
     )
+    queue_for_supervisor = Queue(
+        name=JOB_OFFERS_TOPIC_NAME,
+        use_tls=USE_TLS,
+        group_id=f".kirby.supervisors.{name}",
+    )
+
     scheduler = Scheduler(queue=queue, wakeup=wakeup)
 
     for i in range(nb_runner):
-        Runner(queue=scheduler.queue)
-    for i in range(nb_arbiter):
-        Arbiter(queue=scheduler.queue)
+        Runner(queue)
 
+    running_deamons = []
     with Election(identity=name, server=server, check_ttl=window) as me:
         while True:
             checkpoint = perf_counter()
@@ -37,10 +46,20 @@ def run_supervisor(name, window, wakeup, nb_runner, nb_arbiter):
                 if content is not None:
                     jobs = scheduler.parse_jobs(content)
                     for job in jobs:
+                        if job["type"] == JobType.DAEMON:
+                            if job not in running_deamons:
+                                running_deamons.append(job)
+                                Arbiter(job)
+                            else:
+                                continue
                         scheduler.queue_job(job)
-
             else:
-                logger.debug("not the leader, do nothing")
+                logger.debug("not the leader, raising needed arbiters")
+                for job_offer in queue_for_supervisor.nexts():
+                    if job_offer["type"] == JobType.DAEMON:
+                        if job_offer not in running_deamons:
+                            running_deamons.append(job_offer)
+                            Arbiter(job_offer)
 
             drift = perf_counter() - checkpoint
             next_wakeup = wakeup - drift

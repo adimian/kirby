@@ -32,6 +32,11 @@ class JobDescription:
     notifications = attr.ib(type=dict)
     variables = attr.ib(type=dict, converter=convert_variables)
 
+    def json_repr(self):
+        vars_ = vars(self).copy()
+        vars_["type"] = self.type.value
+        return vars_
+
 
 def parse_job_description(job_description):
     kwargs = json.loads(job_description)
@@ -70,6 +75,7 @@ class Executor:
         self.venv_name = f"kirby-{self.package_name}-{self.version}"
         self.venv_created = False
         self.env = job.variables
+        self.env.update(PACKAGE_NAME=self.package_name, ID=str(job.id))
 
         self._thread = None
         self._process = None
@@ -137,13 +143,35 @@ class Executor:
 
     def join(self, timeout_s=None):
         # If timeout_ms == None : join will block until the process is joined
-        if self.status == ProcessState.RUNNING:
+        if not self._thread:
+            raise RuntimeError("Cannot join an Executor that didn't start.")
+        if self._thread.is_alive():
             self._thread.join(timeout_s)
             if self.return_values.return_code != 0:
                 raise ProcessExecutionError(self.return_values.stderr)
+
+    def _safe_join(self):
+        try:
+            self.join()
+        except RuntimeError:
+            pass
+
+    def terminate(self):
+        if self._process:
+            if self._process.poll() is None:
+                self._process.terminate()
+        self._safe_join()
+
+    def kill(self):
+        if self._process:
+            self._process.kill()
+        self._safe_join()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.join()
+        try:
+            self.terminate()
+        except ProcessExecutionError as e:
+            logging.warning(f"The Executor stops with the error: {e}")

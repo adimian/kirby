@@ -1,5 +1,6 @@
 black==19.3b0
 coveralls
+freezegun==0.3.12
 hypothesis==4.24.6
 pytest==4.4.1
 pytest-cov==2.7.1

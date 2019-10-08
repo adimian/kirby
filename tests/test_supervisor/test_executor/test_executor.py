@@ -32,8 +32,8 @@ def test_executor_can_parse_job(single_job_description):
 
 
 def test_it_generates_venv_name(venv_directory, job_description):
-    with Executor(job_description) as executor:
-        assert executor.venv_name == "kirby-dummykirby-0.0.0.dev"
+    executor = Executor(job_description)
+    assert executor.venv_name == "kirby-dummykirby-0.0.0.dev"
 
 
 @pytest.mark.skipif(
@@ -78,11 +78,9 @@ def test_executor_raise_error_if_process_fails(
     venv_directory, failing_job_description
 ):
     with pytest.raises(ProcessExecutionError):
-        with Executor(failing_job_description) as executor:
-            executor.run()
-            while executor.status == ProcessState.SETTINGUP:
-                pass
-            assert executor.status == ProcessState.RUNNING
+        executor = Executor(failing_job_description)
+        executor.run()
+        executor.join()
 
 
 @pytest.mark.skipif(
@@ -99,5 +97,4 @@ def test_executor_is_asynchronous(venv_directory, job_description):
             pass
         assert executor.status == ProcessState.RUNNING
 
-        executor.join()
-        assert executor.return_values
+    assert executor.return_values

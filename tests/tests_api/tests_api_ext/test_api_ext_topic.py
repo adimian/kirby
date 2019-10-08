@@ -1,4 +1,5 @@
 import pytest
+
 from datetime import datetime, timedelta
 from hypothesis import given, strategies
 
@@ -158,3 +159,14 @@ def test_topic_rollback_is_temporary(kirby_topic_factory):
         kirby_topic.between(now + 4 * delta, now + 8 * delta)
 
         assert kirby_topic.next() == 1
+
+
+def test_topic_can_rewind(kirby_topic_factory, is_in_test_mode):
+    now = datetime(year=2019, month=10, day=3, hour=10, minute=18)
+    delta = timedelta(minutes=1)
+    with kirby_topic_factory("TOPIC_NAME", init_time=now) as kirby_topic:
+        for i in range(10):
+            kirby_topic.send(i, submitted=now + i * delta)
+
+        for msg, i in zip(kirby_topic.rewind(earlier=now), range(9, -1, -1)):
+            assert msg == i
