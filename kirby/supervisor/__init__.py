@@ -17,6 +17,7 @@ USE_TLS = getenv("KAFKA_USE_TLS", type=bool, default=False)
 JOB_OFFERS_TOPIC_NAME = getenv(
     "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
 )
+NB_SUPERVISORS_KEY = "_NB_SUPERVISORS"
 
 
 def run_supervisor(name, window, wakeup, nb_runner):
@@ -32,31 +33,44 @@ def run_supervisor(name, window, wakeup, nb_runner):
     for i in range(nb_runner):
         Runner(queue)
 
-    running_deamons = []
-    with Election(identity=name, server=server, check_ttl=window) as me:
-        while True:
-            checkpoint = perf_counter()
-            if me.is_leader():
-                content = scheduler.fetch_jobs()
-                if content is not None:
-                    jobs = scheduler.parse_jobs(content)
-                    for job in jobs:
-                        if job["type"] == JobType.DAEMON:
-                            if job not in running_deamons:
-                                running_deamons.append(job)
-                                Arbiter(job)
-                            else:
-                                continue
-                        scheduler.queue_job(job)
-            else:
-                logger.debug("not the leader, raising needed arbiters")
-                for job_offer in queue.nexts():
-                    if job_offer["type"] == JobType.DAEMON:
-                        if job_offer not in running_deamons:
-                            running_deamons.append(job_offer)
-                            Arbiter(job_offer)
+    # Check if number of supervisor exist or not
+    # if not then we initialize it
+    if server.get(NB_SUPERVISORS_KEY) is None:
+        server.set(NB_SUPERVISORS_KEY, 1, nx=1.0)
+    else:
+        current_value = server.get(NB_SUPERVISORS_KEY)
+        server.set(NB_SUPERVISORS_KEY, current_value + 1, nx=1.0)
 
-            drift = perf_counter() - checkpoint
-            next_wakeup = wakeup - drift
-            logger.debug("waking up in {:.2f}s".format(next_wakeup))
-            sleep(next_wakeup)
+    try:
+        running_deamons = []
+        with Election(identity=name, server=server, check_ttl=window) as me:
+            while True:
+                checkpoint = perf_counter()
+                if me.is_leader():
+                    content = scheduler.fetch_jobs()
+                    if content is not None:
+                        jobs = scheduler.parse_jobs(content)
+                        for job in jobs:
+                            if job["type"] == JobType.DAEMON:
+                                if job not in running_deamons:
+                                    running_deamons.append(job)
+                                    Arbiter(job)
+                                else:
+                                    continue
+                            scheduler.queue_job(job)
+                else:
+                    logger.debug("not the leader, raising needed arbiters")
+                    for job_offer in queue.nexts():
+                        if job_offer["type"] == JobType.DAEMON:
+                            if job_offer not in running_deamons:
+                                running_deamons.append(job_offer)
+                                Arbiter(job_offer)
+
+                drift = perf_counter() - checkpoint
+                next_wakeup = wakeup - drift
+                logger.debug("waking up in {:.2f}s".format(next_wakeup))
+                sleep(next_wakeup)
+    finally:
+        # reduce number of running supervisors
+        current_value = server.get(NB_SUPERVISORS_KEY)
+        server.set(NB_SUPERVISORS_KEY, current_value - 1, nx=1.0)
