@@ -17,7 +17,8 @@ USE_TLS = getenv("KAFKA_USE_TLS", type=bool, default=False)
 JOB_OFFERS_TOPIC_NAME = getenv(
     "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers"
 )
-NB_SUPERVISORS_KEY = "_NB_SUPERVISORS"
+SUPERVISORS_KEY = "_SUPERVISORS"
+SUPERVISORS_SET = "Supervisors"
 
 
 def run_supervisor(name, window, wakeup, nb_runner):
@@ -33,13 +34,8 @@ def run_supervisor(name, window, wakeup, nb_runner):
     for i in range(nb_runner):
         Runner(queue)
 
-    # Check if number of supervisor exist or not
-    # if not then we initialize it
-    if server.get(NB_SUPERVISORS_KEY) is None:
-        server.set(NB_SUPERVISORS_KEY, 1, nx=1.0)
-    else:
-        current_value = server.get(NB_SUPERVISORS_KEY)
-        server.set(NB_SUPERVISORS_KEY, current_value + 1, nx=1.0)
+    # Add this supervisor to set
+    server.sadd(SUPERVISORS_SET, name)
 
     try:
         running_deamons = []
@@ -71,6 +67,5 @@ def run_supervisor(name, window, wakeup, nb_runner):
                 logger.debug("waking up in {:.2f}s".format(next_wakeup))
                 sleep(next_wakeup)
     finally:
-        # reduce number of running supervisors
-        current_value = server.get(NB_SUPERVISORS_KEY)
-        server.set(NB_SUPERVISORS_KEY, current_value - 1, nx=1.0)
+        # remove from set
+        server.srem(SUPERVISORS_SET, name)
