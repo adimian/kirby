@@ -73,6 +73,8 @@ def parse_records(records_by_partition, raw_records=False):
                 for records in records_by_partition.values()
                 for record in records
             ]
+    else:
+        return []
 
 
 def is_in_test_mode(topic_config):
