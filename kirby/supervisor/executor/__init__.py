@@ -150,8 +150,28 @@ class Executor:
             if self.return_values.return_code != 0:
                 raise ProcessExecutionError(self.return_values.stderr)
 
+    def _safe_join(self):
+        try:
+            self.join()
+        except RuntimeError:
+            pass
+
+    def terminate(self):
+        if self._process:
+            if self._process.poll() is None:
+                self._process.terminate()
+        self._safe_join()
+
+    def kill(self):
+        if self._process:
+            self._process.kill()
+        self._safe_join()
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.join()
+        try:
+            self.terminate()
+        except ProcessExecutionError as e:
+            logging.warning(f"The Executor stops with the error: {e}")

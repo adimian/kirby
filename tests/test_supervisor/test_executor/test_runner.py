@@ -15,12 +15,10 @@ logging.basicConfig(level=logging.DEBUG)
         "Make sure you host the package somewhere."
     ),
 )
-def test_runner_waits_for_jobs(
-    venv_directory, queue_for_runner, job_description, runner
-):
-    while not runner.job:
+def test_runner_waits_for_jobs(venv_directory, job_description, kirby_runner):
+    while not kirby_runner.job:
         pass
-    assert runner.job == job_description
+    assert kirby_runner.job.package_name == job_description.package_name
 
 
 @pytest.mark.skipif(
@@ -30,10 +28,11 @@ def test_runner_waits_for_jobs(
         "Make sure you host the package somewhere."
     ),
 )
-def test_runner_raise_job(venv_directory, queue_for_runner, runner):
-    while runner.status != ProcessState.RUNNING:
-        pass
-    assert runner.status == ProcessState.RUNNING
+def test_runner_raise_job(venv_directory, kirby_runner):
+    status = kirby_runner.status
+    while status != ProcessState.RUNNING:
+        status = kirby_runner.status
+    assert status == ProcessState.RUNNING
 
 
 @pytest.mark.skipif(
@@ -43,14 +42,14 @@ def test_runner_raise_job(venv_directory, queue_for_runner, runner):
         "Make sure you host the package somewhere."
     ),
 )
-def test_runner_kill_job(venv_directory, queue_for_runner, runner):
+def test_runner_kill_job(venv_directory, kirby_runner):
     # Wait until the process started
-    while runner.status != ProcessState.RUNNING:
+    while kirby_runner.status != ProcessState.RUNNING:
         pass
 
-    runner.kill()
+    kirby_runner.kill()
 
     # Wait until the process is killed
-    while runner.status == ProcessState.RUNNING:
+    while kirby_runner.status == ProcessState.RUNNING:
         pass
-    assert runner.status == ProcessState.FAILED
+    assert kirby_runner.status == ProcessState.FAILED

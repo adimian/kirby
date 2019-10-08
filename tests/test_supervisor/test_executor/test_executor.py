@@ -78,8 +78,9 @@ def test_executor_raise_error_if_process_fails(
     venv_directory, failing_job_description
 ):
     with pytest.raises(ProcessExecutionError):
-        with Executor(failing_job_description) as executor:
-            executor.run()
+        executor = Executor(failing_job_description)
+        executor.run()
+        executor.join()
 
 
 @pytest.mark.skipif(
@@ -96,5 +97,4 @@ def test_executor_is_asynchronous(venv_directory, job_description):
             pass
         assert executor.status == ProcessState.RUNNING
 
-        executor.join()
-        assert executor.return_values
+    assert executor.return_values

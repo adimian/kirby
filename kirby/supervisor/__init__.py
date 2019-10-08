@@ -26,6 +26,11 @@ def run_supervisor(name, window, wakeup, nb_runner):
         use_tls=USE_TLS,
         group_id=JOB_OFFERS_TOPIC_NAME,
     )
+    queue_for_supervisor = Queue(
+        name=JOB_OFFERS_TOPIC_NAME,
+        use_tls=USE_TLS,
+        group_id=f".kirby.supervisors.{name}",
+    )
 
     scheduler = Scheduler(queue=queue, wakeup=wakeup)
 
@@ -50,7 +55,7 @@ def run_supervisor(name, window, wakeup, nb_runner):
                         scheduler.queue_job(job)
             else:
                 logger.debug("not the leader, raising needed arbiters")
-                for job_offer in queue.nexts():
+                for job_offer in queue_for_supervisor.nexts():
                     if job_offer["type"] == JobType.DAEMON:
                         if job_offer not in running_deamons:
                             running_deamons.append(job_offer)

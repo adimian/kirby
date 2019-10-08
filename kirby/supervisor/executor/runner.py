@@ -1,6 +1,7 @@
 import logging
 import threading
 
+from kirby.api.ext.topic import NoMoreMessagesException
 from kirby.supervisor.executor import (
     parse_job_description,
     Executor,
@@ -11,42 +12,25 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-class Runner:
+class Runner(Executor):
     def __init__(self, queue):
         self.queue = queue
-
-        self.executor = None
         self.job = None
+        thread = threading.Thread(target=self.run)
+        thread.start()
+        self.status = ProcessState.STOPPED
 
-        logger.debug("Starting Runner's thread")
-        self._thread = threading.Thread(target=self.catch_and_raise_jobs)
-        self._thread.start()
-
-    def catch_and_raise_jobs(self):
-        from kirby.api.ext.topic import NoMoreMessagesException
-
+    def run(self, block=True):
         try:
-            for job_desc in self.queue:
-                self.job = parse_job_description(job_desc)
+            for job in self.queue:
+                self.job = parse_job_description(job)
+                super().__init__(self.job)
                 logger.debug(f"A runner received the job : '{self.job.name}'")
-
-                with Executor(self.job) as executor:
-                    self.executor = executor
-                    executor.raise_process()
+                super().raise_process()
+                super().terminate()
 
         except NoMoreMessagesException:
             logger.debug(
                 f"The jobs' queue (which was run in test mode) "
                 "has no jobs anymore"
             )
-
-    @property
-    def status(self):
-        if self.executor:
-            return self.executor.status
-        else:
-            return ProcessState.STOPPED
-
-    def kill(self):
-        if self.executor._process:
-            self.executor._process.kill()
