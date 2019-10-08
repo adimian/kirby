@@ -75,9 +75,10 @@ def custom_job_creator():
 def queue_job_offers(kafka_topic_factory, is_in_test_mode, kafka_use_tls):
     topic_name = "job-offers"
     with kafka_topic_factory(topic_name):
-        yield Queue(
+        with Queue(
             name=topic_name, use_tls=kafka_use_tls, testing=is_in_test_mode
-        )
+        ) as queue:
+            yield queue
 
 
 @pytest.fixture

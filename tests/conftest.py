@@ -306,8 +306,10 @@ def kafka_topic_factory(kafka_use_tls, bootstrap_servers):
             admin.create_topics(
                 [NewTopic(topic_name, 1, 1)], timeout_ms=timeout_ms
             )
-            yield
-            admin.delete_topics([topic_name], timeout_ms=10000)
+            try:
+                yield
+            finally:
+                admin.delete_topics([topic_name], timeout_ms=10000)
         else:
             logger.warning(
                 f"There is no KAFKA_BOOTSTRAP_SERVERS. "

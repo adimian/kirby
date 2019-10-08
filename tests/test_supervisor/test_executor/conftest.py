@@ -4,6 +4,7 @@ import pytest
 from tempfile import mkdtemp
 
 from kirby.supervisor.executor.runner import Runner
+from kirby.supervisor.executor.arbiter import Arbiter
 
 
 @pytest.fixture()
@@ -14,17 +15,18 @@ def venv_directory():
 
 
 @pytest.fixture
-def queue_for_runner(queue_job_offers, single_job_description):
+def queue(queue_job_offers, single_job_description):
     queue_job_offers.send(single_job_description)
     return queue_job_offers
 
 
 @pytest.fixture
-def runner(is_in_test_mode, kafka_use_tls, queue_for_runner):
-    return Runner(queue=queue_for_runner)
+def kirby_runner(queue):
+    with Runner(queue=queue) as runner:
+        yield runner
 
 
 @pytest.fixture
-def queue_for_arbiter(queue_job_offers, single_failing_job_description):
-    queue_job_offers.send(single_failing_job_description)
-    return queue_job_offers
+def kirby_arbiter(single_failing_job_description):
+    with Arbiter(job=single_failing_job_description) as arbiter:
+        yield arbiter
