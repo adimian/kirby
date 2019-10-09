@@ -1,6 +1,7 @@
 import logging
 import threading
 
+from kirby.models import JobType
 from kirby.api.ext.topic import NoMoreMessagesException
 from kirby.supervisor.executor import (
     parse_job_description,
@@ -23,7 +24,9 @@ class Runner(Executor):
     def run(self, block=True):
         try:
             for job in self.queue:
-                self.job = parse_job_description(job)
+                job_parsed = parse_job_description(job)
+                if job_parsed.type != JobType.SCHEDULED:
+                    continue
                 super().__init__(self.job)
                 logger.debug(f"A runner received the job : '{self.job.name}'")
                 super().raise_process()
