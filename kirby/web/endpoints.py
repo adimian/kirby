@@ -192,7 +192,7 @@ class Schedule(Resource):
                             {
                                 "id": script.id,
                                 "name": job_name,
-                                "type": job.type,
+                                "type": job.type.value,
                                 "environment": context.environment.name,
                                 "package_name": script.package_name,
                                 "package_version": script.package_version,
