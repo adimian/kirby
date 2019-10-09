@@ -15,10 +15,7 @@ def jobs_request_result(data_dir):
 
 
 def test_scheduler_can_parse_jobs(jobs_request_result, scheduler):
-
     jobs = scheduler.parse_jobs(jobs_request_result)
-
-    [print(type(job)) for job in jobs]
     assert all(isinstance(job, dict) for job in jobs)
 
 
