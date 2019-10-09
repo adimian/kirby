@@ -1,6 +1,7 @@
 import os
 import pytest
 
+from kirby.models import JobType
 from kirby.supervisor.executor import (
     Executor,
     parse_job_description,
@@ -15,7 +16,7 @@ def test_executor_can_parse_job(single_job_description):
 
     assert job.id == 1
     assert job.name == "Test package"
-    assert job.type == "daemon"
+    assert job.type == JobType.DAEMON
     assert job.environment == "Development"
     assert job.package_name == "dummykirby"
     assert job.package_version == "0.0.0.dev"

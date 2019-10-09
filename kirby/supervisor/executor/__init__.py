@@ -12,6 +12,8 @@ from psutil import Popen
 from smart_getenv import getenv
 from virtualenvapi.manage import VirtualEnvironment
 
+from kirby.models import JobType
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -25,7 +27,7 @@ def convert_variables(data):
 class JobDescription:
     id = attr.ib(type=int)
     name = attr.ib(type=str)
-    type = attr.ib(type=str)
+    type = attr.ib(type=JobType)
     environment = attr.ib(type=str)
     package_name = attr.ib(type=str)
     package_version = attr.ib(type=str)
@@ -40,6 +42,11 @@ class JobDescription:
 
 def parse_job_description(job_description):
     kwargs = json.loads(job_description)
+    type_ = kwargs["type"]
+    if type_ == "scheduled":
+        kwargs["type"] = JobType.SCHEDULED
+    elif type_ == "daemon":
+        kwargs["type"] = JobType.DAEMON
     job = JobDescription(**kwargs)
     return job
 
