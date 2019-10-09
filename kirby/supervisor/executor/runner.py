@@ -27,6 +27,7 @@ class Runner(Executor):
                 job_parsed = parse_job_description(job)
                 if job_parsed.type != JobType.SCHEDULED:
                     continue
+                self.job = job_parsed
                 super().__init__(self.job)
                 logger.debug(f"A runner received the job : '{self.job.name}'")
                 super().raise_process()
