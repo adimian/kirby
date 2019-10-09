@@ -1,8 +1,7 @@
-import os
 import uuid
 
-import __main__
 from .ext.topic import Topic
+from kirby.api.context import ctx
 
 LOGGER_TOPIC_NAME = "_logs"
 
@@ -33,7 +32,7 @@ class Logger:
         if not kargs.get("group_id"):
             kargs.update(group_id=str(uuid.uuid4()))
         self.logs_topic = Topic(LOGGER_TOPIC_NAME, **kargs)
-        self.name = os.path.splitext(os.path.basename(__main__.__file__))[0]
+        self.name = ctx.PACKAGE_NAME
         self.default_level = default_level
 
     def _send_log_factory(self, level):
