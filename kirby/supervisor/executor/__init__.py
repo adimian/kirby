@@ -2,15 +2,15 @@ import attr
 import json
 import logging
 import os
+import psutil
 import subprocess
 import threading
+import virtualenvapi
 
 from collections import namedtuple
 from enum import Enum
 from os.path import expanduser
-from psutil import Popen
 from smart_getenv import getenv
-from virtualenvapi.manage import VirtualEnvironment
 
 from kirby.models import JobType
 
@@ -103,7 +103,7 @@ class Executor:
             )
 
             logging.info(f"creating venv for {self.venv_name} at {venv_path}")
-            env = VirtualEnvironment(venv_path)
+            env = virtualenvapi.manage.VirtualEnvironment(venv_path)
 
             logging.debug("Installing package")
             env.install(self.package_name)
@@ -118,7 +118,7 @@ class Executor:
             self.package_name,
         ]
         logging.debug("Raising process")
-        self._process = Popen(
+        self._process = psutil.Popen(
             args,
             cwd=self.virtualenv.path,
             env=self.env,
@@ -162,6 +162,8 @@ class Executor:
             self.join()
         except RuntimeError:
             pass
+        # Delete the job's virtualenv in the end
+        delattr(self, "_Executor__virtualenv")
 
     def terminate(self):
         if self._process:
