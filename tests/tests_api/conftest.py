@@ -1,13 +1,12 @@
 import os
-from smart_getenv import getenv
+
 from contextlib import contextmanager
 from pytest import fixture
 from freezegun import freeze_time
 
 from kirby.api import Kirby
-from kirby.api.ext.topic import Topic
-
 from tests.conftest import API_ROOT
+from kirby.api.ext.topic import Topic
 
 
 DATE = "2019-05-22 15:18"
@@ -45,27 +44,21 @@ def kirby_app(session, kirby_hidden_env, kirby_expected_env):
 
 
 @fixture
-def kirby_topic_factory(kafka_topic_factory):
+def kirby_topic_factory(kafka_topic_factory, is_in_test_mode, kafka_use_tls):
     import logging
 
     logger = logging.getLogger(__name__)
-    bootstrap_servers = getenv(
-        "KAFKA_BOOTSTRAP_SERVERS", type=list, separator=","
-    )
 
     @contextmanager
     def create_kirby_topic(topic_name, *args, timeout_ms=1500, **kargs):
-        if bootstrap_servers:
-            kargs.update(
-                use_tls=getenv("KAFKA_USE_TLS", type=bool, default=True)
-            )
+        if not is_in_test_mode:
+            kargs.update(use_tls=kafka_use_tls)
             with kafka_topic_factory(topic_name, timeout_ms=timeout_ms):
                 with Topic(topic_name, *args, **kargs) as kirby_topic:
                     yield kirby_topic
         else:
             logger.warning(
-                f"There is no KAFKA_BOOTSTRAP_SERVERS. "
-                "Topic will be created in testing mode"
+                f"The Topic '{topic_name}' is created in testing mode"
             )
             kargs.update(testing=True)
             with Topic(topic_name, *args, **kargs) as kirby_topic:

@@ -1,40 +1,46 @@
+import datetime
 import os
-
 import pytest
 
-from kirby.api.queue import Queue
+from unittest.mock import patch, MagicMock
+
 from kirby.exc import CoolDownException
-from kirby.supervisor.scheduler import Scheduler
-import datetime
 
 
-def test_scheduler_can_grab_jobs(data_dir):
-    scheduler = Scheduler(queue=None, wakeup=60)
-
+@pytest.fixture
+def jobs_request_result(data_dir):
     with open(os.path.join(data_dir, "sample_jobs_request.txt"), "r") as f:
         content = f.read()
-
-    jobs = scheduler.parse_jobs(content)
-
-    assert isinstance(jobs, list)
-    assert all(isinstance(job, str) for job in jobs)
+    return content
 
 
-def test_scheduler_queue_jobs():
-    queue = Queue(name="jobs-to-do", testing=True)
+def test_scheduler_can_parse_jobs(jobs_request_result, scheduler):
 
-    scheduler = Scheduler(queue=queue, wakeup=60)
+    jobs = scheduler.parse_jobs(jobs_request_result)
 
+    [print(type(job)) for job in jobs]
+    assert all(isinstance(job, dict) for job in jobs)
+
+
+@patch("requests.get")
+def test_scheduler_retrieve_jobs(get_mock, scheduler, jobs_request_result):
+    os.environ[
+        "KIRBY_SCHEDULE_ENDPOINT"
+    ] = "http://a.webserver.somewhere/which_propose/schedule"
+
+    get_mock.return_value = MagicMock(
+        status_code=200, text=jobs_request_result
+    )
+
+    assert scheduler.fetch_jobs() == jobs_request_result
+
+
+def test_scheduler_queue_jobs(scheduler):
     scheduler.queue_job("hello world")
+    assert scheduler.queue.next() == "hello world"
 
-    assert queue.last() == "hello world"
 
-
-def test_scheduler_does_not_queue_twice_within_wakeup_period():
-    queue = Queue(name="jobs-to-do", testing=True)
-
-    scheduler = Scheduler(queue=queue, wakeup=30)
-
+def test_scheduler_does_not_queue_twice_within_wakeup_period(scheduler):
     date_1 = datetime.datetime(2000, 1, 1, 0, 0, 0)
     date_2 = datetime.datetime(2000, 1, 1, 0, 0, 20)
 
@@ -43,11 +49,7 @@ def test_scheduler_does_not_queue_twice_within_wakeup_period():
         scheduler.queue_job("hello world", now=date_2)
 
 
-def test_scheduler_can_queue_after_wakeup_period():
-    queue = Queue(name="jobs-to-do", testing=True)
-
-    scheduler = Scheduler(queue=queue, wakeup=30)
-
+def test_scheduler_can_queue_after_wakeup_period(scheduler):
     date_1 = datetime.datetime(2000, 1, 1, 0, 0, 0)
     date_2 = datetime.datetime(2000, 1, 1, 0, 0, 40)
 

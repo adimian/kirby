@@ -1,18 +1,17 @@
 import datetime
 import json
-
+import logging
 import requests
+
 from smart_getenv import getenv
 
-import logging
-
-from ..exc import CoolDownException
+from kirby.exc import CoolDownException
 
 logger = logging.getLogger(__name__)
 
 
 class Scheduler:
-    def __init__(self, queue, wakeup):
+    def __init__(self, wakeup, queue):
         self.queue = queue
         self.cooldown = datetime.timedelta(seconds=wakeup)
 
@@ -21,16 +20,11 @@ class Scheduler:
         try:
             response = requests.get(url)
             return response.text
-        except requests.exceptions.ConnectionError:
-            logger.exception("unable to fetch jobs: ")
+        except requests.exceptions.ConnectionError as e:
+            logger.exception(f"Unable to fetch jobs: {e}")
 
     def parse_jobs(self, content):
-        jobs = []
-        descriptions = json.loads(content)
-        for description in descriptions["scripts"]:
-            jobs.append(json.dumps(description))
-
-        return jobs
+        return [description for description in json.loads(content)["scripts"]]
 
     def queue_job(self, job, now=None):
         if now is None:

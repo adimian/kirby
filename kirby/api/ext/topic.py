@@ -43,6 +43,10 @@ kirby_value_deserializer = partial(msgpack.loads, raw=False)
 kirby_value_serializer = msgpack.dumps
 
 
+def earliest_kafka_date():
+    return datetime.datetime(year=1970, month=1, day=1, hour=1)
+
+
 def datetime_to_kafka_ts(time):
     return int(time.timestamp() * 1000)
 
@@ -69,6 +73,8 @@ def parse_records(records_by_partition, raw_records=False):
                 for records in records_by_partition.values()
                 for record in records
             ]
+    else:
+        return []
 
 
 def is_in_test_mode(topic_config):
@@ -161,6 +167,11 @@ class Consumer:
                 return []
 
     def seek_at_timestamp(self, datetime_timestamp):
+        if is_in_test_mode(self.topic_config):
+            raise RuntimeError(
+                f"The 'temporary_rollback' function is not available "
+                "in test mode"
+            )
         kafka_timestamp = datetime_to_kafka_ts(datetime_timestamp)
         partitions = self._consumer.assignment()
         offsets = self._consumer.offsets_for_times(
@@ -175,7 +186,13 @@ class Consumer:
 
     @contextmanager
     def temporary_rollback(self, datetime_timestamp):
+        if is_in_test_mode(self.topic_config):
+            raise RuntimeError(
+                f"The 'temporary_rollback' function is not available "
+                "in test mode"
+            )
         # Init old_offsets
+        start_ts = datetime.datetime.utcnow()
         partitions = self._consumer.assignment()
         old_offsets = {
             partition: self._consumer.committed(partition)
@@ -188,13 +205,20 @@ class Consumer:
 
         # Rollback to the old offsets
         for partition, offset in old_offsets.items():
-            if offset:
-                self._consumer.seek(partition=partition, offset=offset)
-            else:
+            if not offset:
+                offsets_for_times = self._consumer.offsets_for_times(
+                    {partition: datetime_to_kafka_ts(start_ts)}
+                )[partition]
+                if offsets_for_times:
+                    offset = offsets_for_times.offset
+                else:
+                    offset = 0
                 logger.warning(
-                    f"There where no offset for the partition {partition}"
+                    f"There where no offset for the partition {partition} "
+                    f"before the rollback. The offset was therefore set as "
+                    "the last message at the beginning of the rollback."
                 )
-                logger.warning(f"old_offsets= {old_offsets}")
+            self._consumer.seek(partition=partition, offset=offset)
 
     @topic_retry_decorator
     def between(self, start, end, timeout_ms=1500):
@@ -209,15 +233,16 @@ class Consumer:
                 return None
 
         if is_in_test_mode(self.topic_config):
-            messages = [
-                msg
-                for t, msg in self.topic_config.messages
-                if start <= t < end
-            ]
-            if not self.topic_config.raw_records:
-                return [message.value for message in messages]
-            else:
-                return messages
+            return parse_records(
+                {
+                    "partition_0": [
+                        msg
+                        for t, msg in self.topic_config.messages
+                        if start <= t < end
+                    ]
+                },
+                self.topic_config.raw_records,
+            )
         else:
             with self.temporary_rollback(start):
                 start_timestamp = datetime_to_kafka_ts(start)
@@ -226,7 +251,10 @@ class Consumer:
                 messages = []
                 record = poll_next_record()
                 if record:
-                    while start_timestamp <= record.timestamp < end_timestamp:
+                    while (
+                        start_timestamp <= record.timestamp < end_timestamp
+                        and record
+                    ):
                         messages.append((record.timestamp, record))
                         record = poll_next_record()
                         if not record:
@@ -240,6 +268,17 @@ class Consumer:
     def close(self):
         if not is_in_test_mode(self.topic_config):
             self._consumer.close(autocommit=False)
+
+    def rewind(self, earlier=None, latest=None):
+        if not earlier:
+            earlier = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
+        if not latest:
+            latest = datetime.datetime.utcnow()
+
+        messages = self.between(earlier, latest)
+        messages.reverse()
+        for message in messages:
+            yield message
 
     def __iter__(self):
         return self
@@ -299,7 +338,7 @@ class Producer:
                         timestamp_type=0,
                         key=None,
                         value=message,
-                        headers=[(k, v) for k, v in headers.items()],
+                        headers=self.format_headers(headers),
                         checksum=None,
                         serialized_key_size=None,
                         serialized_value_size=None,
@@ -344,7 +383,7 @@ class Topic(External):
             )
 
         mode = "testing" if self.testing else "live"
-        logger.debug(f"starting topic {topic_name} in {mode} mode")
+        logger.debug(f"starting kirby topic {topic_name} in {mode} mode")
 
     def safely_set_attribute_if_does_not_exist(
         self, item, class_, *args, **kargs
