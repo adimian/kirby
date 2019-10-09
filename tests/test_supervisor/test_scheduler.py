@@ -2,17 +2,37 @@ import datetime
 import os
 import pytest
 
+from unittest.mock import patch, MagicMock
+
 from kirby.exc import CoolDownException
 
 
-def test_scheduler_can_grab_jobs(data_dir, scheduler):
+@pytest.fixture
+def jobs_request_result(data_dir):
     with open(os.path.join(data_dir, "sample_jobs_request.txt"), "r") as f:
         content = f.read()
+    return content
 
-    jobs = scheduler.parse_jobs(content)
+
+def test_scheduler_can_parse_jobs(jobs_request_result, scheduler):
+
+    jobs = scheduler.parse_jobs(jobs_request_result)
 
     [print(type(job)) for job in jobs]
     assert all(isinstance(job, dict) for job in jobs)
+
+
+@patch("requests.get")
+def test_scheduler_retrieve_jobs(get_mock, scheduler, jobs_request_result):
+    os.environ[
+        "KIRBY_SCHEDULE_ENDPOINT"
+    ] = "http://a.webserver.somewhere/which_propose/schedule"
+
+    get_mock.return_value = MagicMock(
+        status_code=200, text=jobs_request_result
+    )
+
+    assert scheduler.fetch_jobs() == jobs_request_result
 
 
 def test_scheduler_queue_jobs(scheduler):

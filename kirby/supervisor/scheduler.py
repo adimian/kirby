@@ -20,8 +20,8 @@ class Scheduler:
         try:
             response = requests.get(url)
             return response.text
-        except requests.exceptions.ConnectionError:
-            logger.exception("unable to fetch jobs: ")
+        except requests.exceptions.ConnectionError as e:
+            logger.exception(f"Unable to fetch jobs: {e}")
 
     def parse_jobs(self, content):
         return [description for description in json.loads(content)["scripts"]]
