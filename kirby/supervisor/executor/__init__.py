@@ -5,7 +5,7 @@ import os
 import psutil
 import subprocess
 import threading
-import virtualenvapi
+import virtualenvapi.manage
 
 from collections import namedtuple
 from enum import Enum
@@ -111,6 +111,9 @@ class Executor:
             self.__virtualenv = env
         return self.__virtualenv
 
+    def create_venv(self):
+        return self.virtualenv
+
     def raise_process(self):
         args = [
             os.path.join(self.virtualenv.path, "bin", "python"),
@@ -152,35 +155,34 @@ class Executor:
         # If timeout_ms == None : join will block until the process is joined
         if not self._thread:
             raise RuntimeError("Cannot join an Executor that didn't start.")
-        if self._thread.is_alive():
-            self._thread.join(timeout_s)
-            if self.return_values.return_code != 0:
-                raise ProcessExecutionError(self.return_values.stderr)
+        self._thread.join(timeout_s)
 
     def _safe_join(self):
         try:
             self.join()
-        except RuntimeError:
-            pass
+        except RuntimeError as e:
+            logging.warning(repr(e))
+
+    def _exit(self):
+        self._safe_join()
         # Delete the job's virtualenv in the end
         delattr(self, "_Executor__virtualenv")
+        if self.return_values.return_code != 0:
+            raise ProcessExecutionError(self.return_values.stderr)
 
     def terminate(self):
         if self._process:
             if self._process.poll() is None:
                 self._process.terminate()
-        self._safe_join()
+        self._exit()
 
     def kill(self):
         if self._process:
             self._process.kill()
-        self._safe_join()
+        self._exit()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            self.terminate()
-        except ProcessExecutionError as e:
-            logging.warning(f"The Executor stops with the error: {e}")
+        self.terminate()
