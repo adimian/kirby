@@ -17,7 +17,9 @@ def process_mock(mocker):
     return_code = 0
     process_mock_ = mocker.patch("psutil.Popen")
     process_mock_.return_value = Mock(
-        wait=Mock(return_value=return_code), returncode=return_code
+        wait=Mock(return_value=return_code),
+        poll=Mock(return_value=None),
+        returncode=return_code,
     )
     yield process_mock_
 
