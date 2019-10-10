@@ -56,7 +56,7 @@ def run_supervisor(name, window, wakeup, nb_runner):
                 if content is not None:
                     jobs = scheduler.parse_jobs(content)
                     for job in jobs:
-                        if job["type"] == JobType.DAEMON:
+                        if job["type"] == JobType.DAEMON.value:
                             if job not in running_daemons:
                                 running_daemons.append(job)
                                 Arbiter(job)
@@ -66,7 +66,7 @@ def run_supervisor(name, window, wakeup, nb_runner):
             else:
                 logger.debug("not the leader, raising needed arbiters")
                 for job_offer in queue_for_supervisor.nexts():
-                    if job_offer["type"] == JobType.DAEMON:
+                    if job_offer["type"] == JobType.DAEMON.value:
                         if job_offer not in running_daemons:
                             running_daemons.append(job_offer)
                             Arbiter(job_offer)
