@@ -1,4 +1,6 @@
 import logging
+import signal
+import sys
 
 from redis import Redis
 from smart_getenv import getenv
@@ -34,10 +36,18 @@ def run_supervisor(name, window, wakeup, nb_runner):
 
     scheduler = Scheduler(queue=queue, wakeup=wakeup)
 
-    for i in range(nb_runner):
-        Runner(queue)
+    runners = [Runner(queue) for i in range(nb_runner)]
 
-    running_deamons = []
+    def signal_handler(sig, frame):
+        for daemon in running_daemons:
+            daemon.terminate()
+        for runner in runners:
+            runner.terminate()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    running_daemons = []
     with Election(identity=name, server=server, check_ttl=window) as me:
         while True:
             checkpoint = perf_counter()
@@ -47,8 +57,8 @@ def run_supervisor(name, window, wakeup, nb_runner):
                     jobs = scheduler.parse_jobs(content)
                     for job in jobs:
                         if job["type"] == JobType.DAEMON:
-                            if job not in running_deamons:
-                                running_deamons.append(job)
+                            if job not in running_daemons:
+                                running_daemons.append(job)
                                 Arbiter(job)
                             else:
                                 continue
@@ -57,8 +67,8 @@ def run_supervisor(name, window, wakeup, nb_runner):
                 logger.debug("not the leader, raising needed arbiters")
                 for job_offer in queue_for_supervisor.nexts():
                     if job_offer["type"] == JobType.DAEMON:
-                        if job_offer not in running_deamons:
-                            running_deamons.append(job_offer)
+                        if job_offer not in running_daemons:
+                            running_daemons.append(job_offer)
                             Arbiter(job_offer)
 
             drift = perf_counter() - checkpoint
