@@ -67,6 +67,10 @@ class ProcessExecutionError(Exception):
     pass
 
 
+class NoThreadError(Exception):
+    pass
+
+
 class Executor:
     def __init__(self, job, _virtualenv=None):
         self.type = job.type
@@ -80,7 +84,6 @@ class Executor:
         if _virtualenv:
             self.__virtualenv = _virtualenv
         self.venv_name = f"kirby-{self.package_name}-{self.version}"
-        self.venv_created = False
         self.env = job.variables
         self.env.update(PACKAGE_NAME=self.package_name, ID=str(job.id))
 
@@ -154,13 +157,16 @@ class Executor:
     def join(self, timeout_s=None):
         # If timeout_ms == None : join will block until the process is joined
         if not self._thread:
-            raise RuntimeError("Cannot join an Executor that didn't start.")
+            raise NoThreadError(
+                f"Cannot join an Executor that have not started a thread. "
+                "Please use .run to start the thread."
+            )
         self._thread.join(timeout_s)
 
     def _safe_join(self):
         try:
             self.join()
-        except RuntimeError as e:
+        except NoThreadError as e:
             logging.warning(repr(e))
 
     def _exit(self):
