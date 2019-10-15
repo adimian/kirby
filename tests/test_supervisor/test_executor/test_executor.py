@@ -1,35 +1,12 @@
 import os
 import pytest
 
-from unittest.mock import Mock
-
 from kirby.models import JobType
 from kirby.supervisor.executor import (
     Executor,
-    parse_job_description,
     ProcessState,
     ProcessExecutionError,
 )
-
-
-@pytest.fixture
-def process_mock(mocker):
-    return_code = 0
-    process_mock_ = mocker.patch("psutil.Popen")
-    process_mock_.return_value = Mock(
-        wait=Mock(return_value=return_code),
-        poll=Mock(return_value=None),
-        returncode=return_code,
-    )
-    yield process_mock_
-
-
-@pytest.fixture
-def venv_mock(mocker):
-    venv_mock_ = mocker.patch("virtualenvapi.manage.VirtualEnvironment")
-    venv_dir = os.path.join("some", "path", "somewhere")
-    venv_mock_.return_value = Mock(path=venv_dir)
-    yield venv_mock_
 
 
 def wait_until(executor, state):
@@ -42,18 +19,15 @@ def wait_as_long_as(executor, state):
         pass
 
 
-def test_executor_can_parse_job(single_job_description):
-
-    job = parse_job_description(single_job_description)
-
-    assert job.id == 1
-    assert job.name == "Test package"
-    assert job.type == JobType.DAEMON
-    assert job.environment == "Development"
-    assert job.package_name == "dummykirby"
-    assert job.package_version == "0.0.0.dev"
-    assert job.variables == {"KIRBY_TEST_MARKER": "Hello, world!"}
-    assert job.notifications == [
+def test_executor_can_parse_job(job_description):
+    assert job_description.id == 1
+    assert job_description.name == "Test package"
+    assert job_description.type == JobType.DAEMON
+    assert job_description.environment == "Development"
+    assert job_description.package_name == "dummykirby"
+    assert job_description.package_version == "0.0.0.dev"
+    assert job_description.variables == {"KIRBY_TEST_MARKER": "Hello, world!"}
+    assert job_description.notifications == [
         {
             "on_retry": False,
             "on_failure": True,
@@ -98,7 +72,6 @@ def test_executor_can_start_process(venv_mock, process_mock, job_description):
     venv_dir = venv_mock.return_value.path
 
     with Executor(job_description) as executor:
-        executor.run()
         wait_until(executor, ProcessState.STOPPED)
     process_mock.assert_called_once_with(
         [
@@ -125,7 +98,6 @@ def test_executor_can_start_process_integration(
     venv_directory, job_description
 ):
     with Executor(job_description) as executor:
-        executor.run()
 
         wait_as_long_as(executor, ProcessState.SETTINGUP)
 
@@ -133,15 +105,13 @@ def test_executor_can_start_process_integration(
 
 
 def test_executor_raise_error_if_process_fails(
-    venv_mock, process_mock, failing_job_description
+    venv_mock, process_mock_failing, failing_job_description
 ):
-    return_code = 1
-    process_mock.return_value.wait.return_value = return_code
-    process_mock.return_value.returncode = return_code
     with pytest.raises(ProcessExecutionError):
-        with Executor(failing_job_description) as executor:
-            executor.run()
-            wait_until(executor, ProcessState.FAILED)
+        executor = Executor(failing_job_description)
+        executor.start()
+        wait_until(executor, ProcessState.FAILED)
+        executor.get_return_values()
 
 
 @pytest.mark.integration
@@ -155,10 +125,11 @@ def test_executor_raise_error_if_process_fails(
 def test_executor_raise_error_if_process_fails_integration(
     venv_directory, failing_job_description
 ):
+    executor = Executor(failing_job_description)
+    executor.start()
+    executor.join()
     with pytest.raises(ProcessExecutionError):
-        executor = Executor(failing_job_description)
-        executor.run()
-        executor.join()
+        executor.get_return_values()
 
 
 @pytest.mark.integration
@@ -170,9 +141,29 @@ def test_executor_raise_error_if_process_fails_integration(
     ),
 )
 def test_executor_is_asynchronous_integration(venv_directory, job_description):
-    with Executor(job_description) as executor:
-        executor.run()
-        wait_as_long_as(executor, ProcessState.SETTINGUP)
-        assert executor.status == ProcessState.RUNNING
+    executor = Executor(job_description)
+    executor.start()
+    executor.join()
+    assert executor.get_return_values()
 
-    assert executor.return_values
+
+def test_executor_terminate_job(venv_mock, process_mock, job_description):
+    executor = Executor(job_description)
+    executor.start()
+    wait_as_long_as(executor, ProcessState.SETTINGUP)
+
+    executor.terminate()
+    wait_as_long_as(executor, ProcessState.RUNNING)
+
+    assert executor.status == ProcessState.STOPPED
+
+
+def test_executor_kill_job(venv_mock, process_mock_failing, job_description):
+    executor = Executor(job_description)
+    executor.start()
+    wait_as_long_as(executor, ProcessState.SETTINGUP)
+
+    executor.kill()
+    wait_as_long_as(executor, ProcessState.RUNNING)
+
+    assert executor.status == ProcessState.FAILED

@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import psutil
+import sys
 import subprocess
 import threading
 import virtualenvapi.manage
@@ -67,31 +68,35 @@ class ProcessExecutionError(Exception):
     pass
 
 
-class NoThreadError(Exception):
-    pass
-
-
-class Executor:
+class Executor(threading.Thread):
     def __init__(self, job, _virtualenv=None):
-        self.type = job.type
-
-        self.package_name = job.package_name
-        self.version = job.package_version
-        self.package = f"{self.package_name}=={self.version}"
-
-        self.notifications = job.notifications
+        self.job = job
 
         if _virtualenv:
             self.__virtualenv = _virtualenv
-        self.venv_name = f"kirby-{self.package_name}-{self.version}"
-        self.env = job.variables
-        self.env.update(PACKAGE_NAME=self.package_name, ID=str(job.id))
-
-        self._thread = None
         self._process = None
-        self.return_values = None
+        self.__return_values = None
 
         self.status = ProcessState.SETTINGUP
+        self.exc_info = None
+        self.flag = False
+        super().__init__()
+
+    @property
+    def env_vars(self):
+        env_vars_ = self.job.variables
+        env_vars_.update(
+            PACKAGE_NAME=self.job.package_name, ID=str(self.job.id)
+        )
+        return env_vars_
+
+    @property
+    def venv_name(self):
+        return f"kirby-{self.job.package_name}-{self.job.package_version}"
+
+    @property
+    def package(self):
+        return f"{self.job.package_name}=={self.job.package_version}"
 
     @property
     def virtualenv(self):
@@ -109,7 +114,7 @@ class Executor:
             env = virtualenvapi.manage.VirtualEnvironment(venv_path)
 
             logging.debug("Installing package")
-            env.install(self.package_name)
+            env.install(self.job.package_name)
             logging.debug("Package installed")
             self.__virtualenv = env
         return self.__virtualenv
@@ -117,77 +122,59 @@ class Executor:
     def create_venv(self):
         return self.virtualenv
 
-    def raise_process(self):
-        args = [
-            os.path.join(self.virtualenv.path, "bin", "python"),
-            "-m",
-            self.package_name,
-        ]
-        logging.debug("Raising process")
-        self._process = psutil.Popen(
-            args,
-            cwd=self.virtualenv.path,
-            env=self.env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        self.status = ProcessState.RUNNING
-        return_code = self._process.wait()
-        if return_code == 0:
-            self.status = ProcessState.STOPPED
-        else:
-            self.status = ProcessState.FAILED
-        logging.debug("Process ended")
-
-        logging.debug(f"Process stdout: {self._process.stdout.read()}")
-        logging.debug(f"Process stderr: {self._process.stderr.read()}")
-
-        self.return_values = ProcessReturnValues(
-            self._process.returncode,
-            self._process.stdout.read(),
-            self._process.stderr.read(),
-        )
-
-    def run(self, block=False):
-        self._thread = threading.Thread(target=self.raise_process)
-        self._thread.start()
-        if block:
-            self.join()
-
-    def join(self, timeout_s=None):
-        # If timeout_ms == None : join will block until the process is joined
-        if not self._thread:
-            raise NoThreadError(
-                f"Cannot join an Executor that have not started a thread. "
-                "Please use .run to start the thread."
-            )
-        self._thread.join(timeout_s)
-
-    def _safe_join(self):
+    def run(self):
+        self.flag = True
         try:
-            self.join()
-        except NoThreadError as e:
-            logging.warning(repr(e))
+            args = [
+                os.path.join(self.virtualenv.path, "bin", "python"),
+                "-m",
+                self.job.package_name,
+            ]
+            logging.debug("Raising process")
+            self._process = psutil.Popen(
+                args,
+                cwd=self.virtualenv.path,
+                env=self.env_vars,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.status = ProcessState.RUNNING
+            return_code = self._process.wait()
+            stdout = self._process.stdout.read()
+            stderr = self._process.stderr.read()
 
-    def _exit(self):
-        self._safe_join()
-        # Delete the job's virtualenv in the end
-        delattr(self, "_Executor__virtualenv")
-        if self.return_values.return_code != 0:
-            raise ProcessExecutionError(self.return_values.stderr)
+            logging.debug("Process ended")
+            logging.debug(f"Process returncode: {return_code}")
+            logging.debug(f"Process stdout: {stdout}")
+            logging.debug(f"Process stderr: {stderr}")
+
+            self.__return_values = ProcessReturnValues(
+                return_code, stdout, stderr
+            )
+            if return_code == 0:
+                self.status = ProcessState.STOPPED
+            else:
+                self.status = ProcessState.FAILED
+                raise ProcessExecutionError(stderr)
+        except:
+            self.exc_info = sys.exc_info()
+
+    def get_return_values(self):
+        if self.exc_info:
+            raise self.exc_info[1].with_traceback(self.exc_info[2])
+        return self.__return_values
 
     def terminate(self):
         if self._process:
             if self._process.poll() is None:
                 self._process.terminate()
-        self._exit()
 
     def kill(self):
         if self._process:
             self._process.kill()
-        self._exit()
 
     def __enter__(self):
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

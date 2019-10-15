@@ -2,25 +2,25 @@ import logging
 import os
 import pytest
 
+from unittest.mock import Mock
+
 from kirby.supervisor.executor import ProcessState
+from kirby.supervisor.executor.runner import Runner
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.mark.skipif(
-    not os.getenv("PIP_EXTRA_INDEX_URL"),
-    reason=(
-        f"You haven't set any extra index for pip. "
-        "Make sure you host the package somewhere."
-    ),
-)
-def test_runner_waits_for_jobs(venv_directory, job_description, kirby_runner):
-    while not kirby_runner.job:
+def test_runner_waits_for_jobs(
+    process_mock_failing, venv_mock, queue, job_description
+):
+    runner = Runner(queue=queue)
+    while not runner.jobs:
         pass
-    assert kirby_runner.job.package_name == job_description.package_name
+    assert runner.jobs[0] == job_description
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(
     not os.getenv("PIP_EXTRA_INDEX_URL"),
     reason=(
@@ -28,28 +28,62 @@ def test_runner_waits_for_jobs(venv_directory, job_description, kirby_runner):
         "Make sure you host the package somewhere."
     ),
 )
-def test_runner_raise_job(venv_directory, kirby_runner):
-    status = kirby_runner.status
+def test_runner_waits_for_jobs_integration(
+    venv_directory, job_description, queue
+):
+    runner = Runner(queue=queue)
+    while not runner.jobs:
+        pass
+    job = runner.jobs[0]
+    assert job.package_name == job_description.package_name
+
+
+def test_runner_raise_job(venv_mock, process_mock, queue):
+    runner = Runner(queue=queue)
+
+    while not runner.jobs:
+        pass
+
+    executor = runner.executors[0]
+    status = executor.status
     while status != ProcessState.RUNNING:
-        status = kirby_runner.status
+        status = executor.status
     assert status == ProcessState.RUNNING
 
 
-@pytest.mark.skipif(
-    not os.getenv("PIP_EXTRA_INDEX_URL"),
-    reason=(
-        f"You haven't set any extra index for pip. "
-        "Make sure you host the package somewhere."
-    ),
-)
-def test_runner_kill_job(venv_directory, kirby_runner):
+def test_runner_can_communicate_to_the_job(
+    venv_mock, process_mock_failing, queue
+):
+    runner = Runner(queue=queue)
+    while not runner.jobs:
+        pass
+    executor = runner.executors[0]
+
     # Wait until the process started
-    while kirby_runner.status != ProcessState.RUNNING:
+    while executor.status == ProcessState.SETTINGUP:
         pass
 
-    kirby_runner.kill()
-
-    # Wait until the process is killed
-    while kirby_runner.status == ProcessState.RUNNING:
+    runner.kill()
+    while executor.status == ProcessState.RUNNING:
         pass
-    assert kirby_runner.status == ProcessState.FAILED
+
+    assert executor.status == ProcessState.FAILED
+
+
+class MockRunner:
+    def __init__(self):
+        self.threads = [
+            Mock(name="1", is_alive=Mock(return_value=True), join=Mock()),
+            Mock(name="2", is_alive=Mock(return_value=False), join=Mock()),
+            Mock(name="3", is_alive=Mock(return_value=True), join=Mock()),
+        ]
+
+    def get_running_threads(self):
+        return [thread for thread in self.threads if not thread.is_alive()]
+
+
+def test_runner_is_watching_executors():
+    runner = MockRunner()
+    running_threads = runner.get_running_threads()
+    Runner.watch_threads(runner)
+    assert runner.threads == running_threads

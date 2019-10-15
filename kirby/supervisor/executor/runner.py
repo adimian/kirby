@@ -1,7 +1,6 @@
 import logging
 import threading
 
-from kirby.models import JobType
 from kirby.api.ext.topic import NoMoreMessagesException
 from kirby.supervisor.executor import (
     parse_job_description,
@@ -13,28 +12,62 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-class Runner(Executor):
+class Runner(threading.Thread):
     def __init__(self, queue):
+        self.executors = []
+        self.threads = []
         self.queue = queue
-        self.job = None
-        thread = threading.Thread(target=self.run)
-        thread.start()
-        self.status = ProcessState.STOPPED
+        super().__init__()
+        self.start()
 
-    def run(self, block=True):
+    @property
+    def jobs(self):
+        return [e.job for e in self.executors]
+
+    def watch_threads(self):
+        i = 0
+        while i < len(self.threads):
+            thread = self.threads[i]
+            if thread.is_alive():
+                thread.join()
+                self.threads.pop(i)
+            else:
+                i += 1
+
+    def run(self):
         try:
             for job in self.queue:
-                job_parsed = parse_job_description(job)
-                if job_parsed.type != JobType.SCHEDULED:
-                    continue
-                self.job = job_parsed
-                super().__init__(self.job)
-                logger.debug(f"A runner received the job : '{self.job.name}'")
-                super().raise_process()
-                super().terminate()
-
+                job = parse_job_description(job)
+                logger.debug(f"Running the daemon job : '{job.name}'")
+                thread = threading.Thread(
+                    target=self.raise_executor, args=(job,)
+                )
+                thread.start()
+                self.threads.append(thread)
         except NoMoreMessagesException:
-            logger.debug(
-                f"The jobs' queue (which was run in test mode) "
-                "has no jobs anymore"
+            pass
+
+    def raise_executor(self, job):
+        executor = Executor(job)
+        self.executors.append(executor)
+        executor.run()
+        if executor.status == ProcessState.STOPPED:
+            logger.warning(
+                f"The {executor.job.type} job : '{executor.job.name}'"
+                "terminated correctly but it was not supposed to."
             )
+        elif executor.status == ProcessState.FAILED:
+            logger.error(
+                f"The {executor.job.type} job : '{executor.job.name}' failed."
+            )
+        logger.error(
+            f"The runner is re-raising the process '{executor.job.name}'."
+        )
+
+    def terminate(self):
+        for e in self.executors:
+            e.terminate()
+
+    def kill(self):
+        for e in self.executors:
+            e.kill()

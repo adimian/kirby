@@ -1,14 +1,10 @@
 import logging
-import threading
 import time
 
 from smart_getenv import getenv
 
-from kirby.supervisor.executor import (
-    parse_job_description,
-    Executor,
-    ProcessState,
-)
+from kirby.supervisor.executor import Executor, ProcessState
+from kirby.supervisor.executor.runner import Runner
 
 
 logger = logging.getLogger(__name__)
@@ -19,30 +15,27 @@ WAIT_BETWEEN_RETRIES = getenv(
 )
 
 
-class Arbiter(Executor):
-    def __init__(self, job):
-        self.job = parse_job_description(job)
+class Arbiter(Runner):
+    def __init__(self, queue):
         self._stop_signal = False
-        super().__init__(self.job)
-        logger.debug(f"Running the daemon job : '{self.job.name}'")
-        self._thread = threading.Thread(target=self.run)
-        self._thread.start()
+        super().__init__(queue)
 
-    def run(self, block=True):
+    def raise_executor(self, job):
+        executor = Executor(job)
+        self.executors.append(executor)
         while not self._stop_signal:
-            super().raise_process()
-            super().terminate()
-            if self.status == ProcessState.STOPPED:
+            executor.run()
+            if executor.status == ProcessState.STOPPED:
                 logger.warning(
-                    f"The {self.job.type} job : '{self.job.name}'"
+                    f"The {executor.job.type} job : '{executor.job.name}'"
                     "terminated correctly but it was not supposed to."
                 )
-            elif self.status == ProcessState.FAILED:
+            elif executor.status == ProcessState.FAILED:
                 logger.error(
-                    f"The {self.job.type} job : '{self.job.name}' failed."
+                    f"The {executor.job.type} job : '{executor.job.name}' failed."
                 )
             logger.error(
-                f"The arbiter is re-raising the process '{self.job.name}'."
+                f"The arbiter is re-raising the process '{executor.job.name}'."
             )
             time.sleep(WAIT_BETWEEN_RETRIES)
 
