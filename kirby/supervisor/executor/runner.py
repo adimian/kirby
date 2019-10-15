@@ -44,6 +44,7 @@ class Runner(threading.Thread):
                 )
                 thread.start()
                 self.threads.append(thread)
+                self.watch_threads()
         except NoMoreMessagesException:
             pass
 
