@@ -1,3 +1,4 @@
+import json
 import os
 import pytest
 
@@ -30,6 +31,11 @@ def single_failing_job_description(data_dir):
     ) as f:
         job_description = f.read()
     return job_description
+
+
+@pytest.fixture()
+def single_job_description_json(single_job_description):
+    return json.loads(single_job_description)
 
 
 @pytest.fixture()
@@ -72,8 +78,10 @@ def custom_job_creator():
 
 
 @pytest.fixture
-def queue_job_offers(kafka_topic_factory, is_in_test_mode, kafka_use_tls):
-    topic_name = "job-offers"
+def queue_job_offers_scheduled(
+    kafka_topic_factory, is_in_test_mode, kafka_use_tls
+):
+    topic_name = "job-offers.scheduled"
     with kafka_topic_factory(topic_name):
         with Queue(
             name=topic_name, use_tls=kafka_use_tls, testing=is_in_test_mode
@@ -82,5 +90,21 @@ def queue_job_offers(kafka_topic_factory, is_in_test_mode, kafka_use_tls):
 
 
 @pytest.fixture
-def scheduler(queue_job_offers):
-    return Scheduler(queue=queue_job_offers, wakeup=30)
+def queue_job_offers_daemon(
+    kafka_topic_factory, is_in_test_mode, kafka_use_tls
+):
+    topic_name = "job-offers.daemon"
+    with kafka_topic_factory(topic_name):
+        with Queue(
+            name=topic_name, use_tls=kafka_use_tls, testing=is_in_test_mode
+        ) as queue:
+            yield queue
+
+
+@pytest.fixture
+def scheduler(queue_job_offers_scheduled, queue_job_offers_daemon):
+    return Scheduler(
+        queue_daemon=queue_job_offers_daemon,
+        queue_scheduled=queue_job_offers_scheduled,
+        wakeup=30,
+    )

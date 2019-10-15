@@ -30,14 +30,14 @@ class Scheduler:
         return [description for description in json.loads(content)["scripts"]]
 
     def queue_job(self, job, now=None):
-        if job.type == JobType.DAEMON:
+        if job["type"] == JobType.DAEMON.value:
             queue = self.queue_daemon
-        elif job.type == JobType.SCHEDULED:
+        elif job["type"] == JobType.SCHEDULED.value:
             queue = self.queue_scheduled
         else:
             raise RuntimeError(
                 f"The job to queue is neither"
-                f" '{JobType.DAEMON}' nor '{JobType.SCHEDULED}'."
+                f" '{JobType.DAEMON.value}' nor '{JobType.SCHEDULED.value}'."
             )
 
         if now is None:
