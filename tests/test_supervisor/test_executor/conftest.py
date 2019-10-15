@@ -13,15 +13,15 @@ def venv_directory():
 
 
 @pytest.fixture
-def queue(queue_job_offers, single_job_description):
-    queue_job_offers.send(single_job_description)
-    return queue_job_offers
+def queue(queue_job_offers_daemon, single_job_description):
+    queue_job_offers_daemon.send(single_job_description)
+    return queue_job_offers_daemon
 
 
 @pytest.fixture
-def queue_failing(queue_job_offers, single_failing_job_description):
-    queue_job_offers.send(single_failing_job_description)
-    return queue_job_offers
+def queue_failing(queue_job_offers_daemon, single_failing_job_description):
+    queue_job_offers_daemon.send(single_failing_job_description)
+    return queue_job_offers_daemon
 
 
 def build_process_mock(mocker, return_code, sleep_time_for_wait=2):
