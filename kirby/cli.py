@@ -103,11 +103,8 @@ def adduser(username):
     default=30,
     help="Shortest time interval between two scheduler executions",
 )
-@click.option(
-    "--runner", "nb_runner", type=int, default=3, help="Number of runners that will start"
-)
-def supervisor(name, window, wakeup, nb_runner):
-    run_supervisor(name, window, wakeup, nb_runner)
+def supervisor(name, window, wakeup):
+    run_supervisor(name, window, wakeup)
 
 
 @click.command()

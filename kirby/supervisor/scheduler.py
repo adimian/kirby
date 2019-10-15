@@ -5,14 +5,17 @@ import requests
 
 from smart_getenv import getenv
 
+from kirby.models import JobType
 from kirby.exc import CoolDownException
 
 logger = logging.getLogger(__name__)
 
 
 class Scheduler:
-    def __init__(self, wakeup, queue):
-        self.queue = queue
+    def __init__(self, queue_daemon, queue_scheduled, wakeup):
+        self.queue_daemon = queue_daemon
+        self.queue_scheduled = queue_scheduled
+
         self.cooldown = datetime.timedelta(seconds=wakeup)
 
     def fetch_jobs(self):
@@ -27,12 +30,22 @@ class Scheduler:
         return [description for description in json.loads(content)["scripts"]]
 
     def queue_job(self, job, now=None):
+        if job.type == JobType.DAEMON:
+            queue = self.queue_daemon
+        elif job.type == JobType.SCHEDULED:
+            queue = self.queue_scheduled
+        else:
+            raise RuntimeError(
+                f"The job to queue is neither"
+                f" '{JobType.DAEMON}' nor '{JobType.SCHEDULED}'."
+            )
+
         if now is None:
             now = datetime.datetime.utcnow()
 
-        submitted_jobs = self.queue.between(start=now - self.cooldown, end=now)
+        submitted_jobs = queue.between(start=now - self.cooldown, end=now)
 
         if job in submitted_jobs:
             raise CoolDownException()
         else:
-            self.queue.append(job, submitted=now)
+            queue.append(job, submitted=now)
