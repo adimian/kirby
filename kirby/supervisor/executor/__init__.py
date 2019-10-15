@@ -84,7 +84,7 @@ class Executor(threading.Thread):
 
     @property
     def env_vars(self):
-        env_vars_ = self.job.variables
+        env_vars_ = self.job.variables.copy()
         env_vars_.update(
             PACKAGE_NAME=self.job.package_name, ID=str(self.job.id)
         )

@@ -80,7 +80,7 @@ def test_executor_can_start_process(venv_mock, process_mock, job_description):
             job_description.package_name,
         ],
         cwd=venv_dir,
-        env=job_description.variables,
+        env=executor.env_vars,
         stderr=-1,
         stdout=-1,
     )
