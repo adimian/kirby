@@ -18,14 +18,14 @@ def venv_directory():
 
 
 @pytest.fixture()
-def single_job_description(data_dir):
+def job_description_text(data_dir):
     with open(os.path.join(data_dir, "sample_single_job.txt"), "r") as f:
         job_description = f.read()
     return job_description
 
 
 @pytest.fixture()
-def single_failing_job_description(data_dir):
+def failing_job_description_text(data_dir):
     with open(
         os.path.join(data_dir, "sample_single_failing_job.txt"), "r"
     ) as f:
@@ -34,18 +34,18 @@ def single_failing_job_description(data_dir):
 
 
 @pytest.fixture()
-def single_job_description_json(single_job_description):
-    return json.loads(single_job_description)
+def job_description_json(job_description_text):
+    return json.loads(job_description_text)
 
 
 @pytest.fixture()
-def job_description(single_job_description):
-    return parse_job_description(single_job_description)
+def job_description(job_description_text):
+    return parse_job_description(job_description_text)
 
 
 @pytest.fixture()
-def failing_job_description(single_failing_job_description):
-    return parse_job_description(single_failing_job_description)
+def failing_job_description(failing_job_description_text):
+    return parse_job_description(failing_job_description_text)
 
 
 @pytest.fixture()

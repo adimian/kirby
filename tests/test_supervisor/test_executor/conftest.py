@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from tempfile import mkdtemp
 
 
-@pytest.fixture()
+@pytest.fixture
 def venv_directory():
     temp_dir = mkdtemp()
     os.environ["KIRBY_VENV_DIRECTORY"] = temp_dir
@@ -13,14 +13,16 @@ def venv_directory():
 
 
 @pytest.fixture
-def queue(queue_job_offers_daemon, single_job_description):
-    queue_job_offers_daemon.send(single_job_description)
+def queue_job_offers(queue_job_offers_daemon, job_description_text):
+    queue_job_offers_daemon.send(job_description_text)
     return queue_job_offers_daemon
 
 
 @pytest.fixture
-def queue_failing(queue_job_offers_daemon, single_failing_job_description):
-    queue_job_offers_daemon.send(single_failing_job_description)
+def queue_job_offers_failing(
+    queue_job_offers_daemon, failing_job_description_text
+):
+    queue_job_offers_daemon.send(failing_job_description_text)
     return queue_job_offers_daemon
 
 

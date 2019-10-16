@@ -12,9 +12,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def test_runner_waits_for_jobs(
-    process_mock_failing, venv_mock, queue, job_description
+    process_mock_failing, venv_mock, queue_job_offers, job_description
 ):
-    runner = Runner(queue=queue)
+    runner = Runner(queue=queue_job_offers)
     while not runner.jobs:
         pass
     assert runner.jobs[0] == job_description
@@ -29,17 +29,17 @@ def test_runner_waits_for_jobs(
     ),
 )
 def test_runner_waits_for_jobs_integration(
-    venv_directory, job_description, queue
+    venv_directory, job_description, queue_job_offers
 ):
-    runner = Runner(queue=queue)
+    runner = Runner(queue=queue_job_offers)
     while not runner.jobs:
         pass
     job = runner.jobs[0]
     assert job.package_name == job_description.package_name
 
 
-def test_runner_raise_job(venv_mock, process_mock, queue):
-    runner = Runner(queue=queue)
+def test_runner_raise_job(venv_mock, process_mock, queue_job_offers):
+    runner = Runner(queue=queue_job_offers)
 
     while not runner.jobs:
         pass
@@ -52,9 +52,9 @@ def test_runner_raise_job(venv_mock, process_mock, queue):
 
 
 def test_runner_can_communicate_to_the_job(
-    venv_mock, process_mock_failing, queue
+    venv_mock, process_mock_failing, queue_job_offers
 ):
-    runner = Runner(queue=queue)
+    runner = Runner(queue=queue_job_offers)
     while not runner.jobs:
         pass
     executor = runner.executors[0]
