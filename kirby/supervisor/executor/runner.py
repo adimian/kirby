@@ -38,7 +38,6 @@ class Runner(threading.Thread):
         try:
             for job in self.queue:
                 job = parse_job_description(job)
-                logger.debug(f"Running the daemon job : '{job.name}'")
                 thread = threading.Thread(
                     target=self.raise_executor, args=(job,)
                 )
@@ -51,6 +50,7 @@ class Runner(threading.Thread):
     def raise_executor(self, job):
         executor = Executor(job)
         self.executors.append(executor)
+        logger.debug(f"Running the scheduled job : '{job.name}'")
         executor.run()
         if executor.status == ProcessState.STOPPED:
             logger.warning(

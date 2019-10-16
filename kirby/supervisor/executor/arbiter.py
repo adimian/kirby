@@ -23,6 +23,7 @@ class Arbiter(Runner):
     def raise_executor(self, job):
         executor = Executor(job)
         self.executors.append(executor)
+        logger.debug(f"Running the daemon job : '{job.name}'")
         while not self._stop_signal:
             executor.run()
             if executor.status == ProcessState.STOPPED:
