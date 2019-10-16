@@ -12,6 +12,7 @@ from kirby.supervisor.election import Election
 from kirby.supervisor.scheduler import Scheduler
 from kirby.supervisor.executor.runner import Runner
 from kirby.supervisor.executor.arbiter import Arbiter
+from kirby.supervisor.executor import parse_job_description
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def run_supervisor(name, window, wakeup):
     queue_arbiter = Queue(
         name=JOB_OFFERS_DAEMON_TOPIC_NAME, use_tls=USE_TLS, group_id=name
     )
+
     queue_runner = Queue(
         name=JOB_OFFERS_SCHEDULED_TOPIC_NAME,
         use_tls=USE_TLS,
@@ -38,7 +40,6 @@ def run_supervisor(name, window, wakeup):
     scheduler = Scheduler(
         queue_daemon=queue_arbiter, queue_scheduled=queue_runner, wakeup=wakeup
     )
-
     runner = Runner(queue_runner)
     arbiter = Arbiter(queue_arbiter)
 
@@ -59,7 +60,7 @@ def run_supervisor(name, window, wakeup):
                     for job in jobs:
                         if (
                             job["type"] == JobType.DAEMON.value
-                            and job in arbiter.jobs
+                            and parse_job_description(job) in arbiter.jobs
                         ):
                             continue
                         else:
