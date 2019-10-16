@@ -1,6 +1,6 @@
 import logging
 import threading
-
+from datetime import datetime
 from kirby.api.ext.topic import NoMoreMessagesException
 from kirby.supervisor.executor import (
     parse_job_description,
@@ -38,7 +38,9 @@ class Runner(threading.Thread):
         try:
             for job in self.queue:
                 job = parse_job_description(job)
-                logger.debug(f"Running the daemon job : '{job.name}'")
+                logger.debug(
+                    f"{datetime.utcnow()} Running the  job : '{job.package_name}' from {self.queue.name}"
+                )
                 thread = threading.Thread(
                     target=self.raise_executor, args=(job,)
                 )
