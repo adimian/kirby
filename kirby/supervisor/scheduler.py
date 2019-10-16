@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 import requests
-
+from datetime import datetime as dt
 from smart_getenv import getenv
 
 from kirby.models import JobType
@@ -30,9 +30,9 @@ class Scheduler:
         return [description for description in json.loads(content)["scripts"]]
 
     def queue_job(self, job, now=None):
-        if job.type == JobType.DAEMON:
+        if job["type"] == JobType.DAEMON.value:
             queue = self.queue_daemon
-        elif job.type == JobType.SCHEDULED:
+        elif job["type"] == JobType.SCHEDULED.value:
             queue = self.queue_scheduled
         else:
             raise RuntimeError(
@@ -43,9 +43,10 @@ class Scheduler:
         if now is None:
             now = datetime.datetime.utcnow()
 
-        submitted_jobs = queue.between(start=now - self.cooldown, end=now)
-
-        if job in submitted_jobs:
-            raise CoolDownException()
-        else:
-            queue.append(job, submitted=now)
+        # submitted_jobs = queue.between(start=now - self.cooldown, end=now)
+        #
+        # if job in submitted_jobs:
+        #     raise CoolDownException()
+        # else:
+        print(f"-------{dt.utcnow()} {job['package_name']} SEND")
+        queue.append(job, submitted=now)
