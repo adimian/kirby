@@ -50,7 +50,7 @@ class Runner(threading.Thread):
     def raise_executor(self, job):
         executor = Executor(job)
         self.executors.append(executor)
-        logger.debug(f"Running the scheduled job : '{job.name}'")
+        logger.debug(f"Running the {executor.job.type} job : '{job.name}'")
         executor.run()
         if executor.status == ProcessState.FAILED:
             logger.error(
