@@ -32,23 +32,27 @@ def test_scheduler_retrieve_jobs(get_mock, scheduler, jobs_request_result):
     assert scheduler.fetch_jobs() == jobs_request_result
 
 
-def test_scheduler_queue_jobs(scheduler):
-    scheduler.queue_job("hello world")
-    assert scheduler.queue.next() == "hello world"
+def test_scheduler_queue_jobs(scheduler, job_description_json):
+    scheduler.queue_job(job_description_json)
+    assert scheduler.queue_daemon.next() == job_description_json
 
 
-def test_scheduler_does_not_queue_twice_within_wakeup_period(scheduler):
+def test_scheduler_does_not_queue_twice_within_wakeup_period(
+    scheduler, job_description_json
+):
     date_1 = datetime.datetime(2000, 1, 1, 0, 0, 0)
     date_2 = datetime.datetime(2000, 1, 1, 0, 0, 20)
 
-    scheduler.queue_job("hello world", now=date_1)
+    scheduler.queue_job(job_description_json, now=date_1)
     with pytest.raises(CoolDownException):
-        scheduler.queue_job("hello world", now=date_2)
+        scheduler.queue_job(job_description_json, now=date_2)
 
 
-def test_scheduler_can_queue_after_wakeup_period(scheduler):
+def test_scheduler_can_queue_after_wakeup_period(
+    scheduler, job_description_json
+):
     date_1 = datetime.datetime(2000, 1, 1, 0, 0, 0)
     date_2 = datetime.datetime(2000, 1, 1, 0, 0, 40)
 
-    scheduler.queue_job("hello world", now=date_1)
-    scheduler.queue_job("hello world", now=date_2)
+    scheduler.queue_job(job_description_json, now=date_1)
+    scheduler.queue_job(job_description_json, now=date_2)

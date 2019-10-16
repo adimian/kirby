@@ -37,7 +37,7 @@ class Scheduler:
         else:
             raise RuntimeError(
                 f"The job to queue is neither"
-                f" '{JobType.DAEMON}' nor '{JobType.SCHEDULED}'."
+                f" '{JobType.DAEMON.value}' nor '{JobType.SCHEDULED.value}'."
             )
 
         if now is None:

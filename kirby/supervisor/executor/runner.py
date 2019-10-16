@@ -46,25 +46,19 @@ class Runner(threading.Thread):
                 )
                 thread.start()
                 self.threads.append(thread)
+                self.watch_threads()
         except NoMoreMessagesException:
             pass
 
     def raise_executor(self, job):
         executor = Executor(job)
         self.executors.append(executor)
+        logger.debug(f"Running the {executor.job.type} job : '{job.name}'")
         executor.run()
-        if executor.status == ProcessState.STOPPED:
-            logger.warning(
-                f"The {executor.job.type} job : '{executor.job.name}'"
-                "terminated correctly but it was not supposed to."
-            )
-        elif executor.status == ProcessState.FAILED:
+        if executor.status == ProcessState.FAILED:
             logger.error(
                 f"The {executor.job.type} job : '{executor.job.name}' failed."
             )
-        logger.error(
-            f"The runner is re-raising the process '{executor.job.name}'."
-        )
 
     def terminate(self):
         for e in self.executors:

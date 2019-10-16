@@ -8,9 +8,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def test_arbiter_job_reraised_if_failed(
-    venv_mock, process_mock_failing, queue_failing
+    venv_mock, process_mock_failing, queue_job_offers_failing
 ):
-    arbiter = Arbiter(queue_failing)
+    arbiter = Arbiter(queue_job_offers_failing)
 
     # Wait until the arbiter catch the job
     while not arbiter.jobs:
