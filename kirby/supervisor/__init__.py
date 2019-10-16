@@ -17,10 +17,14 @@ logger = logging.getLogger(__name__)
 
 USE_TLS = getenv("KAFKA_USE_TLS", type=bool, default=False)
 JOB_OFFERS_DAEMON_TOPIC_NAME = getenv(
-    "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers.daemon"
+    "KIRBY_TOPIC_DAEMON_JOB_OFFERS",
+    type=str,
+    default=".kirby.job-offers.daemon",
 )
 JOB_OFFERS_SCHEDULED_TOPIC_NAME = getenv(
-    "KIRBY_TOPIC_JOB_OFFERS", type=str, default=".kirby.job-offers.scheduled"
+    "KIRBY_TOPIC_SCHEDULED_JOB_OFFERS",
+    type=str,
+    default=".kirby.job-offers.scheduled",
 )
 
 
