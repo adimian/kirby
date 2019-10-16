@@ -79,7 +79,6 @@ class Executor(threading.Thread):
 
         self.status = ProcessState.SETTINGUP
         self.exc_info = None
-        self.flag = False
         super().__init__()
 
     @property
@@ -123,7 +122,6 @@ class Executor(threading.Thread):
         return self.virtualenv
 
     def run(self):
-        self.flag = True
         try:
             args = [
                 os.path.join(self.virtualenv.path, "bin", "python"),
