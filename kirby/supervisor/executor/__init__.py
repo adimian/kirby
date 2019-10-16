@@ -42,7 +42,7 @@ class JobDescription:
 
 
 def parse_job_description(job_description):
-    kwargs = json.loads(job_description)
+    kwargs = job_description.copy()
     type_ = kwargs["type"]
     if type_ == "scheduled":
         kwargs["type"] = JobType.SCHEDULED
@@ -84,7 +84,7 @@ class Executor(threading.Thread):
 
     @property
     def env_vars(self):
-        env_vars_ = self.job.variables
+        env_vars_ = self.job.variables.copy()
         env_vars_.update(
             PACKAGE_NAME=self.job.package_name, ID=str(self.job.id)
         )
