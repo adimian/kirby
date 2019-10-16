@@ -39,13 +39,18 @@ def job_description_json(job_description_text):
 
 
 @pytest.fixture()
-def job_description(job_description_text):
-    return parse_job_description(job_description_text)
+def failing_job_description_json(failing_job_description_text):
+    return json.loads(failing_job_description_text)
 
 
 @pytest.fixture()
-def failing_job_description(failing_job_description_text):
-    return parse_job_description(failing_job_description_text)
+def job_description(job_description_json):
+    return parse_job_description(job_description_json)
+
+
+@pytest.fixture()
+def failing_job_description(failing_job_description_json):
+    return parse_job_description(failing_job_description_json)
 
 
 @pytest.fixture()

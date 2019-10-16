@@ -13,16 +13,14 @@ def venv_directory():
 
 
 @pytest.fixture
-def queue_job_offers(queue_job_offers_daemon, job_description_text):
-    queue_job_offers_daemon.send(job_description_text)
+def queue_job_offers(queue_job_offers_daemon, job_description_json):
+    queue_job_offers_daemon.send(job_description_json)
     return queue_job_offers_daemon
 
 
 @pytest.fixture
-def queue_job_offers_failing(
-    queue_job_offers_daemon, failing_job_description_text
-):
-    queue_job_offers_daemon.send(failing_job_description_text)
+def queue_job_offers_failing(queue_job_offers_daemon, job_description_json):
+    queue_job_offers_daemon.send(job_description_json)
     return queue_job_offers_daemon
 
 
