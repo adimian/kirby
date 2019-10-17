@@ -170,3 +170,23 @@ def test_topic_can_rewind(kirby_topic_factory, is_in_test_mode):
 
         for msg, i in zip(kirby_topic.rewind(earlier=now), range(9, -1, -1)):
             assert msg == i
+
+
+def test_topic_get_messages_between_two_dates(kirby_topic_factory):
+    now = datetime(year=2019, month=10, day=17, hour=0, minute=0)
+    then = datetime(year=2018, month=10, day=17, hour=0, minute=0)
+    delta = timedelta(weeks=1.5)
+    with kirby_topic_factory("TOPIC_NAME", init_time=now) as kirby_topic:
+
+        # Send messages
+        messages = []
+        time = then - 3 * delta
+        while time < now + 3 * delta:
+            message = str(time)
+            if then <= time < now:
+                messages.append(message)
+            kirby_topic.send(message, submitted=time)
+            time += delta
+
+        # Assert result is as expected
+        assert kirby_topic.between(then, now) == messages

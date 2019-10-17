@@ -249,21 +249,24 @@ class Consumer:
                 end_timestamp = datetime_to_kafka_ts(end)
 
                 messages = []
+                is_finished_on_partition = {
+                    partitions: False
+                    for partitions in self._consumer.assignment()
+                }
                 record = poll_next_record()
-                if record:
-                    while (
-                        start_timestamp <= record.timestamp < end_timestamp
-                        and record
-                    ):
+                while record:
+                    if start_timestamp <= record.timestamp < end_timestamp:
                         messages.append((record.timestamp, record))
-                        record = poll_next_record()
-                        if not record:
+                    else:
+                        is_finished_on_partition[record.partition] = True
+                        if all(is_finished_on_partition.values()):
                             break
+                    record = poll_next_record()
 
             if self.topic_config.raw_records:
-                return [v for t, v in messages]
+                return [v for t, v in sorted(messages)]
             else:
-                return [v.value for t, v in messages]
+                return [v.value for t, v in sorted(messages)]
 
     def close(self):
         if not is_in_test_mode(self.topic_config):

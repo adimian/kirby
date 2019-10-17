@@ -44,6 +44,16 @@ def bootstrap_servers():
 
 
 @fixture
+def kafka_num_partitions():
+    return getenv("KAFKA_KAFKA_NUM_PARTITIONS", type=int, default=3)
+
+
+@fixture
+def kafka_replication_factor():
+    return getenv("KAFKA_KAFKA_REPLICATION_FACTOR", type=int, default=1)
+
+
+@fixture
 def webapp():
     app = app_maker(
         config={
@@ -275,7 +285,12 @@ def db_scripts_registered(db_scripts_not_registered, db_topics):
 
 
 @fixture
-def kafka_topic_factory(kafka_use_tls, bootstrap_servers):
+def kafka_topic_factory(
+    kafka_use_tls,
+    bootstrap_servers,
+    kafka_num_partitions,
+    kafka_replication_factor,
+):
     import logging
     from contextlib import contextmanager, suppress
     from smart_getenv import getenv
@@ -310,7 +325,14 @@ def kafka_topic_factory(kafka_use_tls, bootstrap_servers):
                 admin.delete_topics([topic_name], timeout_ms=10000)
 
             admin.create_topics(
-                [NewTopic(topic_name, 1, 1)], timeout_ms=timeout_ms
+                [
+                    NewTopic(
+                        topic_name,
+                        kafka_num_partitions,
+                        kafka_replication_factor,
+                    )
+                ],
+                timeout_ms=timeout_ms,
             )
             try:
                 yield

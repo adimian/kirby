@@ -43,6 +43,11 @@ class Scheduler:
         if now is None:
             now = datetime.datetime.utcnow()
 
+        submitted_jobs = queue.between(start=now - self.cooldown, end=now)
+
+        if job in submitted_jobs:
+            raise CoolDownException()
+
         # TODO: insert a cooldown exception in case a scheduler dies and new leader tries to insert same job again.
         # TODO: Previous cooldownException wasn't efficient because between method was too long to proceed.
         print(f"-------{dt.utcnow()} {job['package_name']} SEND")
