@@ -1,3 +1,4 @@
+import logging
 import os
 
 from pytest import fixture
@@ -20,6 +21,11 @@ from kirby.models import (
 )
 
 API_ROOT = "http://some-test-server.somewhere"
+
+
+@fixture
+def mute_kafka():
+    logging.getLogger("kafka").setLevel(logging.CRITICAL)
 
 
 @fixture
