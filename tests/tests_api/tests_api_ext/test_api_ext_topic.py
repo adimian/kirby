@@ -1,7 +1,9 @@
+import os
 import pytest
 
 from datetime import datetime, timedelta
 from hypothesis import given, strategies
+from smart_getenv import getenv
 
 from kafka.structs import TopicPartition
 from kafka.consumer.fetcher import ConsumerRecord
@@ -146,6 +148,16 @@ def test_topic_can_rollback(kirby_topic_factory):
         ]
 
 
+@pytest.mark.integration
+@pytest.mark.skipif(
+    getenv("TESTING", type=bool, default=True),
+    reason=f"This is an integration test.",
+)
+@pytest.mark.skipif(
+    getenv("KAFKA_NUM_PARTITIONS", type=int, default=3) > 1,
+    reason=f"The test rely on the the ordering of messages return by Kafka, "
+    "this is guarantied only when there is one partition.",
+)
 def test_topic_rollback_is_temporary(kirby_topic_factory):
     now = datetime(year=2019, month=7, day=24, hour=10, minute=45)
     delta = timedelta(hours=1)
@@ -156,7 +168,9 @@ def test_topic_rollback_is_temporary(kirby_topic_factory):
 
         assert kirby_topic.next() == 0
 
-        kirby_topic.between(now + 4 * delta, now + 8 * delta)
+        with kirby_topic.temporary_rollback(now + 4 * delta):
+            while kirby_topic.next():
+                pass
 
         assert kirby_topic.next() == 1
 
