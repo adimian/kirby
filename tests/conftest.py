@@ -45,12 +45,12 @@ def bootstrap_servers():
 
 @fixture
 def kafka_num_partitions():
-    return getenv("KAFKA_KAFKA_NUM_PARTITIONS", type=int, default=3)
+    return getenv("KAFKA_NUM_PARTITIONS", type=int, default=3)
 
 
 @fixture
 def kafka_replication_factor():
-    return getenv("KAFKA_KAFKA_REPLICATION_FACTOR", type=int, default=1)
+    return getenv("KAFKA_REPLICATION_FACTOR", type=int, default=1)
 
 
 @fixture
