@@ -47,8 +47,8 @@ class Runner(threading.Thread):
                 thread.start()
                 self.threads.append(thread)
                 self.watch_threads()
-        except NoMoreMessagesException:
-            pass
+        except RuntimeError:
+            logger.debug("Runner cannot start thread(s)")
 
     def raise_executor(self, job):
         executor = Executor(job)

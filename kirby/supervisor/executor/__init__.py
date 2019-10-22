@@ -153,7 +153,7 @@ class Executor(threading.Thread):
             else:
                 self.status = ProcessState.FAILED
                 raise ProcessExecutionError(stderr)
-        except:
+        except (subprocess.SubprocessError, subprocess.TimeoutExpired):
             self.exc_info = sys.exc_info()
 
     def get_return_values(self):
