@@ -11,11 +11,11 @@ of Kirby.
 ## Scripts
 
 Kirby's task is to handle the execution of scripts that process data. 
-The data which come from externals sources of Kirby can moved beetwen processes via Kafka topics. 
+The data which come from externals sources of Kirby can move between processes via Kafka topics. 
 
-Currently as external sources, Kirby propose support for `Web Services` and `Topics`.
+Currently as external sources, Kirby proposes support for `Web Services`,  `Topics` and `Files`.
 
-The Kafka topics use by the Kirby object `Topics` are stored alongside the needed topics for Kirby.
+The Kafka topics used by the Kirby object `Topic` are stored alongside the needed topics for Kirby.
 
 There is two types of script that can be run with Kirby : 
 - `Scheduled`: Run at a frequency or a date given in the database (cron schedule expressions).
@@ -30,10 +30,10 @@ There is two types of script that can be run with Kirby :
 
 .. image:: _static/kirby-scripts.png
 
-The schema above show an example of recommended structure for the scripts. The basic idea consist in separating the 
-script in:
-- *Sensors* (`Scheduled` script) that connects to external source of data and push them into Topic(s).
-- *Processor* (`Deamon` script) that process the data from Topic(s) and output them in an external, 
+The schema above shows an example of recommended structure for the scripts. The basic idea consists in separating the 
+scripts in:
+- *Sensors* (`Scheduled` script) that connects to external source of data and send them into Topic(s).
+- *Processor* (`Deamon` script) that processes the data from Topic(s) and outputs them in an external, 
 it can be another topic that will be read by other processors.
 
 Multiple processors can connect to a Topic and be raised once a message is produced by the sensor.
@@ -45,20 +45,20 @@ database.
 
 .. image:: _static/kirby-model.png
 
-The image showed above is the export of the database model.
+The image showed above is the export of the script database model.
 
-The script to run is describe in the Script table. The package_name represent the name of
-the package that will be installed (with the correct package_version).
+The script to run is described in the `Script` table. The `package_name` represents the name of
+the package that will be installed (with the correct `package_version`).
 
 The script needs to be executed in a environment (`prod`, `dev`, `test` for instance).
 If scheduled, the script needs a schedule link (otherwise this link wont be included).
 
-In order to link a script that runs in various environment, we created a job table.
+In order to link a script that runs in various environments, we created a `job` table.
 
 The context links all these tables together. It represents the execution context of 
 the script.
 
-On failure or on retry there is notifications that will be send.
+`On failure` or `on retry` are notifications that will be sent.
 
 .. todo:: The notification system is not implemented yet
 
