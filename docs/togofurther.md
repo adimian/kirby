@@ -56,7 +56,7 @@ The latest is consumed by `kirby` web API to print logs in `logs` tab.
 Once user's script is over, associated subprocess and thread are closed.
 There are only two behaviour differences between `arbiter` and `runner` :
 - when a daemon script fails, the `arbiter` try to re-run it, 
-- `arbiters` of all `supervisors` have a different `group id` which mean that they all run
+- `arbiters` of all `supervisors` have a different `group id` which means that they all run
 every single daemon script. Scheduled scripts are only run once. 
 
  
