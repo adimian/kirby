@@ -91,13 +91,14 @@ And finally, when connecting to the homepage of the web service you have access 
 .. image:: _static/kirby-supervisor.svg
 
 The user can raise as many `Supervisor` that he wants. One of the `Supervisor` is elected `Scheduler` via an election.
-More details are given in .. togofurther: 
+
 
 The latter is retrieving the schedule from the web service (see [Web Service](#id1)) and post the jobs 
 in *Kafka Topics* : the topic `.kirby.job-offers.daemon` for daemons jobs  and the topic `.kirby.job-offers.scheduled` 
 for scheduled tasks.
 
-
+More details about election process and scheduler are given 
+in :ref:`linking-togofurther`.
 
 One `Runner` and one `Arbiter` are spawned per `Supervisor`.
 
@@ -111,5 +112,10 @@ of the script:
 
 Their tasks are to retrieve the *jobs* posted on the Kafka topics (see [Supervisor & Scheduler](#supervisor--scheduler) 
 for the topics concerned) 
+
+More details about runner and arbiter are given 
+in :ref:`linking-togofurther`.
+
+## Kirby and Kafka 
 
 :todo: explain Why kafka? How does it spread jobs... 
