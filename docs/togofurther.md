@@ -23,7 +23,7 @@ scripts that must be run (following their schedule).
 When starting a `supervisor`, a `scheduler` instance is created. 
 If `supervisor` is the leader, every `WAKEUP` seconds (default = 30s) its
 `scheduler`  will fetch jobs from `kirby` script database using `/schedule` 
- endpoint and send them to the appropriate  `Kafka` `job-offers` 
+endpoint and send them to the appropriate  `Kafka` `job-offers` 
 topic (daemon or scheduled).
  
  
@@ -44,9 +44,11 @@ exactly the same way. Once run, a `supervisor` creates :
 kafka topic and 
 `KIRBY_TOPIC_SCHEDULED_JOBS` kafka topic. As a reminder, those topics are fed by the 
 `scheduler` of the leader `supervisor`. 
+
 Once a job is fetched, an `executor` instance is created in a new thread. This `executor`
 creates a Python virtual environment in `.kirby.virtualenv` folder and installs (trough `pypi`)
-user's script and all associated dependencies (including `kirby`)  
+user's script and all associated dependencies (including `kirby`).
+
 The `executor` then runs the script in a subprocess. This script creates a `kirby` instance. 
 After what it registers its externals (source and destination). When doing that, 
 `kirby` checks that externals given in user's script exist in the script database. If 
