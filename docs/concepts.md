@@ -24,13 +24,14 @@ There are two types of script that can be run with Kirby :
 .. note:: Cron schedule expressions example :
 
     :code:`5 4 * * *` = every day at 4:05
+    
     :code:`*/2 * * * *` = every two minutes
     
     `This website <https://crontab.guru/>`_ can help you build cron schedule expressions
 
 .. image:: _static/kirby-scripts.png
 
-The schema above shows an example of recommended structure for the scripts. 
+The schema above shows an example of recommended data flow and associated scripts. 
 The basic idea consists in separating the scripts in:
 - *Sensors* (`Scheduled` script) that connect to external sources of data and send information into Topic(s).
 - *Processors* (`Daemon` script) that process the data from Topic(s) and outputs them in an external, 
@@ -65,7 +66,7 @@ the script.
 
 ## Web service
 
-The web service expose the the database through a clear interface via an admin interface with an identification system. 
+The web service exposes the database through a clear interface via an admin interface with an identification system. 
 And an API used by kirby to access the database.
 
 The next image shows a visualisation of the job table:
@@ -80,7 +81,8 @@ The following image is the log's screen:
 
 .. image:: _static/webapi/logs.png
 
-And finally, when connecting to the homepage of the web service you have acces to the list of the eng
+And finally, when connecting to the homepage of the web service you have access to the list of the endpoints. 
+
 .. image:: _static/webapi/api.png
 
 
@@ -89,6 +91,7 @@ And finally, when connecting to the homepage of the web service you have acces t
 .. image:: _static/kirby-supervisor.png
 
 The user can raise as many `Supervisor` that he wants. One of the `Supervisor` is elected `Scheduler` via an election.
+More details are given in .. togofurther: 
 
 The latter is retrieving the schedule from the web service (see [Web Service](#id1)) and post the jobs 
 in *Kafka Topics* : the topic `.kirby.job-offers.daemon` for daemons jobs  and the topic `.kirby.job-offers.scheduled` 
