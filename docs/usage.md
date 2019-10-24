@@ -1,26 +1,26 @@
 # User Guide
 
-Kirby is a Python Frameworks which manages user's 
+`kirby` is a Python Frameworks which manages user's 
 scripts execution on several servers. User's scripts can be :
-- scheduled script (schedule definition is based on cron)
+- scheduled script (schedule definition is based on `cron`)
 - daemon script
 
-Scripts are run on several servers (Kirby supervisors). In order to ensure 
-that a scheduled script is never launched twice, Kirby uses Kafka topics. 
+Scripts are run on several servers (`kirby supervisors`). In order to ensure 
+that a scheduled script is never launched twice, Kirby uses `Kafka` topics. 
 
 ## Kirby dependencies
-`Kirby` uses a Redis server for the leader election process (see below). Before 
-running `Kirby`, start a `Redis` server : 
+`Kirby` uses a `redis` server for the leader election process (see below). Before 
+running `kirby`, start a `redis` server : 
 ```bash
 $ redis-server
 ```
-As explained above Kirby also needs a Kafka cluster (required by all `kirby` services)
+As explained above `kirby` also needs a `Kafka` cluster (required by all `kirby` services)
 
 ```bash
 $ bin/zookeeper-server-start.sh config/zookeeper.properties
 $ bin/kafka-server-start.sh config/server.properties
 ```
-Finally, Kirby needs a database server (required for the `kirby` web UI). 
+Finally, `kirby` needs a database server (required for the `kirby` web UI). 
 
 
 
@@ -36,27 +36,28 @@ The following environment variables are used by `kirby` :
 
 | Variable name                   | Content description                                                                 |
 |---------------------------------|-------------------------------------------------------------------------------------|
-| SQLALCHEMY_DATABASE_URI         | Path for Kirby db storage. Example : ///kirby.db                                    |
-| SQLALCHEMY_TRACK_MODIFICATIONS  | Flask app parameter                                                                 |
-| SECRET_KEY                      | Flask app parameter                                                                 |
-| SECURITY_PASSWORD_SALT          | Flask app parameter                                                                 |
-| KAFKA_BOOTSTRAP_SERVERS         | 127.0.0.1:9092                                                                      |
-| KAFKA_USE_SSL                   | Tells if SSL is used in KAFKA                                                       |
-| KAFKA_SSL_CAFILE                | see ssl_cafile Kafka parameter                                                      |
-| KAFKA_SSL_CERTFILE              | see ssl_certfile Kafka parameter                                                    |
-| KAFKA_SSL_KEYFILE               | see ssl_keyfile Kafka parameter                                                     |
-| KIRBY_TOPIC_JOB_OFFERS          | Job offers Kafka topic name. Example .kirby.job-offers                              |
-| KIRBY_SUPERVISOR_GROUP_ID       | see group_id parameter in class KafkaConsumer                                       |
-| KIRBY_SCHEDULE_ENDPOINT         | Kirby web server followed by /schedule. For example :http://127.0.0.1:8080/schedule |
-|EXT_WAIT_BETWEEN_RETRIES   |  see tenacity.retry wait argument (Default=0.4) |
-|EXT_RETRIES   |  see tenacity.retry stop argument (Default=3)|
-|TESTING    | Flask app parameter  |
-|LOG_FORMAT   | see format parameter in logging.basicConfig() (Default= "[%(asctime)s] %(levelname)s:%(name)s:%(message)s") |
+| `SQLALCHEMY_DATABASE_URI`         | Path for `kirby` db storage. Example : `///kirby.db`                                    |
+| `SQLALCHEMY_TRACK_MODIFICATIONS`  | `Flask` app parameter **(Default=None)**                                                                 |
+| `SECRET_KEY`                      | `Flask` app parameter : secret key for session.                                                                  |
+| `SECURITY_PASSWORD_SALT`          | `Flask` app parameter                                                                 |
+|`TESTING`                          | `Flask` app parameter  |
+| `KAFKA_BOOTSTRAP_SERVERS`         | `kafka` Bootstrap server (Example :127.0.0.1:9092)                                                                      |
+| `KAFKA_USE_SSL`                   | `kafka` parameter : tells if SSL is used                                                      |
+| `KAFKA_SSL_CAFILE`                | `kafka` parameter :  `ssl_cafile`                                               |
+| `KAFKA_SSL_CERTFILE`              | `kafka` parameter  : see `ssl_certfile`                                            |
+| `KAFKA_SSL_KEYFILE`               | `kafka` parameter  :see `ssl_keyfile`                                                    |
+| `KIRBY_TOPIC_SCHEDULED_JOBS`          | Scheduled job offers `kafka` topic name. Example `.kirby.job-offers.scheduled`                              |
+| `KIRBY_TOPIC_DAEMON_JOBS`          | Daemon job offers `kafka` topic name. Example `.kirby.job-offers.daemon`                              |
+| `KIRBY_SUPERVISOR_GROUP_ID`       | see `group_id` parameter in class `KafkaConsumer`                                       |
+| `KIRBY_SCHEDULE_ENDPOINT`         | `kirby` web server followed schedule endpoint. For example :http://127.0.0.1:8080/schedule |
+|`EXT_WAIT_BETWEEN_RETRIES`   |  see `tenacity.retry` wait argument **(Default=0.4)** |
+|`EXT_RETRIES`   |  see `tenacity.retry` stop argument **(Default=3)**|
+|`LOG_FORMAT`   | see format parameter in `logging.basicConfig()` **(Default= "[%(asctime)s] %(levelname)s:%(name)s:%(message)s")** |
 
 ## Adding a superuser
 
 If you want to add a local user (so not using external user provisioning like 
-LDAP or Okta), you can use the following command on the web UI server
+`LDAP` or `Okta`), you can use the following command on the web UI server
 
 ```bash
 $ kirby adduser alice
@@ -65,7 +66,7 @@ Give admin rights? [y/N]: y
 User alice added with admin rights
 ```
 ## Script database creation
-The goal of Kirby is to manage user's scripts execution. `kirby` input is 
+The goal of `kirby` is to manage user's scripts execution. `kirby` input is 
 therefore a script database following this model.
 
 .. todo:: add link to database model.
@@ -123,7 +124,7 @@ script database and send them to a `Kafka` topic.
 All `supervisor` (including leader) consume scripts in the `Kafka` topic, create 
 the Python virtual environments, install the scripts from `Pypiserver` 
 and run them (in a separated subprocess).
-If leader supervisor crashes, another supervisor will take the lead.
+If leader `supervisor` crashes, another `supervisor` will take the lead.
 
 .. important:: - There must be at least one `supervisor` instance running at all times.
                - Each supervisor must have a unique name
