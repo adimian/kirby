@@ -11,15 +11,15 @@ of Kirby.
 ## Scripts
 
 Kirby's task is to handle the execution of scripts that process data. 
-The data which come from externals sources of Kirby can move between processes via Kafka topics. 
+The data which come from externals sources of Kirby should move between processes via Kafka topics. 
 
 Currently as external sources, Kirby proposes support for `Web Services`,  `Topics` and `Files`.
 
-The Kafka topics used by the Kirby object `Topic` are stored alongside the needed topics for Kirby.
+User's Kafka topics are stored alongside  Kirby internal topics.
 
-There is two types of script that can be run with Kirby : 
+There are two types of script that can be run with Kirby : 
 - `Scheduled`: Run at a frequency or a date given in the database (cron schedule expressions).
-- `Deamon`: Jobs that need to be run in continuous.
+- `Daemon`: Jobs that need to be run in continuous.
 
 .. note:: Cron schedule expressions example :
 
@@ -30,10 +30,10 @@ There is two types of script that can be run with Kirby :
 
 .. image:: _static/kirby-scripts.png
 
-The schema above shows an example of recommended structure for the scripts. The basic idea consists in separating the 
-scripts in:
-- *Sensors* (`Scheduled` script) that connects to external source of data and send them into Topic(s).
-- *Processor* (`Deamon` script) that processes the data from Topic(s) and outputs them in an external, 
+The schema above shows an example of recommended structure for the scripts. 
+The basic idea consists in separating the scripts in:
+- *Sensors* (`Scheduled` script) that connect to external sources of data and send information into Topic(s).
+- *Processors* (`Daemon` script) that process the data from Topic(s) and outputs them in an external, 
 it can be another topic that will be read by other processors.
 
 Multiple processors can connect to a Topic and be raised once a message is produced by the sensor.
