@@ -65,8 +65,23 @@ the script.
 
 ## Web service
 
+The web service expose the the database through a clear interface via an admin interface with an identification system. 
+And an API used by kirby to access the database.
 
-.. todo: schedule endpoint
+The next image shows a visualisation of the job table:
+
+.. image:: _static/webapi/table.png
+
+The next image shows the creation of a line in the job table:
+
+.. image:: _static/webapi/database_edit.png
+
+The following image is the log's screen:
+
+.. image:: _static/webapi/logs.png
+
+And finally, when connecting to the homepage of the web service you have acces to the list of the eng
+.. image:: _static/webapi/api.png
 
 
 ## Supervisor & Scheduler
