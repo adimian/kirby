@@ -1,6 +1,6 @@
 # Components
 
-.. image:: _static/kirby-components.png
+.. image:: _static/kirby-components.svg
 
 Above is the diagram of all components of Kirby along with the dataflow and interprocess calls. Each and every one of
 the components are described in the following.
@@ -28,7 +28,7 @@ There are two types of script that can be run with Kirby :
     
     `This website <https://crontab.guru/>`_ can help you build cron schedule expressions
 
-.. image:: _static/kirby-scripts.png
+.. image:: _static/kirby-scripts.svg
 
 The schema above shows an example of recommended structure for the scripts. 
 The basic idea consists in separating the scripts in:
@@ -43,7 +43,7 @@ database.
 
 ## Database
 
-.. image:: _static/kirby-model.png
+.. image:: _static/kirby-model.svg
 
 The image showed above is the export of the script database model.
 
@@ -86,7 +86,7 @@ And finally, when connecting to the homepage of the web service you have acces t
 
 ## Supervisor & Scheduler
 
-.. image:: _static/kirby-supervisor.png
+.. image:: _static/kirby-supervisor.svg
 
 The user can raise as many `Supervisor` that he wants. One of the `Supervisor` is elected `Scheduler` via an election.
 
