@@ -93,7 +93,7 @@ And finally, when connecting to the homepage of the web service you have access 
 The user can raise as many `Supervisor` that he wants. One of the `Supervisor` is elected `Scheduler` via an election.
 
 
-The latter is retrieving the schedule from the web service (see [Web Service](#id1)) and post the jobs 
+The latter is retrieving the schedule from the web service (see [Web Service](#web-service)) and post the jobs 
 in *Kafka Topics* : the topic `.kirby.job-offers.daemon` for daemons jobs  and the topic `.kirby.job-offers.scheduled` 
 for scheduled tasks.
 
@@ -110,7 +110,7 @@ of the script:
 - `Runner` if the script is a `Scheduled`.
 - `Arbiter` if it's a `Deamon`.
 
-Their tasks are to retrieve the *jobs* posted on the Kafka topics (see [Supervisor & Scheduler](#supervisor--scheduler) 
+Their tasks are to retrieve the *jobs* posted on the Kafka topics (see [Supervisor & Scheduler](#supervisor-scheduler) 
 for the topics concerned) 
 
 More details about runner and arbiter are given 
