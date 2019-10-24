@@ -1,3 +1,4 @@
+.. _linking-togofurther:
 # To go further 
 ## Election process
 Election process is explained on the right side of figure below. 
