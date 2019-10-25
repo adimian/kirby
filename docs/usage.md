@@ -1,3 +1,4 @@
+.. _linking-userguide:
 # User Guide
 
 `kirby` is a Python Frameworks which manages user's 
@@ -46,9 +47,8 @@ The following environment variables are used by `kirby` :
 | `KAFKA_SSL_CAFILE`                | `kafka` parameter :  `ssl_cafile`                                               |
 | `KAFKA_SSL_CERTFILE`              | `kafka` parameter  : see `ssl_certfile`                                            |
 | `KAFKA_SSL_KEYFILE`               | `kafka` parameter  :see `ssl_keyfile`                                                    |
-| `KIRBY_TOPIC_SCHEDULED_JOBS`          | Scheduled job offers `kafka` topic name. Example `.kirby.job-offers.scheduled`                              |
-| `KIRBY_TOPIC_DAEMON_JOBS`          | Daemon job offers `kafka` topic name. Example `.kirby.job-offers.daemon`                              |
-| `KIRBY_SUPERVISOR_GROUP_ID`       | see `group_id` parameter in class `KafkaConsumer`                                       |
+| `KIRBY_TOPIC_SCHEDULED_JOBS`          | Scheduled job offers `kafka` topic name **(Default: `.kirby.job-offers.scheduled`)**                              |
+| `KIRBY_TOPIC_DAEMON_JOBS`          | Daemon job offers `kafka` topic name **(Default: `.kirby.job-offers.daemon` )**                            |                                    |
 | `KIRBY_SCHEDULE_ENDPOINT`         | `kirby` web server followed schedule endpoint. For example :http://127.0.0.1:8080/schedule |
 |`EXT_WAIT_BETWEEN_RETRIES`   |  see `tenacity.retry` wait argument **(Default=0.4)** |
 |`EXT_RETRIES`   |  see `tenacity.retry` stop argument **(Default=3)**|
@@ -117,18 +117,30 @@ https://pypi.org/project/pypiserver/
 This step is mandatory. If scripts are note set on a `pypi` server, they will not be run. 
 
 
-## Running supervisors
+## Create job-offers topics and running supervisors
 Several `supervisor` can be run. One of those is called the leader. 
 Leader `supervisor` is the only one which fetches jobs to run from the `kirby` 
-script database and send them to a `Kafka` topic. 
-All `supervisor` (including leader) consume scripts in the `Kafka` topic, create 
+script database and send them to  the appropriate `job-offers` Kafka topic (
+`KIRBY_TOPIC_SCHEDULED_JOBS` or `KIRBY_TOPIC_DAEMON_JOBS`)
+
+All `supervisor` (including leader) consume scripts in those Kafka topics, create 
 the Python virtual environments, install the scripts from `Pypiserver` 
 and run them (in a separated subprocess).
 If leader `supervisor` crashes, another `supervisor` will take the lead.
 
 .. important:: - There must be at least one `supervisor` instance running at all times.
                - Each supervisor must have a unique name
-  
+
+If you want to run several supervisors, it is mandatory to create previously the 
+`job-offers` Kafka topics with a number of partitions higher or equals to the 
+number of supervisors you want to run. If you don't know how many supervisors
+you want to run, just create the topics with enough partitions (10 for example):
+
+```bash
+$ kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 10 --topic KIRBY_TOPIC_SCHEDULED_JOBS
+$ kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 10 --topic KIRBY_TOPIC_DAEMON_JOBS
+```
+
 If you want to call your instance "server-1" then start `kirby`  as follows:
 
 ```bash
