@@ -115,7 +115,3 @@ for the topics concerned)
 
 More details about runner and arbiter are given 
 in :ref:`linking-togofurther`.
-
-## Kirby and Kafka 
-
-:todo: explain Why kafka? How does it spread jobs... 

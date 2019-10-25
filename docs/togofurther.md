@@ -41,11 +41,31 @@ exactly the same way. Once run, a `supervisor` creates :
 - a `runner` instance in a new thread to deal with scheduled scripts,
 - an `arbiter` instance (also in a new thread) to deal with daemon scripts. 
  
+ 
+## Job retrieving
 `arbiter` and `runner` are consuming jobs respectively from `KIRBY_TOPIC_DAEMON_JOBS`
-kafka topic and 
-`KIRBY_TOPIC_SCHEDULED_JOBS` kafka topic. As a reminder, those topics are fed by the 
-`scheduler` of the leader `supervisor`. 
+kafka topic and `KIRBY_TOPIC_SCHEDULED_JOBS` kafka topic. As a reminder, those topics are fed by the 
+`scheduler` of the leader `supervisor`.
 
+Since there is multiple Arbiters and multiple Runners, we need to synchronise the processes. Specially if 
+there is a failure and we need to re-raise the scripts, either we need to list executing daemons or run every daemon 
+by every arbiters. We choose the second option. 
+
+The scheduled don't have to be re-raised, specially sensors. For the scheduled processor, there is still a way for doing
+that manually using the rewind method.
+
+.. todo:: The rewind feature still need to be developed. 
+
+In order to do execute every daemon jobs by every arbiters, we need to correctly set the `group_id` of the arbiters. 
+In Kafka, for different two groups of consumers will consume each and every message on a topic. If there is one consumer
+in a group, it will consume every message in the topic. So `group_id` of the consumers of the arbiters are set as the 
+name of the supervisor (which is set by the user and is supposed to be unique).
+
+For the runners, they must all receive different jobs, so their `group_id` is set to the same value : the name of 
+the topic `.kirby.job-offers.scheduled` by default (modifiable by the environment variable 
+`KIRBY_TOPIC_SCHEDULED_JOB_OFFERS`).
+
+## Process execution
 Once a job is fetched, an `executor` instance is created in a new thread. This `executor`
 creates a Python virtual environment in `.kirby.virtualenv` folder and installs (trough `pypi`)
 user's script and all associated dependencies (including `kirby`).
@@ -66,6 +86,3 @@ every single daemon script. Scheduled scripts are only run once.
 .. image:: _static/runner_arbiter_diagram.png
 
  
-
- 
-   
