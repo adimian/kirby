@@ -1,9 +1,10 @@
 import uuid
 
-from .ext.topic import Topic
-from kirby.api.context import ctx
+from smart_getenv import getenv
 
-LOGGER_TOPIC_NAME = "_logs"
+from .ext.topic import Topic
+
+LOGGER_TOPIC_NAME = getenv("KIRBY_TOPIC_LOGS", default=".kirby.logs")
 
 LEVELS = ["critical", "error", "warning", "info", "debug", "noset"]
 CORRESPONDENCES_VALUES_LEVELS = {
