@@ -1,6 +1,8 @@
 {
   "ENVS": {
-    "dev": "Development"
+    "test": "Test",
+    "dev": "Development",
+    "prod": "Prod"
   },
   "ENV_VARS": {
     "GLOBAL": {
@@ -9,99 +11,148 @@
     }
   },
   "JOBS": {
-    "sensor_cashregister": {
-      "description": "Fetch bakery realtime sales",
+    "sensor_sales": {
+      "description": "Fetch sales",
       "type": "daemon",
       "package_version": {
-        "dev": "1.0.5",
-        "test": "0.0.5",
-        "prod": "2.0.5"
+        "test": "0.0.1",
+        "dev": "0.1.0",
+        "prod": "1.0.0"
       },
       "notification_group": "sysadmins",
       "config": {
         "JOB": {
-          "CASHREGISTER_TOPIC_NAME": "cashregister"
+          "SALES_TOPIC_NAME": "sales"
         },
         "CONTEXT": {
-          "dev": {
-            "BAKERY_API_BASE": "http://some.server.somewhere:8000"
-          },
           "test": {
-            "BAKERY_API_BASE": "localhost:8000"
+            "SALES_API_BASE": "localhost:8000"
+          },
+          "dev": {
+            "SALES_API_BASE": "http://some.server.somewhere:8000"
           },
           "prod": {
-            "BAKERY_API_BASE": "http://some.server.elsewhere:8000"
+            "SALES_API_BASE": "http://some.server.elsewhere:8000"
           }
         }
       }
     },
-    "sensor_orders": {
-      "description": "Fetch bakery forecast sales",
+    "sales_to_prevision": {
+      "description": "Process sales to estimate prevision",
+      "type": "daemon",
+      "package_version": {
+        "test": "0.0.1",
+        "dev": "0.1.0",
+        "prod": "1.0.0"
+      },
+      "notification_group": "sysadmins",
+      "config": {
+        "JOB": {
+          "SALES_TOPIC_NAME": "sales",
+          "PREVISION_TOPIC_NAME": "prevision"
+        },
+        "CONTEXT": {
+          "test": {},
+          "dev": {},
+          "prod": {}
+        }
+      }
+    },
+    "prevision_to_production": {
+      "description": "Set production as prevision",
       "type": "scheduled",
+      "scheduled_param": {
+        "name": "schedule for prevision_to_production",
+        "hour": "*",
+        "minute": "*"
+      },
       "package_version": {
-        "dev": "1.0.5",
-        "test": "0.0.5",
-        "prod": "2.0.5"
+        "test": "0.0.1",
+        "dev": "0.1.0",
+        "prod": "1.0.0"
       },
       "notification_group": "sysadmins",
-      "scheduled_param": {
-        "name": "every two minutes",
-        "hour": "*",
-        "minute": "*/2"
-      },
       "config": {
         "JOB": {
-          "ORDERS_TOPIC_NAME": "orders"
+          "PREVISION_TOPIC_NAME": "prevision",
+          "PRODUCTION_TOPIC_NAME": "production"
         },
         "CONTEXT": {
-          "dev": {
-            "BAKERY_API_BASE": "http://some.server.somewhere:8000"
-          },
+          "test": {},
+          "dev": {},
+          "prod": {}
+        }
+      }
+    },
+    "parse_surplus": {
+      "description": "Compare production and sales to get the surplus",
+      "type": "scheduled",
+      "scheduled_param": {
+        "name": "schedule for parse_surplus",
+        "hour": "*",
+        "minute": "*"
+      },
+      "package_version": {
+        "test": "0.0.1",
+        "dev": "0.1.0",
+        "prod": "1.0.0"
+      },
+      "notification_group": "sysadmins",
+      "config": {
+        "JOB": {
+          "PRODUCTION_TOPIC_NAME": "production",
+          "SALES_TOPIC_NAME": "sales",
+          "SURPLUS_TOPIC_NAME": "surplus"
+        },
+        "CONTEXT": {
           "test": {
-            "BAKERY_API_BASE": "localhost:8000"
+            "STOCK_API_BASE": "localhost:8000"
+          },
+          "dev": {
+            "STOCK_API_BASE": "http://some.server.somewhere:8000"
           },
           "prod": {
-            "BAKERY_API_BASE": "http://some.server.elsewhere:8000"
+            "STOCK_API_BASE": "http://some.server.elsewhere:8000"
           }
         }
       }
     },
-    "insert_realtime": {
-      "description": "From realtime, push points on the timeseries tables",
+    "get_profit": {
+      "description": "Calculates profit from sales, production and surplus",
       "type": "daemon",
       "package_version": {
-        "dev": "1.0.5",
-        "test": "0.0.5",
-        "prod": "2.0.5"
+        "test": "0.0.1",
+        "dev": "0.1.0",
+        "prod": "1.0.0"
       },
       "notification_group": "sysadmins",
-      "scheduled_param": {
-        "name": "every two minutes",
-        "hour": "*",
-        "minute": "*/2"
-      },
       "config": {
         "JOB": {
-          "ORDERS_TOPIC_NAME": "orders"
+          "PRODUCTION_TOPIC_NAME": "production",
+          "SALES_TOPIC_NAME": "sales"
         },
         "CONTEXT": {
-          "dev": {
-            "BAKERY_API_BASE": "http://some.server.somewhere:8000"
-          },
           "test": {
-            "BAKERY_API_BASE": "localhost:8000"
+            "PROFIT_API_BASE": "localhost:8000"
+          },
+          "dev": {
+            "PROFIT_API_BASE": "http://some.server.somewhere:8000"
           },
           "prod": {
-            "BAKERY_API_BASE": "http://some.server.elsewhere:8000"
+            "PROFIT_API_BASE": "http://some.server.elsewhere:8000"
           }
         }
       }
     }
   },
   "EXTS": [
-    "bakery",
-    "cashregister",
-    "totalfiles"
+    "DB/Sales",
+    "DB/Stock",
+    "DB/Profit",
+    "sales",
+    "prevision",
+    "production",
+    "surplus"
   ],
   "USERS": [
     {
@@ -111,9 +162,7 @@
     }
   ],
   "NOTIFICATION_GROUPS": {
-    "sysadmins": [
-      "alice@local.local"
-    ]
+    "sysadmins": []
   }
 }
 

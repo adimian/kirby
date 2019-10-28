@@ -10,8 +10,6 @@ from kirby.models.security import user_datastore
 from kirby.supervisor import run_supervisor
 from kirby.web import app_maker
 
-import example
-
 load_dotenv()
 DEFAULT_LOG_FORMAT = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
 

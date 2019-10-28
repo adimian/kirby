@@ -28,22 +28,16 @@ def database(json_file_path):
 
 
 @click.group()
-def package():
+def packages():
     pass
 
 
 @click.command()
-def create():
+def upload():
     pass
 
 
-@click.command()
-def install():
-    pass
-
-
-package.add_command(create)
-package.add_command(install)
+packages.add_command(upload)
 
 
 @click.group()
@@ -52,7 +46,7 @@ def cli():
 
 
 cli.add_command(database)
-cli.add_command(package)
+cli.add_command(packages)
 
 if __name__ == "__main__":
     cli()
