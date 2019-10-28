@@ -118,7 +118,7 @@ def read_json(demo_json_file_path):
     return env_dict, env_var_dict, job_dict, ext_list, user_list, notification_group_dict
 
 
-def create_demo_db(s, demo_json_file_path):
+def create_example_db(s, demo_json_file_path):
     env_dict, env_var_dict, job_dict, ext_dict, user_list, notification_group_dict = read_json(demo_json_file_path)
 
     # create demo user
