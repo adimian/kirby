@@ -56,6 +56,7 @@ def test_read_json():
             "notification_group": "sysadmins",
             "config": {
                 models.ConfigScope.JOB: {
+                    "INIT_QUANTITY": 50,
                     "SALES_TOPIC_NAME": "sales",
                     "PREVISION_TOPIC_NAME": "prevision",
                 },
@@ -86,9 +87,13 @@ def test_read_json():
                     "PRODUCTION_TOPIC_NAME": "production",
                 },
                 models.ConfigScope.CONTEXT: {
-                    "test": {},
-                    "dev": {},
-                    "prod": {},
+                    "dev": {
+                        "PRODUCTION_API_BASE": "http://some.server.somewhere:8000"
+                    },
+                    "prod": {
+                        "PRODUCTION_API_BASE": "http://some.server.elsewhere:8000"
+                    },
+                    "test": {"PRODUCTION_API_BASE": "localhost:8000"},
                 },
             },
         },
