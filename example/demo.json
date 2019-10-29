@@ -49,7 +49,8 @@
       "config": {
         "JOB": {
           "SALES_TOPIC_NAME": "sales",
-          "PREVISION_TOPIC_NAME": "prevision"
+          "PREVISION_TOPIC_NAME": "prevision",
+          "INIT_QUANTITY": 50
         },
         "CONTEXT": {
           "test": {},
@@ -78,9 +79,15 @@
           "PRODUCTION_TOPIC_NAME": "production"
         },
         "CONTEXT": {
-          "test": {},
-          "dev": {},
-          "prod": {}
+          "test": {
+            "PRODUCTION_API_BASE": "localhost:8000"
+          },
+          "dev": {
+            "PRODUCTION_API_BASE": "http://some.server.somewhere:8000"
+          },
+          "prod": {
+            "PRODUCTION_API_BASE": "http://some.server.elsewhere:8000"
+          }
         }
       }
     },
