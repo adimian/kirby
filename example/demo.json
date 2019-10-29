@@ -136,7 +136,8 @@
       "config": {
         "JOB": {
           "PRODUCTION_TOPIC_NAME": "production",
-          "SALES_TOPIC_NAME": "sales"
+          "SALES_TOPIC_NAME": "sales",
+          "SURPLUS_TOPIC_NAME": "surplus"
         },
         "CONTEXT": {
           "test": {

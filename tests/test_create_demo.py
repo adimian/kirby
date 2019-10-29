@@ -141,6 +141,7 @@ def test_read_json():
                 models.ConfigScope.JOB: {
                     "PRODUCTION_TOPIC_NAME": "production",
                     "SALES_TOPIC_NAME": "sales",
+                    "SURPLUS_TOPIC_NAME": "surplus",
                 },
                 models.ConfigScope.CONTEXT: {
                     "test": {"PROFIT_API_BASE": "localhost:8000"},
