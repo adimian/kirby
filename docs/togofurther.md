@@ -97,4 +97,18 @@ every single daemon script. Scheduled scripts are only run once.
 
  
 ## Kafka brokers 
-For now, Kirby is validated with only one Kafka broker. 
+Kirby can be run with several Kafka brokers. Like explained in [Kafka quick 
+start documentation](https://kafka.apache.org/quickstart), Kafka manages
+fault-tolerance: if one broker dies, producers and consumers still work, 
+even if they were set on this broker. 
+For this feature to work, it is mandatory that `__consumer_offsets` Kafka topic 
+is configured with a replication factor higher than 1. This configuration is
+ensured by modifying  `offsets.topic.replication.factor` value in Kafka 
+config file (`server.properties`).
+In case Kafka servers were previously launched with  `offsets.topic.replication.factor=1`, 
+which is the default value, `__consumer_offsets` replication factor can 
+be changed following the method explained 
+[here](https://gist.github.com/uarun/da30d8ef52b5d57b145cd13694c8acdc#file-inc-replication-factor-json).
+
+
+ 
