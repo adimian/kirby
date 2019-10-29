@@ -1,6 +1,6 @@
 import click
-import os
 import logging
+import os
 import subprocess
 
 from dotenv import load_dotenv
@@ -12,7 +12,6 @@ from kirby.web import app_maker
 load_dotenv()
 
 logging.getLogger("kafka").setLevel(logging.CRITICAL)
-
 logger = logging.getLogger(__name__)
 
 
@@ -55,8 +54,6 @@ def build_and_upload(package_dir, repo):
 @click.option("--repo", type=str, help="PyPi repository", prompt=True)
 def upload(repo):
     file_path = os.path.dirname(os.path.abspath(__file__))
-    # packages_ = os.listdir(os.path.join(file_path, "scripts"))
-    # for package in packages_:
     for package in os.scandir(os.path.join(file_path, "scripts")):
         if package.is_dir():
             logging.info(f"Build and upload {package}")

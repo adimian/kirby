@@ -92,10 +92,11 @@ demo data inserted in the database
    existing data and there is no rollback mechanism.
    
 
-## Kirby web interface
-`kirby` web interface has two main functions: 
+## Kirby web server
+`kirby` web server has three main functions: 
 - Interact with the `kirby` script database (visualization and modification),
-- Follow (in live mode) scripts execution (`logs` tab). 
+- Follow (in live mode) scripts execution (`logs` tab),
+- Expose the database through an API to the scheduler(s) and the scripts. 
  
 Run the web interface with following command :
 ```bash
@@ -147,10 +148,78 @@ if the intervals are very long.
 
 ## Example
 
+### Dependencies
+To execute the example, you have three dependencies. In the following, you will find description on how to install these
+dependencies.
+
+#### `pypi-server`
 Make sure you have pypi-server 
 [correctly parametered](https://pypiserver.readthedocs.io/en/latest/#uploading-packages-from-sources-remotely).
 
 Run the server using :
 ```bash
-$ pypi-server --overwrite -p 7000 -P ~/htpasswd_file ~/packages
+$ pypi-server --overwrite -p 7000 -P ~/.htaccess ~/packages
 ```
+
+#### `kafka`
+Follow the steps 1 and 2 of the [Kafka quickstart tutorial](https://kafka.apache.org/quickstart). To run kafka instance:
+```bash
+$ redis-server
+```
+
+#### `redis`
+[Install redis](https://redis.io/download#installation) and execute it:
+```bash
+$ redis-server
+```
+
+Once this is done, you can use Kirby and start the example project.
+
+### The project
+The scripts that are used in the example projects are the one presented in the :ref:`linking-components-scripts` part.
+
+We have access to the API of an online service that store the sales, production, stock and other economic 
+metrics such as profit. With this project we will try to estimate the production, the stock and 
+the profit we make each day.
+
+The constraints are : 
+ - The sales made with the current stock are updated on the API every minute
+ - We want to estimate the production everyday knowing the sales
+ - At the end of the day, we also want a state of the stock and an economical report 
+ (for now only with the profit made in the day)
+ - We want the production, the stock and the profit to be send back to some API somewhere 
+
+The architecture of our project is the following:
+
+.. image:: _static/kirby-scripts.svg
+ 
+The design choices are these one:
+- For this proof-of-concept we are focusing on a strategical product for our business : pain-au-chocolat 
+(our business is a bakery)
+- At initialisation, the prevision is going to send data proposed by the administrator
+- Since it's a proof of concept, we won't have API at disposal. So, for the imputs we are going to fake them and for
+the outputs, we are going to write on files.
+
+### Build example project
+
+Fill the database with metadata on scripts:
+```bash
+$ kirby-ex database
+```
+
+Build the scripts and upload them in your local pypi server:
+```bash
+$ kirby-ex packages upload --repo <repo_name>
+```
+The repo_name should be the one you referenced in the installation of your pypi server on the `~/.htaccess` file (`internal`)
+
+### Execute Kirby
+- Run the kirby web server (see [Kirby web server](#kirby-web-server))
+- Then run a Supervisor (see [Running supervisors](#running-supervisors)) 
+
+.. important:: If you want to run multiples consumer, you have to manually create the topics to make sure there is more than ont partition.
+
+
+### Results
+Once the Supervisor is launched, the scripts are running. 
+You can see the results of the scripts on : `kirby/example/result`

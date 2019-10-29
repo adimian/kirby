@@ -9,6 +9,7 @@ It is highly recommended to understand how [Kafka](https://kafka.apache.org/) wo
 of Kirby.
 
 ## Scripts
+.. _linking-components-scripts:
 
 Kirby's task is to handle the execution of scripts that process data. 
 The data which come from externals sources of Kirby should move between processes via Kafka topics. 
