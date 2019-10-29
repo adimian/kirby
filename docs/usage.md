@@ -143,3 +143,14 @@ if your network is limited and you do not have scheduled jobs or
 if the intervals are very long. 
    
 .. note:: Defaults are fine in most cases.   
+
+
+## Example
+
+Make sure you have pypi-server 
+[correctly parametered](https://pypiserver.readthedocs.io/en/latest/#uploading-packages-from-sources-remotely).
+
+Run the server using :
+```bash
+$ pypi-server --overwrite -p 7000 -P ~/htpasswd_file ~/packages
+```
