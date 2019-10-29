@@ -60,7 +60,53 @@ def upload(repo):
             build_and_upload(package, repo)
 
 
+@click.command()
+@click.option(
+    "--script_name",
+    type=str,
+    help="Name of the script that will be created",
+    prompt=True,
+)
+@click.option(
+    "--author_name",
+    type=str,
+    help="Name of the author of the script",
+    default="Kirby Team",
+    prompt=True,
+)
+def create(script_name, author_name):
+    path = os.path.dirname(os.path.abspath(__file__))
+
+    package_dir = os.path.join(path, "scripts", script_name)
+    os.mkdir(package_dir)
+
+    package_code_dir = os.path.join(package_dir, script_name)
+    os.mkdir(package_code_dir)
+    with open(
+        os.path.join(package_code_dir, "__main__.py"), "w+"
+    ) as main_file:
+        main_file.write(
+            """if __name__ == "__main__":
+    pass
+"""
+        )
+    with open(os.path.join(package_dir, "setup.py"), "w+") as setup_file:
+        setup_file.write(
+            f"""from distutils.core import setup
+
+setup(
+    name="{script_name}",
+    version="0.0.1",
+    author="{author_name}",
+    license="MIT",
+    packages=["{script_name}"],
+)
+"""
+        )
+
+
 packages.add_command(upload)
+packages.add_command(create)
 
 
 @click.group()
