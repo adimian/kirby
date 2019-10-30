@@ -1,6 +1,7 @@
 import click
 import logging
 import os
+import shutil
 import subprocess
 
 from dotenv import load_dotenv
@@ -66,7 +67,7 @@ def upload(repo):
     file_path = os.path.dirname(os.path.abspath(__file__))
     for package in os.scandir(os.path.join(file_path, "scripts")):
         if package.is_dir():
-            logging.info(f"Build and upload {package}")
+            click.echo(f"Build and upload {package}")
             build_and_upload(package, repo)
 
 
@@ -115,8 +116,22 @@ setup(
         )
 
 
+@click.command()
+def clean():
+    file_path = os.path.dirname(os.path.abspath(__file__))
+    for package in os.scandir(os.path.join(file_path, "scripts")):
+        if package.is_dir():
+            try:
+                os.remove(os.path.join(package, "MANIFEST"))
+            except FileNotFoundError:
+                pass
+            shutil.rmtree(os.path.join(package, "dist"), ignore_errors=True)
+    click.echo("All packages are now clean.")
+
+
 packages.add_command(upload)
 packages.add_command(create)
+packages.add_command(clean)
 
 
 @click.group()
