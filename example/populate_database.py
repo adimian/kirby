@@ -4,7 +4,7 @@ from kirby.models import NotificationGroup
 from kirby.models.security import user_datastore
 
 
-def create_config_keys(s,env_var_dict):
+def create_config_keys(s, env_var_dict):
     # Global vars
     scope = models.ConfigScope.GLOBAL
     for k, v in env_var_dict[scope].items():
@@ -17,15 +17,21 @@ def create_envs(s, env_dict):
         s.add(env)
         return env
 
-    return {short_name: create_env(name) for short_name, name in env_dict.items()}
+    return {
+        short_name: create_env(name) for short_name, name in env_dict.items()
+    }
 
 
 def create_jobs(s, job_dict):
     def create_job(description, type, notification_group, config):
         job = models.Job(name=description, type=type)
         job.set_config(**config)
-        notification_group_db = s.query(NotificationGroup).filter_by(name=notification_group)[0]
-        job.add_notification(notification_group_db, on_failure=True, on_retry=False)
+        notification_group_db = s.query(NotificationGroup).filter_by(
+            name=notification_group
+        )[0]
+        job.add_notification(
+            notification_group_db, on_failure=True, on_retry=False
+        )
         s.add(job)
         return job
 
@@ -44,7 +50,9 @@ def create_contexts(s, jobs, envs, job_dict):
     def create_context(job_name, job, env_name, env):
         ctx = models.Context(job=job, environment=env)
         ctx.set_config(
-            **job_dict[job_name]["config"][models.ConfigScope.CONTEXT][env_name]
+            **job_dict[job_name]["config"][models.ConfigScope.CONTEXT][
+                env_name
+            ]
         )
         s.add(ctx)
         return ctx
@@ -96,7 +104,7 @@ def create_scripts(s, contexts, jobs, envs, job_dict):
 
 
 def read_json(demo_json_file_path):
-    with open(demo_json_file_path, 'r') as f:
+    with open(demo_json_file_path, "r") as f:
         json_content = json.load(f)
     env_dict = json_content["ENVS"]
     env_var_dict = json_content["ENV_VARS"]
@@ -106,24 +114,39 @@ def read_json(demo_json_file_path):
     notification_group_dict = json_content["NOTIFICATION_GROUPS"]
 
     for key, value in job_dict.items():
-        if value['type'] == 'daemon':
-            value['type'] = models.JobType.DAEMON
-        elif value['type'] == 'scheduled':
-            value['type'] = models.JobType.SCHEDULED
+        if value["type"] == "daemon":
+            value["type"] = models.JobType.DAEMON
+        elif value["type"] == "scheduled":
+            value["type"] = models.JobType.SCHEDULED
         else:
-            raise Exception(f"type {value['type']} not accepted in job type. Use only daemon or scheduled")
-        value['config'][models.ConfigScope.JOB] = value['config'].pop("JOB")
-        value['config'][models.ConfigScope.CONTEXT] = value['config'].pop("CONTEXT")
-    env_var_dict[models.ConfigScope.GLOBAL] = env_var_dict.pop('GLOBAL')
-    return env_dict, env_var_dict, job_dict, ext_list, user_list, notification_group_dict
+            raise Exception(
+                f"type {value['type']} not accepted in job type. Use only daemon or scheduled"
+            )
+        value["config"][models.ConfigScope.JOB] = value["config"].pop("JOB")
+        value["config"][models.ConfigScope.CONTEXT] = value["config"].pop(
+            "CONTEXT"
+        )
+    env_var_dict[models.ConfigScope.GLOBAL] = env_var_dict.pop("GLOBAL")
+    return (
+        env_dict,
+        env_var_dict,
+        job_dict,
+        ext_list,
+        user_list,
+        notification_group_dict,
+    )
 
 
 def create_example_db(s, demo_json_file_path):
-    env_dict, env_var_dict, job_dict, ext_dict, user_list, notification_group_dict = read_json(demo_json_file_path)
+    env_dict, env_var_dict, job_dict, ext_dict, user_list, notification_group_dict = read_json(
+        demo_json_file_path
+    )
 
     # create demo user
     for user in user_list:
-        user_db = user_datastore.create_user(username=user["username"], password=user["password"])
+        user_db = user_datastore.create_user(
+            username=user["username"], password=user["password"]
+        )
         role_db = user_datastore.find_role(user["role"])
         user_datastore.add_role_to_user(user=user_db, role=role_db)
         s.commit()
@@ -142,7 +165,7 @@ def create_example_db(s, demo_json_file_path):
 
     envs = create_envs(s, env_dict)
 
-    contexts = create_contexts(s, jobs, envs,job_dict)
+    contexts = create_contexts(s, jobs, envs, job_dict)
 
     add_schedules(s, envs, jobs, contexts, job_dict)
 
@@ -150,7 +173,6 @@ def create_example_db(s, demo_json_file_path):
 
     create_scripts(s, contexts, jobs, envs, job_dict)
 
-    create_config_keys(s,env_var_dict)
+    create_config_keys(s, env_var_dict)
 
     s.commit()
-
