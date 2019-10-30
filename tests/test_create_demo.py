@@ -162,6 +162,7 @@ def test_read_json():
         "DB/Sales",
         "DB/Stock",
         "DB/Profit",
+        "DB/Production",
         "sales",
         "prevision",
         "production",

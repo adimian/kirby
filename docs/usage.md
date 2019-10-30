@@ -183,11 +183,11 @@ metrics such as profit. With this project we will try to estimate the production
 the profit we make each day.
 
 The constraints are : 
- - The sales made with the current stock are updated on the API every minute
- - We want to estimate the production everyday knowing the sales
+ - The sales made with the current stock are updated on the API every minute,
+ - We want to estimate the production everyday knowing the sales,
  - At the end of the day, we also want a state of the stock and an economical report 
- (for now only with the profit made in the day)
- - We want the production, the stock and the profit to be send back to some API somewhere 
+ (for now only with the profit made in the day),
+ - We want the production, the stock and the profit to be send back to some API somewhere.
 
 The architecture of our project is the following:
 
@@ -195,10 +195,11 @@ The architecture of our project is the following:
  
 The design choices are these one:
 - For this proof-of-concept we are focusing on a strategical product for our business : pain-au-chocolat 
-(our business is a bakery)
-- At initialisation, the prevision is going to send data proposed by the administrator
+(our business is a bakery),
+- At initialisation, the prevision is going to send data proposed by the administrator,
 - Since it's a proof of concept, we won't have API at disposal. So, for the imputs we are going to fake them and for
-the outputs, we are going to write on files.
+the outputs, we are going to write on files,
+- Also, we want result quickly, so one day correspond to one minute in the example.
 
 ### Build example project
 
