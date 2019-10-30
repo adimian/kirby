@@ -23,14 +23,24 @@ logger = logging.getLogger(__name__)
     default=os.path.join(os.path.dirname(__file__), "demo.json"),
     help="demo json path file",
 )
-def database(json_file_path):
+def database(file):
     app = app_maker()
+    db.init_app(app)
+
+    tables = db.metadata.tables
+    if tables:
+        if click.confirm("Do you want to drop all the existing tables in db?"):
+            with app.app_context():
+                db.drop_all()
+        else:
+            click.echo("No modification have been applied")
+            return
 
     with app.app_context():
         app.try_trigger_before_first_request_functions()
-        create_example_db(db.session, json_file_path)
+        create_example_db(db.session, file)
 
-    click.echo("demo data inserted in the database")
+    click.echo("Data for example project inserted in the database")
 
 
 @click.group()
