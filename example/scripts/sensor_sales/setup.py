@@ -6,4 +6,5 @@ setup(
     author="Kirby Team",
     license="MIT",
     packages=["sensor_sales"],
+    install_requires=["kirby"],
 )

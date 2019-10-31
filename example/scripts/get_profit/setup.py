@@ -6,4 +6,5 @@ setup(
     author="Kirby Team",
     license="MIT",
     packages=["get_profit"],
+    install_requires=["kirby"],
 )

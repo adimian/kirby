@@ -6,4 +6,5 @@ setup(
     author="Kirby Team",
     license="MIT",
     packages=["sales_to_prevision"],
+    install_requires=["kirby"],
 )
