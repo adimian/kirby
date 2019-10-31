@@ -34,6 +34,7 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
+    logger = kirby.log.Logger()
 
     with kirby.ext.topic.Topic(
         context.PREVISION_TOPIC_NAME, use_tls=False
@@ -50,5 +51,6 @@ if __name__ == "__main__":
 
                 prevision = prevision_topic.next()(now - half_a_day, now)[-1]
 
+                logger.info(f"Sending {prevision}")
                 production_topic.post("/", data=prevision)
                 production_api.post({"date": now, "qty": prevision})

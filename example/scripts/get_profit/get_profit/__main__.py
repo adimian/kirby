@@ -37,6 +37,7 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
+    logger = kirby.log.Logger()
 
     with kirby.ext.topic.Topic(
         context.PRODUCTION_TOPIC_NAME, use_tls=False
@@ -55,16 +56,16 @@ if __name__ == "__main__":
                     kirby_script.add_source(surplus_topic)
                     kirby_script.add_destination(profit_api)
 
-                    benefits = 0
+                    profit = 0
 
-                    benefits -= (
+                    profit -= (
                         production_topic.beetween(
                             today - half_a_day, today + half_a_day
                         )[0]
                         * context.PRODUCTION_COST
                     )
 
-                    benefits -= (
+                    profit -= (
                         surplus_topic.beetween(
                             today - half_a_day, today + half_a_day
                         )[0]
@@ -74,6 +75,7 @@ if __name__ == "__main__":
                     for sale in sales_topic.beetween(
                         today, today + 2 * half_a_day
                     ):
-                        benefits += sale * context.SELLING_PRICE
+                        profit += sale * context.SELLING_PRICE
 
-                    profit_api.post("/", data=benefits)
+                    logger.info(f"Sending {profit}")
+                    profit_api.post("/", data=profit)

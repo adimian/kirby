@@ -30,6 +30,7 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
+    logger = kirby.log.Logger()
 
     with kirby.ext.webclient.WebClient(
         WEBCLIENT_NAME, context.SALES_API_BASE
@@ -41,5 +42,7 @@ if __name__ == "__main__":
             kirby_script.add_destination(sales_topic)
 
             while True:
-                sales_topic.send(sales_api.get("/"))
+                sale = sales_api.get("/")
+                logger.info(f"Sending {sale}")
+                sales_topic.send(sale)
                 time.sleep(random.randrange(1, 3))
