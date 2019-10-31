@@ -18,8 +18,8 @@ def test_read_json():
     assert env_dict == {"test": "Test", "dev": "Development", "prod": "Prod"}
     assert env_var_dict == {
         models.ConfigScope.GLOBAL: {
-            "KAFKA_BOOTSTRAP_SERVERS": "localhost:9092",
-            "KIRBY_WEB_SERVER": "localhost:8080",
+            "KAFKA_BOOTSTRAP_SERVERS": "http://localhost:9092",
+            "KIRBY_WEB_SERVER": "http://localhost:8080",
             "UNITARY_PRODUCTION_COST": 0.8,
             "UNITARY_STORAGE_PRICE_PER_DAY": 0.2,
             "UNITARY_SELLING_PRICE": 1.5,
