@@ -6,5 +6,5 @@ setup(
     author="Kirby Team",
     license="MIT",
     packages=["parse_surplus"],
-    install_requires=["kirby"],
+    install_requires=["kirby", "example_utils"],
 )

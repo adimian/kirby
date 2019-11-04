@@ -1,10 +1,10 @@
 from distutils.core import setup
 
 setup(
-    name="sensor_sales",
+    name="example_utils",
     version="0.0.1",
     author="Kirby Team",
     license="MIT",
-    packages=["sensor_sales"],
-    install_requires=["kirby", "example_utils"],
+    packages=["example_utils"],
+    install_requires=[],
 )

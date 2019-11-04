@@ -164,7 +164,7 @@ $ pypi-server --overwrite -p 7000 -P ~/.htaccess ~/packages
 #### `kafka`
 Those are the steps 1 and 2 of the [Kafka quickstart tutorial](https://kafka.apache.org/quickstart). 
 
-.. note:: On Windows platforms use ``bin\windows\``  instead of ``bin/`` 
+.. note:: On Windows platforms use ``bin\windows\``  instead of ``bin/``.
 
 Download kafka:
 ```bash
@@ -233,4 +233,4 @@ The repo_name should be the one you referenced in the installation of your pypi 
 
 ### Results
 Once the Supervisor is launched, the scripts are running. 
-You can see the results of the scripts on : `kirby/example/result`
+You can see the results of the scripts on : `kirby/example/results`
