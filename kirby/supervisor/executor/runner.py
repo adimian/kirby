@@ -55,6 +55,10 @@ class Runner(threading.Thread):
         self.executors.append(executor)
         logger.debug(f"Running the {executor.job.type} job : '{job.name}'")
         executor.run()
+        try:
+            executor.get_return_values()
+        except Exception as error:
+            logger.error(error)
         if executor.status == ProcessState.FAILED:
             logger.error(
                 f"The {executor.job.type} job : '{executor.job.name}' failed."

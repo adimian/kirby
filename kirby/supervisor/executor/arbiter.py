@@ -26,6 +26,10 @@ class Arbiter(Runner):
         logger.debug(f"Running the {executor.job.type} job : '{job.name}'")
         while not self._stop_signal:
             executor.run()
+            try:
+                executor.get_return_values()
+            except Exception as error:
+                logger.error(error)
             if executor.status == ProcessState.STOPPED:
                 logger.warning(
                     f"The {executor.job.type} job : '{executor.job.name}'"
