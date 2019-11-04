@@ -24,15 +24,21 @@ def mock_webclient(name, get=None):
 
 
 def export_data_constructor(path):
+
+    # Create directory if does not exist
+    directory = os.path.join(result_folder, path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     def export_data(*args, **kargs):
         time.sleep(random.uniform(0.5, 1.5))
         now = datetime.datetime.utcnow()
 
         formatted_args = [a.__repr__() for a in args]
         formatted_kargs = [f"({a}, {b})" for a, b in kargs.items()]
-        with open(
-            os.path.join(result_folder, path, now.isoformat()), "w+"
-        ) as f:
+
+        # Write data
+        with open(os.path.join(directory, now.isoformat()), "w+") as f:
             f.write("(" + ", ".join(formatted_args) + ")")
             f.write("{" + "; ".join(formatted_kargs) + "}")
 
