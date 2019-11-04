@@ -16,7 +16,7 @@ from kirby.supervisor.executor import parse_job_description
 
 logger = logging.getLogger(__name__)
 
-USE_TLS = getenv("KAFKA_USE_TLS", type=bool, default=False)
+USE_TLS = getenv("KAFKA_USE_TLS", type=bool, default=True)
 JOB_OFFERS_DAEMON_TOPIC_NAME = getenv(
     "KIRBY_TOPIC_DAEMON_JOB_OFFERS",
     type=str,
