@@ -49,20 +49,20 @@ if __name__ == "__main__":
                     profit = 0
 
                     profit -= (
-                        production_topic.beetween(
+                        production_topic.between(
                             today - half_a_day, today + half_a_day
                         )[0]
                         * context.PRODUCTION_COST
                     )
 
                     profit -= (
-                        surplus_topic.beetween(
+                        surplus_topic.between(
                             today - half_a_day, today + half_a_day
                         )[0]
                         * context.STORAGE_PRICE_PER_DAY
                     )
 
-                    for sale in sales_topic.beetween(
+                    for sale in sales_topic.between(
                         today, today + 2 * half_a_day
                     ):
                         profit += sale * context.SELLING_PRICE

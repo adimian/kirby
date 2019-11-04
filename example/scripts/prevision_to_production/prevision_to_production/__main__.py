@@ -39,8 +39,8 @@ if __name__ == "__main__":
                 kirby_script.add_destination(production_topic)
                 kirby_script.add_destination(production_api)
 
-                prevision = prevision_topic.next()(now - half_a_day, now)[-1]
+                prevision = prevision_topic.between(now - half_a_day, now)[-1]
 
                 logger.info(f"Sending {prevision}")
-                production_topic.post("/", data=prevision)
+                production_topic.send(prevision)
                 production_api.post({"date": now, "qty": prevision})

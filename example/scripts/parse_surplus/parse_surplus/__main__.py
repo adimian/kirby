@@ -42,7 +42,7 @@ if __name__ == "__main__":
                     kirby_script.add_source(sales_topic)
                     kirby_script.add_destination(surplus_topic)
 
-                    surplus = surplus_topic.beetween(
+                    surplus = surplus_topic.between(
                         today - half_a_day, today + half_a_day
                     )
                     if len(surplus) > 0:
@@ -50,12 +50,12 @@ if __name__ == "__main__":
                     else:
                         last_surplus_qty = 0
 
-                    produced_qty = production_topic.beetween(
+                    produced_qty = production_topic.between(
                         today - half_a_day, today + half_a_day
                     )[0]
 
                     sold_qty = sum(
-                        surplus_topic.beetween(today, today + 2 * half_a_day)
+                        surplus_topic.between(today, today + 2 * half_a_day)
                     )
 
                     surplus_qty = (produced_qty - sold_qty) + last_surplus_qty
