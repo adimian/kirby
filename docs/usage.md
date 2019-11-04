@@ -162,9 +162,19 @@ $ pypi-server --overwrite -p 7000 -P ~/.htaccess ~/packages
 ```
 
 #### `kafka`
-Follow the steps 1 and 2 of the [Kafka quickstart tutorial](https://kafka.apache.org/quickstart). To run kafka instance:
+Those are the steps 1 and 2 of the [Kafka quickstart tutorial](https://kafka.apache.org/quickstart). 
+
+.. note:: On Windows platforms use ``bin\windows\``  instead of ``bin/`` 
+
+Download kafka:
 ```bash
-$ redis-server
+$ tar -xzf kafka_2.12-2.3.0.tgz
+$ cd kafka_2.12-2.3.0
+```
+
+Run kafka instance:
+```bash
+$ bin/zookeeper-server-start.sh config/zookeeper.properties
 ```
 
 #### `redis`
