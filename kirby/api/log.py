@@ -2,6 +2,7 @@ import uuid
 
 from smart_getenv import getenv
 
+from .context import ctx
 from .ext.topic import Topic
 
 LOGGER_TOPIC_NAME = getenv("KIRBY_TOPIC_LOGS", default=".kirby.logs")
