@@ -8,6 +8,8 @@ def create_config_keys(s, env_var_dict):
     # Global vars
     scope = models.ConfigScope.GLOBAL
     for k, v in env_var_dict[scope].items():
+        if type(v) is not str:
+            v = str(v)
         s.add(models.ConfigKey(name=k, value=v, scope=scope))
 
 
