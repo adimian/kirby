@@ -1,13 +1,12 @@
 {
   "ENVS": {
-    "test": "Test",
-    "dev": "Development",
-    "prod": "Prod"
+    "test": "Test"
   },
   "ENV_VARS": {
     "GLOBAL": {
-      "KAFKA_BOOTSTRAP_SERVERS": "http://localhost:9092",
+      "KAFKA_BOOTSTRAP_SERVERS": "127.0.0.1:9092",
       "KIRBY_WEB_SERVER": "http://localhost:8080",
+      "KAFKA_USE_TLS": false,
       "UNITARY_PRODUCTION_COST": 0.8,
       "UNITARY_STORAGE_PRICE_PER_DAY": 0.2,
       "UNITARY_SELLING_PRICE":  1.5
