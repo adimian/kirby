@@ -360,7 +360,7 @@ class Topic(External):
         self,
         topic_name,
         group_id=None,
-        use_tls=True,
+        use_tls=None,
         testing=False,
         raw_records=False,
         init_time=None,
@@ -370,6 +370,7 @@ class Topic(External):
         self.init_time = (
             datetime.datetime.utcnow() if not init_time else init_time
         )
+        use_tls = use_tls or getenv("KAFKA_USE_TLS", type=bool, default=True)
         if testing:
             self.topic_config = TopicTestModeConfig(
                 name=topic_name,
