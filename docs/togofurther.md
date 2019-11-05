@@ -47,23 +47,33 @@ exactly the same way. Once run, a `supervisor` creates :
 kafka topic and `KIRBY_TOPIC_SCHEDULED_JOBS` kafka topic. As a reminder, those topics are fed by the 
 `scheduler` of the leader `supervisor`.
 
-Since there is multiple Arbiters and multiple Runners, we need to synchronise the processes. Specially if 
-there is a failure and we need to re-raise the scripts, either we need to list executing daemons or run every daemon 
+Since there are multiple Arbiters and multiple Runners, we need to synchronise the processes. Specially if 
+there is a failure and we need to re-raise the scripts. Either we need to list executing daemons or run every daemon 
 by every arbiters. We choose the second option. 
 
-The scheduled don't have to be re-raised, specially sensors. For the scheduled processor, there is still a way for doing
+The scheduled scripts don't have to be re-raised, specially sensors. For the 
+scheduled processor, there is still a way for doing
 that manually using the rewind method.
 
 .. todo:: The rewind feature still need to be developed. 
 
 In order to do execute every daemon jobs by every arbiters, we need to correctly set the `group_id` of the arbiters. 
-In Kafka, for different two groups of consumers will consume each and every message on a topic. If there is one consumer
-in a group, it will consume every message in the topic. So `group_id` of the consumers of the arbiters are set as the 
-name of the supervisor (which is set by the user and is supposed to be unique).
+In Kafka, different groups of consumers will consume each and every message on a topic. If there is only one consumer
+in a group, it will consume every message in the topic. So `group_id` of the arbiters consumers are set as the 
+name of the supervisor which is unique.
 
 For the runners, they must all receive different jobs, so their `group_id` is set to the same value : the name of 
 the topic `.kirby.job-offers.scheduled` by default (modifiable by the environment variable 
 `KIRBY_TOPIC_SCHEDULED_JOB_OFFERS`).
+
+By default, when a Kafka producer related to a given topic is created and if that
+given topic does not exist, it is automatically created with only one partition 
+and a replication factor of 1.  This is fine if we run only one supervisor.
+In the case *S*  supervisors are run, it is important to create both `job-offers`
+topics with a number of partitions higher than *S*  before running the supervisors. 
+This is explained in :ref:`linking-userguide`.
+
+
 
 ## Process execution
 Once a job is fetched, an `executor` instance is created in a new thread. This `executor`
@@ -84,5 +94,21 @@ every single daemon script. Scheduled scripts are only run once.
 
  
 .. image:: _static/runner_arbiter_diagram.png
+
+ 
+## Kafka brokers 
+Kirby can be run with several Kafka brokers. Like explained in [Kafka quick 
+start documentation](https://kafka.apache.org/quickstart), Kafka manages
+fault-tolerance: if one broker dies, producers and consumers still work, 
+even if they were set on this broker. 
+For this feature to work, it is mandatory that `__consumer_offsets` Kafka topic 
+is configured with a replication factor higher than 1. This configuration is
+ensured by modifying  `offsets.topic.replication.factor` value in Kafka 
+config file (`server.properties`).
+In case Kafka servers were previously launched with  `offsets.topic.replication.factor=1`, 
+which is the default value, `__consumer_offsets` replication factor can 
+be changed following the method explained 
+[here](https://gist.github.com/uarun/da30d8ef52b5d57b145cd13694c8acdc#file-inc-replication-factor-json).
+
 
  
