@@ -11,7 +11,11 @@ if __name__ == "__main__":
 
     now = datetime.datetime.utcnow()
     today = datetime.datetime(
-        year=now.year, month=now.month, day=now.day, minute=now.minute
+        year=now.year,
+        month=now.month,
+        day=now.day,
+        hour=now.hour,
+        minute=now.minute,
     )
     half_a_day = datetime.timedelta(seconds=30)
 
