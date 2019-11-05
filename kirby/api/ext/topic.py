@@ -52,11 +52,15 @@ def datetime_to_kafka_ts(time):
 
 
 def parse_records(records_by_partition, raw_records=False):
+    # raw_records define the behaviour of this function:
+    # - if True, return the records as returned by Kafka with
+    #   headers deserialized
+    # - if False, return only values
     if records_by_partition:
         if raw_records:
             # The records are Namedtuple.
             # Namedtuple._replace return the same Namedtuple with the
-            # values modified and let the original one untouched.
+            # selected values modified and the other ones untouched.
             return [
                 record._replace(
                     headers={
@@ -82,6 +86,7 @@ def is_in_test_mode(topic_config):
 
 
 def get_kafka_args(topic_config):
+    # This function is used to get the init dictionary for kafka objects
     if not is_in_test_mode(topic_config):
         kafka_args = {"bootstrap_servers": ctx.KAFKA_BOOTSTRAP_SERVERS}
         if topic_config.use_tls:

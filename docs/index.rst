@@ -11,6 +11,7 @@ Welcome to Kirby documentation!
     concepts
     features
     usage
+    togofurther
 
 ..  toctree::
     :maxdepth: 1
