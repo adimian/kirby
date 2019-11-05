@@ -20,6 +20,7 @@ def test_read_json():
         models.ConfigScope.GLOBAL: {
             "KAFKA_BOOTSTRAP_SERVERS": "http://localhost:9092",
             "KIRBY_WEB_SERVER": "http://localhost:8080",
+            "KAFKA_USE_TLS": False,
             "UNITARY_PRODUCTION_COST": 0.8,
             "UNITARY_STORAGE_PRICE_PER_DAY": 0.2,
             "UNITARY_SELLING_PRICE": 1.5,

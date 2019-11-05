@@ -1,20 +1,12 @@
-import random
-import time
+import example_utils
 
-from unittest import mock
+
 from time import sleep
 
 WEBCLIENT_NAME = "DB/Profit"
 
 
-def mocked_post(*args, **kargs):
-    time.sleep(random.uniform(0.5, 1.5))
-    print(f"posting {args}, {kargs}")
-
-
-mocking_webclient = mock.patch("kirby.ext.webclient.WebClient").__enter__()
-mocking_webclient.return_value.__enter__.return_value.name = WEBCLIENT_NAME
-mocking_webclient.return_value.__enter__.return_value.post = mocked_post
+example_utils.mock_webclient(WEBCLIENT_NAME)
 
 if __name__ == "__main__":
     import kirby

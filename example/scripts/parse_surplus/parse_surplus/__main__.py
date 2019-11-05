@@ -1,20 +1,10 @@
-import random
-import time
-
-from unittest import mock
+import example_utils
 
 
 WEBCLIENT_NAME = "DB/Stock"
 
 
-def mocked_update(*args, **kargs):
-    time.sleep(random.uniform(0.5, 1.5))
-    print(f"updating {args}, {kargs}")
-
-
-mocking_webclient = mock.patch("kirby.ext.webclient.WebClient").__enter__()
-mocking_webclient.return_value.__enter__.return_value.name = WEBCLIENT_NAME
-mocking_webclient.return_value.__enter__.return_value.update = mocked_update
+example_utils.mock_webclient(WEBCLIENT_NAME)
 
 if __name__ == "__main__":
     import kirby
@@ -22,7 +12,8 @@ if __name__ == "__main__":
 
     now = datetime.datetime.utcnow()
     today = datetime.datetime(
-        year=now.year, month=now.month, day=now.day, minute=now.minute
+        year=now.year, month=now.month, day=now.day,
+        hour=now.hour, minute=now.minute
     )
     half_a_day = datetime.timedelta(seconds=30)
 
