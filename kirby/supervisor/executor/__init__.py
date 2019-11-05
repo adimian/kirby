@@ -99,7 +99,7 @@ class Executor(threading.Thread):
     @property
     def virtualenv(self):
         if not hasattr(self, "_Executor__virtualenv"):
-            logging.debug("Creating the venv")
+            logging.debug(f"Creating the venv {self.venv_name}")
             venv_path = os.path.join(
                 getenv(
                     "KIRBY_VENV_DIRECTORY",
@@ -111,9 +111,8 @@ class Executor(threading.Thread):
             logging.info(f"creating venv for {self.venv_name} at {venv_path}")
             env = virtualenvapi.manage.VirtualEnvironment(venv_path)
 
-            logging.debug("Installing package")
+            logging.debug(f"Installing package: {self.job.package_name}")
             env.install(self.job.package_name)
-            logging.debug("Package installed")
             self.__virtualenv = env
         return self.__virtualenv
 
@@ -154,6 +153,7 @@ class Executor(threading.Thread):
                 self.status = ProcessState.FAILED
                 raise ProcessExecutionError(stderr)
         except:
+            print(f"---------------EXCEPT : {sys.exc_info()}")
             self.exc_info = sys.exc_info()
 
     def get_return_values(self):
