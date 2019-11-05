@@ -1,6 +1,6 @@
 import random
 import time
-
+from time import sleep
 from unittest import mock
 
 
@@ -40,9 +40,9 @@ if __name__ == "__main__":
         ) as sales_topic:
             kirby_script.add_source(sales_api)
             kirby_script.add_destination(sales_topic)
-
+            sleep(60)
             while True:
                 sale = sales_api.get("/")
                 logger.info(f"Sending {sale}")
-                sales_topic.send(sale)
+                sales_topic.send(str(sale))
                 time.sleep(random.randrange(1, 3))

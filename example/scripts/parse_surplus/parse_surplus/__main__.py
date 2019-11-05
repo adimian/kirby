@@ -35,6 +35,7 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
+    logger = kirby.log.Logger()
 
     with kirby.ext.topic.Topic(
         context.PRODUCTION_TOPIC_NAME, use_tls=False
@@ -52,23 +53,26 @@ if __name__ == "__main__":
                     kirby_script.add_source(sales_topic)
                     kirby_script.add_destination(surplus_topic)
 
-                    surplus = surplus_topic.beetween(
-                        today - half_a_day, today + half_a_day
+                    surplus = surplus_topic.between(
+                        today - 2 * half_a_day, today
                     )
                     if len(surplus) > 0:
                         last_surplus_qty = surplus[0]
                     else:
                         last_surplus_qty = 0
 
-                    produced_qty = production_topic.beetween(
-                        today - half_a_day, today + half_a_day
-                    )[0]
-
+                    produced_qtys = production_topic.between(
+                        today - 2 * half_a_day, today
+                    )
+                    if len(produced_qtys) != 0:
+                        produced_qty = produced_qtys[0]
+                    else:
+                        produced_qty = 0
                     sold_qty = sum(
-                        surplus_topic.beetween(today, today + 2 * half_a_day)
+                        sales_topic.between(today - 2 * half_a_day, today)
                     )
 
                     surplus_qty = (produced_qty - sold_qty) + last_surplus_qty
-
-                    surplus_topic.send(surplus_qty)
+                    logger.log(f"send {surplus_qty}")
+                    surplus_topic.send(str(surplus_qty))
                     stock_api.update("/", data=surplus_qty)

@@ -31,9 +31,9 @@ if __name__ == "__main__":
             "SALES_TOPIC_NAME": {},
             "PROFIT_API_BASE": {},
             "SURPLUS_TOPIC_NAME": {},
-            "UNITARY_PRODUCTION_COST": {"type": int},
-            "UNITARY_STORAGE_PRICE_PER_DAY": {"type": int},
-            "UNITARY_SELLING_PRICE": {"type": int},
+            "UNITARY_PRODUCTION_COST": {"type": float},
+            "UNITARY_STORAGE_PRICE_PER_DAY": {"type": float},
+            "UNITARY_SELLING_PRICE": {"type": float},
         }
     )
     context = kirby.context.ctx
@@ -58,24 +58,26 @@ if __name__ == "__main__":
 
                     profit = 0
 
+                    current_productions = production_topic.between(
+                        today - half_a_day, today + half_a_day
+                    )
+                    if len(current_productions) != 0:
+                        current_production = current_productions[-1]
+                    else:
+                        current_production = 0
                     profit -= (
-                        production_topic.beetween(
-                            today - half_a_day, today + half_a_day
-                        )[0]
-                        * context.PRODUCTION_COST
+                        current_production * context.UNITARY_PRODUCTION_COST
                     )
 
                     profit -= (
-                        surplus_topic.beetween(
-                            today - half_a_day, today + half_a_day
-                        )[0]
-                        * context.STORAGE_PRICE_PER_DAY
+                        current_production
+                        * context.UNITARY_STORAGE_PRICE_PER_DAY
                     )
 
-                    for sale in sales_topic.beetween(
+                    for sale in sales_topic.between(
                         today, today + 2 * half_a_day
                     ):
-                        profit += sale * context.SELLING_PRICE
+                        profit += sale * context.UNITARY_SELLING_PRICE
 
                     logger.info(f"Sending {profit}")
                     profit_api.post("/", data=profit)

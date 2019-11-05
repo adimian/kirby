@@ -5,7 +5,10 @@ def mean(l):
 def test_new_day(now, last_day):
     # Since it's a proof of concept we don't test if it's a
     # new day but if it's a new minute
-    return now.day != last_day
+
+    return now.replace(microsecond=0).replace(second=0) != last_day.replace(
+        microsecond=0
+    ).replace(second=0)
 
 
 def percentage_advancement_in_the_day(now):
@@ -42,7 +45,7 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
-
+    logger = kirby.log.Logger()
     with kirby.ext.topic.Topic(
         context.SALES_TOPIC_NAME, use_tls=False
     ) as sales_topic:
@@ -59,21 +62,33 @@ if __name__ == "__main__":
             last_day = datetime.datetime.utcnow()
             prevision = Prevision()
             sales = []
+            # First prevision
+            prevision_topic.send("150")
+
             for sale in sales_topic:
-                sales.append(sale)
+                sales.append(int(sale))
                 now = datetime.datetime.utcnow()
 
                 if test_new_day(datetime.datetime.utcnow(), last_day):
                     # If a new day: get real prevision
                     last_day = now
+                    logger.info(f"sum_sales {sum(sales)}")
+
+                    logger.info(
+                        f" prevision {prevision.get_prevision(sum(sales))}"
+                    )
+
                     prevision_topic.send(prevision.get_prevision(sum(sales)))
                     sales = []
                 else:
                     # Else: temporary prevision
                     percentage = percentage_advancement_in_the_day(now)
                     estimation_sales_in_the_day = sum(sales) / percentage
-                    prevision_topic.send(
-                        prevision.get_temporary_prevision(
-                            estimation_sales_in_the_day
-                        )
+                    logger.info(
+                        f"estimation_sales_in_the_day {estimation_sales_in_the_day}"
                     )
+                    # prevision_topic.send(
+                    #     prevision.get_temporary_prevision(
+                    #         estimation_sales_in_the_day
+                    #     )
+                    # )
