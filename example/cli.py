@@ -141,6 +141,6 @@ def cli():
 
 cli.add_command(database)
 cli.add_command(packages)
-cli.add_command(clean)
+
 if __name__ == "__main__":
     cli()
