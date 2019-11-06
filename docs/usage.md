@@ -211,6 +211,17 @@ The design choices are these one:
 the outputs, we are going to write on files,
 - Also, we want result quickly, so one day correspond to one minute in the example.
 
+
+.. image:: _static/kirby-example-timeline.svg
+
+The figure above describe the timeline of messages (with one partition by topic and one supervisor 
+launched = one arbiter and one runner = one daemon script running per task).
+
+.. image:: _static/kirby-example-partitions.svg
+
+The figure above describe the dataflow with three partitions.
+
+
 ### Build example project
 
 Fill the database with metadata on scripts:

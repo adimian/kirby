@@ -30,7 +30,7 @@ There are two types of script that can be run with Kirby :
     
     `This website <https://crontab.guru/>`_ can help you build cron schedule expressions
 
-.. image:: _static/kirby-scripts.svg
+.. image:: _static/kirby-sensor-processor.svg
 
 The schema above shows an example of recommended data flow and associated scripts. 
 The basic idea consists in separating the scripts in:
