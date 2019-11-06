@@ -153,8 +153,11 @@ class Executor(threading.Thread):
                 self.status = ProcessState.FAILED
                 raise ProcessExecutionError(stderr)
         except:
-            print(f"---------------EXCEPT : {sys.exc_info()}")
             self.exc_info = sys.exc_info()
+            logging.debug(
+                f"The executor of {self.job.package_name} "
+                f"has caught error: {self.exc_info}"
+            )
 
     def get_return_values(self):
         if self.exc_info:
