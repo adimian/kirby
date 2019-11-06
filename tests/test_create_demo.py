@@ -15,10 +15,10 @@ def test_read_json():
     env_dict, env_var_dict, job_dict, ext_list, user_list, notification_group_dict = read_json(
         DEMO_JSON_FILE_PATH
     )
-    assert env_dict == {"test": "Test", "dev": "Development", "prod": "Prod"}
+    assert env_dict == {"test": "Test"}
     assert env_var_dict == {
         models.ConfigScope.GLOBAL: {
-            "KAFKA_BOOTSTRAP_SERVERS": "http://localhost:9092",
+            "KAFKA_BOOTSTRAP_SERVERS": "127.0.0.1:9092",
             "KIRBY_WEB_SERVER": "http://localhost:8080",
             "KAFKA_USE_TLS": False,
             "UNITARY_PRODUCTION_COST": 0.8,
