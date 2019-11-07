@@ -39,8 +39,8 @@
         }
       }
     },
-    "sales_to_prevision": {
-      "description": "Process sales to estimate prevision",
+    "sales_to_forecast": {
+      "description": "Process sales to estimate forecast",
       "type": "daemon",
       "package_version": {
         "test": "0.0.1",
@@ -51,7 +51,7 @@
       "config": {
         "JOB": {
           "SALES_TOPIC_NAME": "sales",
-          "PREVISION_TOPIC_NAME": "prevision",
+          "FORECAST_TOPIC_NAME": "forecast",
           "INIT_QUANTITY": 50
         },
         "CONTEXT": {
@@ -61,11 +61,11 @@
         }
       }
     },
-    "prevision_to_production": {
-      "description": "Set production as prevision",
+    "forecast_to_production": {
+      "description": "Set production as forecast",
       "type": "scheduled",
       "scheduled_param": {
-        "name": "schedule for prevision_to_production",
+        "name": "schedule for forecast_to_production",
         "hour": "*",
         "minute": "*"
       },
@@ -77,7 +77,7 @@
       "notification_group": "sysadmins",
       "config": {
         "JOB": {
-          "PREVISION_TOPIC_NAME": "prevision",
+          "FORECAST_TOPIC_NAME": "forecast",
           "PRODUCTION_TOPIC_NAME": "production"
         },
         "CONTEXT": {
@@ -161,7 +161,7 @@
     "DB/Profit",
     "DB/Production",
     "sales",
-    "prevision",
+    "forecast",
     "production",
     "surplus"
   ],

@@ -17,18 +17,18 @@ def percentage_advancement_in_the_day(now):
     return now.second / 60
 
 
-class Prevision:
+class Forecast:
     def __init__(self):
         self.sum_sales = kirby.context.ctx.INIT_QUANTITY
         self.nb_values = 1
 
-    def get_prevision(self, sum_sales):
-        prevision = self.get_temporary_prevision(sum_sales)
+    def get_forecast(self, sum_sales):
+        forecast = self.get_temporary_forecast(sum_sales)
         self.nb_values += 1
         self.sum_sales += sum_sales
-        return prevision
+        return forecast
 
-    def get_temporary_prevision(self, sum_sales):
+    def get_temporary_forecast(self, sum_sales):
         nb_values = self.nb_values + 1
         return (self.sum_sales + sum_sales) / nb_values
 
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     kirby_script = kirby.Kirby(
         {
             "SALES_TOPIC_NAME": {},
-            "PREVISION_TOPIC_NAME": {},
+            "FORECAST_TOPIC_NAME": {},
             "INIT_QUANTITY": {"type": int},
         }
     )
@@ -50,45 +50,45 @@ if __name__ == "__main__":
         context.SALES_TOPIC_NAME, use_tls=False
     ) as sales_topic:
         with kirby.ext.topic.Topic(
-            context.PREVISION_TOPIC_NAME, use_tls=False
-        ) as prevision_topic:
+            context.FORECAST_TOPIC_NAME, use_tls=False
+        ) as forecast_topic:
 
             kirby_script.add_source(sales_topic)
-            kirby_script.add_destination(prevision_topic)
+            kirby_script.add_destination(forecast_topic)
 
-            # Init prevision for first production
-            prevision_topic.send(context.INIT_QUANTITY)
+            # Init forecast for first production
+            forecast_topic.send(context.INIT_QUANTITY)
 
             last_day = datetime.datetime.utcnow()
-            prevision = Prevision()
+            forecast = Forecast()
             sales = []
-            # First prevision
-            prevision_topic.send("150")
+            # First forecast
+            forecast_topic.send("150")
 
             for sale in sales_topic:
                 sales.append(int(sale))
                 now = datetime.datetime.utcnow()
 
                 if test_new_day(datetime.datetime.utcnow(), last_day):
-                    # If a new day: get real prevision
+                    # If a new day: get real forecast
                     last_day = now
                     logger.info(f"sum_sales {sum(sales)}")
 
                     logger.info(
-                        f" prevision {prevision.get_prevision(sum(sales))}"
+                        f" forecast {forecast.get_forecast(sum(sales))}"
                     )
 
-                    prevision_topic.send(prevision.get_prevision(sum(sales)))
+                    forecast_topic.send(forecast.get_forecast(sum(sales)))
                     sales = []
                 else:
-                    # Else: temporary prevision
+                    # Else: temporary forecast
                     percentage = percentage_advancement_in_the_day(now)
                     estimation_sales_in_the_day = sum(sales) / percentage
                     logger.info(
                         f"estimation_sales_in_the_day {estimation_sales_in_the_day}"
                     )
-                    # prevision_topic.send(
-                    #     prevision.get_temporary_prevision(
+                    # forecast.send(
+                    #     forecast.get_temporary_forecast(
                     #         estimation_sales_in_the_day
                     #     )
                     # )

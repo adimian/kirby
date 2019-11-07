@@ -49,8 +49,8 @@ def test_read_json():
                 },
             },
         },
-        "sales_to_prevision": {
-            "description": "Process sales to estimate prevision",
+        "sales_to_forecast": {
+            "description": "Process sales to estimate forecast",
             "type": models.JobType.DAEMON,
             "package_version": {
                 "test": "0.0.1",
@@ -62,7 +62,7 @@ def test_read_json():
                 models.ConfigScope.JOB: {
                     "INIT_QUANTITY": 50,
                     "SALES_TOPIC_NAME": "sales",
-                    "PREVISION_TOPIC_NAME": "prevision",
+                    "FORECAST_TOPIC_NAME": "forecast",
                 },
                 models.ConfigScope.CONTEXT: {
                     "test": {},
@@ -71,11 +71,11 @@ def test_read_json():
                 },
             },
         },
-        "prevision_to_production": {
-            "description": "Set production as prevision",
+        "forecast_to_production": {
+            "description": "Set production as forecast",
             "type": models.JobType.SCHEDULED,
             "scheduled_param": {
-                "name": "schedule for prevision_to_production",
+                "name": "schedule for forecast_to_production",
                 "hour": "*",
                 "minute": "*",
             },
@@ -87,7 +87,7 @@ def test_read_json():
             "notification_group": "sysadmins",
             "config": {
                 models.ConfigScope.JOB: {
-                    "PREVISION_TOPIC_NAME": "prevision",
+                    "FORECAST_TOPIC_NAME": "forecast",
                     "PRODUCTION_TOPIC_NAME": "production",
                 },
                 models.ConfigScope.CONTEXT: {
@@ -165,7 +165,7 @@ def test_read_json():
         "DB/Profit",
         "DB/Production",
         "sales",
-        "prevision",
+        "forecast",
         "production",
         "surplus",
     ]

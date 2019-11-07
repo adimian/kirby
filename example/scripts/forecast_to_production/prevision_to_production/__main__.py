@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     kirby_script = kirby.Kirby(
         {
-            "PREVISION_TOPIC_NAME": {},
+            "FORECAST_TOPIC_NAME": {},
             "PRODUCTION_TOPIC_NAME": {},
             "PRODUCTION_API_BASE": {},
         }
@@ -33,32 +33,32 @@ if __name__ == "__main__":
     logger = kirby.log.Logger()
 
     with kirby.ext.topic.Topic(
-        context.PREVISION_TOPIC_NAME, use_tls=False
-    ) as prevision_topic:
+        context.FORECAST_TOPIC_NAME, use_tls=False
+    ) as forecast_topic:
         with kirby.ext.topic.Topic(
             context.PRODUCTION_TOPIC_NAME, use_tls=False
         ) as production_topic:
             with kirby.ext.webclient.WebClient(
                 WEBCLIENT_NAME, context.PRODUCTION_API_BASE
             ) as production_api:
-                kirby_script.add_source(prevision_topic)
+                kirby_script.add_source(forecast_topic)
                 kirby_script.add_destination(production_topic)
                 kirby_script.add_destination(production_api)
-                prevision_found = False
+                forecast_found = False
                 logger.info(f"While loop ")
-                while not prevision_found:
-                    previsions = prevision_topic.between(
+                while not forecast_found:
+                    forecasts = forecast_topic.between(
                         today, today + 2 * half_a_day
                     )
-                    if len(previsions) != 0:
-                        prevision = previsions[-1]
-                        prevision_found = True
+                    if len(forecasts) != 0:
+                        forecast = forecasts[-1]
+                        forecast_found = True
                     else:
                         logger.info(
                             f"no message found between {today} and {today+ 2 * half_a_day} "
                         )
                         sleep(5)
 
-                logger.info(f"Sending {prevision}")
-                production_topic.send(str(prevision))
-                production_api.post({"date": now, "qty": prevision})
+                logger.info(f"Sending {forecast}")
+                production_topic.send(str(forecast))
+                production_api.post({"date": now, "qty": forecast})
