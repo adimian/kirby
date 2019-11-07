@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name="parse_surplus",
@@ -6,5 +6,5 @@ setup(
     author="Kirby Team",
     license="MIT",
     packages=["parse_surplus"],
-    install_requires=["kirby==0.0.1.dev374","example_utils"],
+    install_requires=["kirby","example_utils"],
 )

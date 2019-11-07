@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name="sales_to_forecast",
@@ -6,5 +6,5 @@ setup(
     author="Kirby Team",
     license="MIT",
     packages=["sales_to_forecast"],
-    install_requires=["kirby==0.0.1.dev374"],
+    install_requires=["kirby"],
 )

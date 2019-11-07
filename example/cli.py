@@ -126,6 +126,10 @@ def clean():
             except FileNotFoundError:
                 pass
             shutil.rmtree(os.path.join(package, "dist"), ignore_errors=True)
+            shutil.rmtree(
+                os.path.join(package, f"{package.name}.egg-info"),
+                ignore_errors=True,
+            )
     click.echo("All packages are now clean.")
 
 
