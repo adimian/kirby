@@ -1,14 +1,7 @@
-def mean(l):
-    return int(sum(l) / len(l))
-
-
-def test_new_day(now, last_day):
+def test_tree_quarter_of_a_day(now):
     # Since it's a proof of concept we don't test if it's a
     # new day but if it's a new minute
-
-    return now.replace(microsecond=0).replace(second=0) != last_day.replace(
-        microsecond=0
-    ).replace(second=0)
+    return now.seconds >= 45
 
 
 def percentage_advancement_in_the_day(now):
@@ -59,19 +52,15 @@ if __name__ == "__main__":
             # Init forecast for first production
             forecast_topic.send(context.INIT_QUANTITY)
 
-            last_day = datetime.datetime.utcnow()
             forecast = Forecast()
             sales = []
-            # First forecast
-            forecast_topic.send("150")
 
             for sale in sales_topic:
                 sales.append(int(sale))
                 now = datetime.datetime.utcnow()
 
-                if test_new_day(datetime.datetime.utcnow(), last_day):
+                if test_tree_quarter_of_a_day(now):
                     # If a new day: get real forecast
-                    last_day = now
                     logger.info(f"sum_sales {sum(sales)}")
 
                     logger.info(
@@ -80,15 +69,3 @@ if __name__ == "__main__":
 
                     forecast_topic.send(forecast.get_forecast(sum(sales)))
                     sales = []
-                else:
-                    # Else: temporary forecast
-                    percentage = percentage_advancement_in_the_day(now)
-                    estimation_sales_in_the_day = sum(sales) / percentage
-                    logger.info(
-                        f"estimation_sales_in_the_day {estimation_sales_in_the_day}"
-                    )
-                    # forecast.send(
-                    #     forecast.get_temporary_forecast(
-                    #         estimation_sales_in_the_day
-                    #     )
-                    # )

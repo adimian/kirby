@@ -20,7 +20,7 @@ if __name__ == "__main__":
         hour=now.hour,
         minute=now.minute,
     )
-    half_a_day = datetime.timedelta(seconds=30)
+    one_day = datetime.timedelta(minutes=1)
 
     kirby_script = kirby.Kirby(
         {
@@ -44,21 +44,20 @@ if __name__ == "__main__":
                 kirby_script.add_source(forecast_topic)
                 kirby_script.add_destination(production_topic)
                 kirby_script.add_destination(production_api)
+
                 forecast_found = False
-                logger.info(f"While loop ")
                 while not forecast_found:
-                    forecasts = forecast_topic.between(
-                        today, today + 2 * half_a_day
-                    )
+                    forecasts = forecast_topic.between(today, today + one_day)
                     if len(forecasts) != 0:
                         forecast = forecasts[-1]
                         forecast_found = True
                     else:
-                        logger.info(
-                            f"no message found between {today} and {today+ 2 * half_a_day} "
+                        logger.debug(
+                            f"no message found between "
+                            f"{today} and {today + one_day} "
                         )
-                        sleep(5)
+                        sleep(.5)
 
-                logger.info(f"Sending {forecast}")
+                logger.info(f"Sending forecast={forecast}")
                 production_topic.send(str(forecast))
                 production_api.post({"date": now, "qty": forecast})
