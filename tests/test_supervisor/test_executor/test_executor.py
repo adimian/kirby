@@ -48,7 +48,7 @@ def test_executor_can_ensure_virtualenv_creation(
 ):
     executor = Executor(job_description)
     executor.create_venv()
-    venv_mock.return_value.install.assert_called_once_with(
+    venv_mock.return_value.install.assert_called_with(
         job_description.package_name
     )
 
