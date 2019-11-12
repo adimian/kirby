@@ -112,7 +112,8 @@ class Executor(threading.Thread):
             env = virtualenvapi.manage.VirtualEnvironment(venv_path)
 
             logging.debug(f"Installing package: {self.job.package_name}")
-            env.install("wheel")
+            env.install("wheel", options=["--force", "--upgrade"])
+            env.install("setuptools", options=["--force", "--upgrade"])
             env.install(self.job.package_name)
             self.__virtualenv = env
         return self.__virtualenv
