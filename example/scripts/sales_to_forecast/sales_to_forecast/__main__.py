@@ -1,7 +1,7 @@
 def test_tree_quarter_of_a_day(now):
     # Since it's a proof of concept we don't test if it's a
     # new day but if it's a new minute
-    return now.seconds >= 45
+    return now.second >= 45
 
 
 def percentage_advancement_in_the_day(now):
