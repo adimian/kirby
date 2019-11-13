@@ -32,6 +32,7 @@ if __name__ == "__main__":
     context = kirby.context.ctx
     logger = kirby.log.Logger()
 
+    logger.log("Start")
     with kirby.ext.topic.Topic(
         context.FORECAST_TOPIC_NAME, use_tls=False
     ) as forecast_topic:
@@ -56,8 +57,10 @@ if __name__ == "__main__":
                             f"no message found between "
                             f"{today} and {today + one_day} "
                         )
-                        sleep(.5)
+                        sleep(0.5)
 
                 logger.info(f"Sending forecast={forecast}")
                 production_topic.send(str(forecast))
                 production_api.post({"date": now, "qty": forecast})
+
+    logger.log("Finished")

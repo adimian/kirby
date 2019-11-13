@@ -1,7 +1,6 @@
 import random
 import time
 from time import sleep
-from unittest import mock
 
 import example_utils
 
