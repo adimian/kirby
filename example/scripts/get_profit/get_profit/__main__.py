@@ -33,6 +33,7 @@ if __name__ == "__main__":
     context = kirby.context.ctx
     logger = kirby.log.Logger()
 
+    logger.log("Start")
     with kirby.ext.topic.Topic(
         context.PRODUCTION_TOPIC_NAME, use_tls=False
     ) as production_topic:
@@ -59,13 +60,23 @@ if __name__ == "__main__":
                         current_production = current_productions[-1]
                     else:
                         current_production = 0
+                    logger.debug(f"current_production={current_production}")
+
                     profit -= (
                         current_production * context.UNITARY_PRODUCTION_COST
                     )
 
+                    current_surplus = surplus_topic.between(
+                        today - half_a_day, today + half_a_day
+                    )
+                    if len(current_surplus) != 0:
+                        current_surplus = current_surplus[-1]
+                    else:
+                        current_surplus = 0
+                    logger.debug(f"current_surplus={current_surplus}")
+
                     profit -= (
-                        current_production
-                        * context.UNITARY_STORAGE_PRICE_PER_DAY
+                        current_surplus * context.UNITARY_STORAGE_PRICE_PER_DAY
                     )
 
                     for sale in sales_topic.between(
@@ -75,3 +86,5 @@ if __name__ == "__main__":
 
                     logger.info(f"Sending {profit}")
                     profit_api.post("/", data=profit)
+
+    logger.log("Finished")
