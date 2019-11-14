@@ -100,7 +100,16 @@ def adduser(username):
     default=30,
     help="Shortest time interval between two scheduler executions",
 )
+@click.option(
+    "--log_level",
+    type=click.Choice(
+        ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+        case_sensitive=False,
+    ),
+    default="WARNING",
+)
 def supervisor(name, window, wakeup):
+    logging.getLogger().setLevel(logging.INFO)
     run_supervisor(name, window, wakeup)
 
 
