@@ -112,8 +112,11 @@ class Consumer:
                 value_deserializer=kirby_value_deserializer,
                 **get_kafka_args(topic_config),
             )
-            # Update metadata inside self._consumer
-            self._consumer._coordinator.poll()
+
+            while not self._consumer.assignment():
+                # Update metadata inside self._consumer
+                self._consumer._coordinator.poll()
+
             if init_time:
                 self.seek_at_timestamp(init_time)
 
