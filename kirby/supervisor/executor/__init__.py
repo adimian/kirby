@@ -99,7 +99,6 @@ class Executor(threading.Thread):
     @property
     def virtualenv(self):
         if not hasattr(self, "_Executor__virtualenv"):
-            logging.debug(f"Creating the venv {self.venv_name}")
             venv_path = os.path.join(
                 getenv(
                     "KIRBY_VENV_DIRECTORY",
@@ -111,7 +110,6 @@ class Executor(threading.Thread):
             logging.info(f"creating venv for {self.venv_name} at {venv_path}")
             env = virtualenvapi.manage.VirtualEnvironment(venv_path)
 
-            logging.debug(f"Installing package: {self.job.package_name}")
             env.install("wheel", options=["--force", "--upgrade"])
             env.install("setuptools", options=["--force", "--upgrade"])
             env.install(self.job.package_name)
@@ -156,7 +154,7 @@ class Executor(threading.Thread):
                 raise ProcessExecutionError(stderr)
         except:
             self.exc_info = sys.exc_info()
-            logging.debug(
+            logging.warning(
                 f"The executor of {self.job.package_name} "
                 f"has caught error: {self.exc_info}"
             )
