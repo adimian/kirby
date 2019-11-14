@@ -108,8 +108,8 @@ def adduser(username):
     ),
     default="WARNING",
 )
-def supervisor(name, window, wakeup):
-    logging.getLogger().setLevel(logging.INFO)
+def supervisor(name, window, wakeup, log_level):
+    logging.getLogger().setLevel(logging.__dict__[log_level])
     run_supervisor(name, window, wakeup)
 
 
