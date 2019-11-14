@@ -4,6 +4,7 @@ import os
 import psutil
 import sys
 import subprocess
+import traceback
 import threading
 import virtualenvapi.manage
 
@@ -151,12 +152,15 @@ class Executor(threading.Thread):
                 self.status = ProcessState.STOPPED
             else:
                 self.status = ProcessState.FAILED
-                raise ProcessExecutionError(stderr)
+                raise ProcessExecutionError(
+                    f"return_code={return_code}; {stderr}"
+                )
         except:
-            self.exc_info = sys.exc_info()
+            (type, value, tb) = sys.exc_info()
+            self.exc_info = (type, value, tb)
             logging.warning(
                 f"The executor of {self.job.package_name} "
-                f"has caught error: {self.exc_info}"
+                f"has caught error: {''.join(traceback.format_tb(tb))}\n{value}"
             )
 
     def get_return_values(self):
