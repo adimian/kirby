@@ -117,8 +117,11 @@ class Consumer:
                 value_deserializer=kirby_value_deserializer,
                 **get_kafka_args(topic_config),
             )
-            # Update metadata inside self._consumer
-            self._consumer._coordinator.poll()
+
+            while not self._consumer.assignment():
+                # Update metadata inside self._consumer
+                self._consumer._coordinator.poll()
+
             if init_time:
                 self.seek_at_timestamp(init_time)
 
@@ -218,7 +221,7 @@ class Consumer:
                     offset = offsets_for_times.offset
                 else:
                     offset = 0
-                logger.warning(
+                logger.debug(
                     f"There where no offset for the partition {partition} "
                     f"before the rollback. The offset was therefore set as "
                     "the last message at the beginning of the rollback."
@@ -365,7 +368,7 @@ class Topic(External):
         self,
         topic_name,
         group_id=None,
-        use_tls=True,
+        use_tls=None,
         testing=False,
         raw_records=False,
         init_time=None,
@@ -375,6 +378,7 @@ class Topic(External):
         self.init_time = (
             datetime.datetime.utcnow() if not init_time else init_time
         )
+        use_tls = use_tls or getenv("KAFKA_USE_TLS", type=bool, default=True)
         if testing:
             self.topic_config = TopicTestModeConfig(
                 name=topic_name,

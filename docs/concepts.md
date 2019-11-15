@@ -9,6 +9,7 @@ It is highly recommended to understand how [Kafka](https://kafka.apache.org/) wo
 of Kirby.
 
 ## Scripts
+.. _linking-components-scripts:
 
 Kirby's task is to handle the execution of scripts that process data. 
 The data which come from externals sources of Kirby should move between processes via Kafka topics. 
@@ -29,7 +30,7 @@ There are two types of script that can be run with Kirby :
     
     `This website <https://crontab.guru/>`_ can help you build cron schedule expressions
 
-.. image:: _static/kirby-scripts.svg
+.. image:: _static/kirby-sensor-processor.svg
 
 The schema above shows an example of recommended data flow and associated scripts. 
 The basic idea consists in separating the scripts in:

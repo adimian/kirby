@@ -34,6 +34,7 @@ class AuthenticatedModelView(ModelView):
 class TopicView(AuthenticatedModelView):
     pass
 
+
 class UserView(AuthenticatedModelView):
     form_excluded_columns = ("password", "provider")
     column_exclude_list = ("password",)
@@ -154,6 +155,7 @@ class LogView(BaseView):
     tl = Timeloop()
 
     def __init__(self, *args, **kargs):
+        logging.getLogger("timeloop").setLevel(logging.CRITICAL)
         self.sessions = {}
         self.rollback_earlier_timestamp = datetime.datetime.utcnow()
         self.delta_datetime = datetime.timedelta(minutes=1)

@@ -1,13 +1,10 @@
-import logging
-import os
-from getpass import getpass
-
 import click
+import logging
+
 from dotenv import load_dotenv
+from getpass import getpass
 from smart_getenv import getenv
 
-import kirby
-from kirby.create_demo import create_demo_db
 from kirby.models import db
 from kirby.models.security import user_datastore
 from kirby.supervisor import run_supervisor
@@ -17,7 +14,7 @@ load_dotenv()
 DEFAULT_LOG_FORMAT = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format=getenv("LOG_FORMAT", default=DEFAULT_LOG_FORMAT),
 )
 logging.getLogger("kafka").setLevel(logging.CRITICAL)
@@ -63,6 +60,8 @@ def read_topic(name):
 @click.option("--debug", type=bool, default=False, help="Start in DEBUG mode")
 def web(host, port, debug):
     app = app_maker()
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     app.run(debug=debug, port=port, host=host)
 
 
@@ -103,25 +102,17 @@ def adduser(username):
     default=30,
     help="Shortest time interval between two scheduler executions",
 )
-def supervisor(name, window, wakeup):
-    run_supervisor(name, window, wakeup)
-
-
-@click.command()
 @click.option(
-    "--json_file_path",
-    type=str,
-    default=os.path.join(os.path.dirname(kirby.__file__), "demo.json"),
-    help="demo json path file",
+    "--log_level",
+    type=click.Choice(
+        ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+        case_sensitive=False,
+    ),
+    default="INFO",
 )
-def demo(json_file_path):
-    app = app_maker()
-
-    with app.app_context():
-        app.try_trigger_before_first_request_functions()
-        create_demo_db(db.session, json_file_path)
-
-    click.echo("demo data inserted in the database")
+def supervisor(name, window, wakeup, log_level):
+    logging.getLogger().setLevel(logging.__dict__[log_level])
+    run_supervisor(name, window, wakeup)
 
 
 @click.group()
@@ -146,7 +137,6 @@ def cli():
 cli.add_command(web)
 cli.add_command(adduser)
 cli.add_command(supervisor)
-cli.add_command(demo)
 cli.add_command(debug)
 
 if __name__ == "__main__":

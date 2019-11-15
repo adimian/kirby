@@ -6,6 +6,7 @@ from redis import Redis
 from smart_getenv import getenv
 from time import perf_counter, sleep
 
+from kirby.exc import CoolDownException
 from kirby.models import JobType
 from kirby.api.queue import Queue
 from kirby.supervisor.election import Election
@@ -68,7 +69,12 @@ def run_supervisor(name, window, wakeup):
                         ):
                             continue
                         else:
-                            scheduler.queue_job(job)
+                            try:
+                                scheduler.queue_job(job)
+                            except CoolDownException:
+                                logging.info(
+                                    f"Job {job['name']} already in the queue"
+                                )
             else:
                 logger.debug("not the leader, do nothing.")
 

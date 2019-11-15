@@ -29,7 +29,7 @@ class Runner(threading.Thread):
         while i < len(self.threads):
             thread = self.threads[i]
             if thread.is_alive():
-                thread.join()
+                thread.join(timeout=0.3)
                 self.threads.pop(i)
             else:
                 i += 1
