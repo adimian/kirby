@@ -48,8 +48,14 @@ def test_executor_can_ensure_virtualenv_creation(
 ):
     executor = Executor(job_description)
     executor.create_venv()
-    venv_mock.return_value.install.assert_called_with(
-        job_description.package_name
+
+    # call_args_list is the list of calls
+    # call_args = (args, kargs)
+    assert any(
+        [
+            job_description.package_name in call_args[0]
+            for call_args in venv_mock.return_value.install.call_args_list
+        ]
     )
 
 
