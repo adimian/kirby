@@ -113,7 +113,9 @@ class Executor(threading.Thread):
 
             env.install("wheel", options=["--force", "--upgrade"])
             env.install("setuptools", options=["--force", "--upgrade"])
-            env.install(self.job.package_name)
+            env.install(
+                self.job.package_name, options=["--no-warn-script-location"]
+            )
             self.__virtualenv = env
         return self.__virtualenv
 
