@@ -216,7 +216,7 @@ class Consumer:
                     offset = offsets_for_times.offset
                 else:
                     offset = 0
-                logger.warning(
+                logger.debug(
                     f"There where no offset for the partition {partition} "
                     f"before the rollback. The offset was therefore set as "
                     "the last message at the beginning of the rollback."
