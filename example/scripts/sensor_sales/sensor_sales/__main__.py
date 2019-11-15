@@ -29,7 +29,7 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
-    logger = kirby.log.Logger()
+    logger = kirby.log.Logger(default_level="debug")
 
     with kirby.ext.webclient.WebClient(
         WEBCLIENT_NAME, context.SALES_API_BASE

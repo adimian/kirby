@@ -30,9 +30,9 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
-    logger = kirby.log.Logger()
+    logger = kirby.log.Logger(default_level="debug")
 
-    logger.log("Start")
+    logger.debug("Start")
     with kirby.ext.topic.Topic(
         context.FORECAST_TOPIC_NAME, use_tls=False
     ) as forecast_topic:
@@ -63,4 +63,4 @@ if __name__ == "__main__":
                 production_topic.send(str(forecast))
                 production_api.post({"date": now, "qty": forecast})
 
-    logger.log("Finished")
+    logger.debug("Finished")

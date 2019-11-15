@@ -31,9 +31,9 @@ if __name__ == "__main__":
         }
     )
     context = kirby.context.ctx
-    logger = kirby.log.Logger()
+    logger = kirby.log.Logger(default_level="debug")
 
-    logger.log("Start")
+    logger.debug("Start")
     with kirby.ext.topic.Topic(
         context.PRODUCTION_TOPIC_NAME, use_tls=False
     ) as production_topic:
@@ -87,4 +87,4 @@ if __name__ == "__main__":
                     logger.info(f"Sending {profit}")
                     profit_api.post("/", data=profit)
 
-    logger.log("Finished")
+    logger.debug("Finished")

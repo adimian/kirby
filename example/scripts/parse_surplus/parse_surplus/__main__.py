@@ -72,7 +72,7 @@ if __name__ == "__main__":
                     logger.debug(f"got sold_qty={sold_qty}")
 
                     surplus_qty = (produced_qty - sold_qty) + last_surplus_qty
-                    logger.log(f"send surplus_qty={surplus_qty}")
+                    logger.info(f"send surplus_qty={surplus_qty}")
                     surplus_topic.send(str(surplus_qty))
                     stock_api.update("/", data=surplus_qty)
     logger.log("Finished")
