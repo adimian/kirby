@@ -14,7 +14,7 @@ load_dotenv()
 DEFAULT_LOG_FORMAT = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format=getenv("LOG_FORMAT", default=DEFAULT_LOG_FORMAT),
 )
 logging.getLogger("kafka").setLevel(logging.CRITICAL)
@@ -60,6 +60,8 @@ def read_topic(name):
 @click.option("--debug", type=bool, default=False, help="Start in DEBUG mode")
 def web(host, port, debug):
     app = app_maker()
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     app.run(debug=debug, port=port, host=host)
 
 
@@ -106,7 +108,7 @@ def adduser(username):
         ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
         case_sensitive=False,
     ),
-    default="WARNING",
+    default="INFO",
 )
 def supervisor(name, window, wakeup, log_level):
     logging.getLogger().setLevel(logging.__dict__[log_level])
